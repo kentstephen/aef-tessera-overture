@@ -90678,7 +90678,8 @@ function NVe({ model: e, el: t }) {
 		area: null,
 		readId: 0,
 		s2Year: U9[U9.length - 1],
-		open: null
+		open: null,
+		lines: !0
 	}, i = (e, t, n) => {
 		let r = document.createElement(e);
 		return t && (r.className = t), n != null && (r.innerHTML = n), r;
@@ -90783,7 +90784,7 @@ function NVe({ model: e, el: t }) {
 	}
 	function ue() {
 		let e = x.getCenter(), t = A?.dateAt(r.s2Year, e.lng, e.lat) ?? "", n = A?.status(r.s2Year) ?? "finding", i = t ? `${$9[t.slice(5, 7) - 1]} ${+t.slice(8, 10)}` + (n === "cloudy" ? ", cloudy" : "") : n === "cloudy" ? "no scene" : "finding…", a = `${String(U9[0]).slice(2)}/${String(U9[U9.length - 1]).slice(2)}`, o = x.getZoom();
-		h.innerHTML = `<div class="s2hd"><b>${r.s2Year}</b><span>Sentinel-2<br>${i}</span><span class="zw">z<br><i class="z">${o.toFixed(1)}</i></span></div><div class="keys"><span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${a}</span><span><kbd>N</kbd> next</span><span><kbd>K</kbd> PNG</span></div><div class="pnote">${o < X9 ? `Zoom in to ${X9} to outline the dug ground` : "<i></i>Dug ground, 2018 to 2025. Click a patch for its years"}</div>`;
+		h.innerHTML = `<div class="s2hd"><b>${r.s2Year}</b><span>Sentinel-2<br>${i}</span><span class="zw">z<br><i class="z">${o.toFixed(1)}</i></span></div><div class="keys"><span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${a}</span><span><kbd>N</kbd> next</span><span><kbd>O</kbd> outlines</span><span><kbd>K</kbd> PNG</span></div><div class="pnote">${o < X9 ? `Zoom in to ${X9} to outline the dug ground` : "<i></i>Dug ground, 2018 to 2025. Click a patch for its years"}</div>`;
 	}
 	function de(e) {
 		let t = Math.max(0, Math.min(U9.length - 1, U9.indexOf(r.s2Year) + e));
@@ -90800,7 +90801,7 @@ function NVe({ model: e, el: t }) {
 			onTile: () => {
 				Se(), se();
 			}
-		})), re && e.push(new Pw({
+		})), re && r.lines && e.push(new Pw({
 			id: "patches",
 			data: {
 				length: re,
@@ -90884,15 +90885,15 @@ function NVe({ model: e, el: t }) {
 				jointRounded: !0,
 				capRounded: !0
 			});
-			e.overlay.setProps({ layers: [...A.layerFor(e.year, `t${t}`), n] });
-			let r = A.dateAt(e.year), i = A.status(e.year), a = r ? `${$9[r.slice(5, 7) - 1]} ${+r.slice(8, 10)}` + (i === "cloudy" ? ", cloudy" : "") : i === "cloudy" ? "no scene" : "finding…";
-			e.label.innerHTML = `<b>${e.year}</b><span>${e.role}<br>Sentinel-2 · ${a}</span>`;
+			e.overlay.setProps({ layers: [...A.layerFor(e.year, `t${t}`), ...r.lines ? [n] : []] });
+			let i = A.dateAt(e.year), a = A.status(e.year), o = i ? `${$9[i.slice(5, 7) - 1]} ${+i.slice(8, 10)}` + (a === "cloudy" ? ", cloudy" : "") : a === "cloudy" ? "no scene" : "finding…";
+			e.label.innerHTML = `<b>${e.year}</b><span>${e.role}<br>Sentinel-2 · ${o}</span>`;
 		});
 	}
 	function ve(e) {
 		r.open = e, ge = q9(e.runs).map(([e, t, n, r]) => [[e, t], [n, r]]);
 		let t = e.n * (k$ * 111320) ** 2 * Math.cos((e.box[1] + e.box[3]) / 2 * Math.PI / 180) / 1e4;
-		v.innerHTML = `${t < 10 ? t.toFixed(2) : t.toFixed(0)} ha, ${e.n.toLocaleString()} pixels · click anywhere or <kbd>Esc</kbd> to go back · <kbd>K</kbd> PNG`;
+		v.innerHTML = `${t < 10 ? t.toFixed(2) : t.toFixed(0)} ha, ${e.n.toLocaleString()} pixels · click anywhere or <kbd>Esc</kbd> to go back · <kbd>O</kbd> outlines · <kbd>K</kbd> PNG`;
 		let n = pe(e);
 		A?.want(n.map((e) => e[0])), g.classList.add("on"), _.forEach((e, t) => {
 			e.year = n[t]?.[0] ?? 0, e.role = n[t]?.[1] ?? "", e.el.classList.toggle("off", !e.year), e.year || e.overlay?.setProps({ layers: [] });
@@ -91137,6 +91138,7 @@ function NVe({ model: e, el: t }) {
 		if (e.metaKey || e.ctrlKey || e.altKey || e.target === p) return;
 		let t = e.key;
 		if (t === "k" || t === "K") Ke();
+		else if (t === "o" || t === "O") r.lines = !r.lines, fe(), r.open && _e(), b(r.lines ? "Outlines on" : "Outlines off");
 		else if (t === "Escape") r.open ? ye() : r.fit && (r.fit = !1, T());
 		else if (t === "f" || t === "F") D();
 		else if (t === "x" || t === "X") r.fit = !r.fit, T();

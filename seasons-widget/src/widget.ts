@@ -67,7 +67,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     document.head.appendChild(s);
   }
 
-  const st = { fit: true, area: null as [number, number, number, number] | null, readId: 0, s2Year: S2_YEARS[S2_YEARS.length - 1], open: null as Patch | null };
+  const st = { fit: true, area: null as [number, number, number, number] | null, readId: 0, s2Year: S2_YEARS[S2_YEARS.length - 1], open: null as Patch | null, lines: true };
   const E = (t: string, c?: string, h?: string) => {
     const e = document.createElement(t);
     if (c) e.className = c;
@@ -234,7 +234,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     const z = map.getZoom();
     s2Card.innerHTML =
       `<div class="s2hd"><b>${st.s2Year}</b><span>Sentinel-2<br>${day}</span><span class="zw">z<br><i class="z">${z.toFixed(1)}</i></span></div>` +
-      `<div class="keys"><span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${ends}</span><span><kbd>N</kbd> next</span><span><kbd>K</kbd> PNG</span></div>` +
+      `<div class="keys"><span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${ends}</span><span><kbd>N</kbd> next</span><span><kbd>O</kbd> outlines</span><span><kbd>K</kbd> PNG</span></div>` +
       `<div class="pnote">${z < AUTO_Z ? `Zoom in to ${AUTO_Z} to outline the dug ground` : `<i></i>Dug ground, 2018 to 2025. Click a patch for its years`}</div>`;
   }
   function stepS2(d: number) {
@@ -265,7 +265,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
           },
         }),
       );
-    if (segN)
+    if (segN && st.lines)
       layers.push(
         new LineLayer({
           id: "patches",
@@ -318,7 +318,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     panels.forEach((pn, i) => {
       if (!pn.year || !pn.map || !pn.overlay) return;
       const line = new PathLayer({ id: "patch", data: openPaths, getPath: (r: number[][]) => r as never, getColor: ORCHID, getWidth: 2.5, widthUnits: "pixels", jointRounded: true, capRounded: true });
-      pn.overlay.setProps({ layers: [...s2!.layerFor(pn.year, `t${i}`), line] as never });
+      pn.overlay.setProps({ layers: [...s2!.layerFor(pn.year, `t${i}`), ...(st.lines ? [line] : [])] as never });
       const d = s2!.dateAt(pn.year), stt = s2!.status(pn.year);
       const day = d ? `${MONTHS[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}` + (stt === "cloudy" ? ", cloudy" : "") : stt === "cloudy" ? "no scene" : "finding…";
       pn.label.innerHTML = `<b>${pn.year}</b><span>${pn.role}<br>Sentinel-2 · ${day}</span>`;
@@ -329,7 +329,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     openPaths = outlineOfRuns(p.runs).map(([a, b, c, d]) => [[a, b], [c, d]]);
     // its size, to see where a cutoff for small patches would sit: hectares from its 10 m pixels at its latitude
     const ha = (p.n * (RES * 111320) ** 2 * Math.cos((((p.box[1] + p.box[3]) / 2) * Math.PI) / 180)) / 1e4;
-    back.innerHTML = `${ha < 10 ? ha.toFixed(2) : ha.toFixed(0)} ha, ${p.n.toLocaleString()} pixels · click anywhere or <kbd>Esc</kbd> to go back · <kbd>K</kbd> PNG`;
+    back.innerHTML = `${ha < 10 ? ha.toFixed(2) : ha.toFixed(0)} ha, ${p.n.toLocaleString()} pixels · click anywhere or <kbd>Esc</kbd> to go back · <kbd>O</kbd> outlines · <kbd>K</kbd> PNG`;
     const ys = yearsOf(p);
     s2?.want(ys.map((y) => y[0]));
     tri.classList.add("on");
@@ -713,6 +713,13 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     if (e.metaKey || e.ctrlKey || e.altKey || e.target === q) return;
     const k = e.key;
     if (k === "k" || k === "K") snap();
+    else if (k === "o" || k === "O") {
+      // the patches' outlines on or off, on the map and in the panels
+      st.lines = !st.lines;
+      draw();
+      if (st.open) drawPanels();
+      note(st.lines ? "Outlines on" : "Outlines off");
+    }
     else if (k === "Escape") {
       if (st.open) closePatch();
       else if (st.fit) {
