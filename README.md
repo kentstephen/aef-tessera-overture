@@ -81,7 +81,7 @@ The map fills the window. Search a place (`/`) and zoom in: from zoom 12 the vie
 settles (below it nothing is read). Reading scores the view in the
 browser.
 
-Keys: `[` `]` the imagery's year, `B` 2017 or 2025, `N` another clear pass, `O` outlines on or off (the panels' own while they are open), `/` search, `K` export, `Shift` `←` `→`
+Keys: `[` `]` the imagery's year, `B` 2017 or 2025, `N` a new look (another clear pass), `O` outlines on or off (the panels' own while they are open), `/` search, `K` export, `Shift` `←` `→`
 pivot, `X` notebook view, `F` full screen, `Esc` back from the panels.
 
 ## How it is built

@@ -90785,7 +90785,7 @@ function NVe({ model: e, el: t }) {
 	}
 	function ue() {
 		let e = x.getCenter(), t = A?.dateAt(r.s2Year, e.lng, e.lat) ?? "", n = A?.status(r.s2Year) ?? "finding", i = t ? `${$9[t.slice(5, 7) - 1]} ${+t.slice(8, 10)}` + (n === "cloudy" ? ", cloudy" : "") : n === "cloudy" ? "no scene" : "finding…", a = `${String(U9[0]).slice(2)}/${String(U9[U9.length - 1]).slice(2)}`, o = x.getZoom();
-		h.innerHTML = `<div class="s2hd"><b>${r.s2Year}</b><span>Sentinel-2<br>${i}</span><span class="zw">z<br><i class="z">${o.toFixed(1)}</i></span></div><div class="keys"><span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${a}</span><span><kbd>N</kbd> next</span><span><kbd>O</kbd> outlines</span></div><div class="pnote">${o < X9 ? `Zoom in to ${X9} to outline the dug ground` : "<i></i>Dug ground, 2018 to 2025. Click a patch for its years"}</div>`;
+		h.innerHTML = `<div class="s2hd"><b>${r.s2Year}</b><span>Sentinel-2<br>${i}</span><span class="zw">z<br><i class="z">${o.toFixed(1)}</i></span></div><div class="keys"><span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${a}</span><span><kbd>N</kbd> new look</span><span><kbd>O</kbd> outlines</span></div><div class="pnote">${o < X9 ? `Zoom in to ${X9} to outline the dug ground` : "<i></i>Dug ground, 2018 to 2025. Click a patch for its years"}</div>`;
 	}
 	function de(e) {
 		let t = Math.max(0, Math.min(U9.length - 1, U9.indexOf(r.s2Year) + e));
