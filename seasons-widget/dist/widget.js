@@ -91810,11 +91810,11 @@ function FHe({ model: e, el: t }) {
 	function ve() {
 		let e = r.open;
 		if (!e) return;
-		let t = Math.max(1, ...e.lastYears), n = _[1].wait ? 0 : _[1].year, i = e.lastYears.map((e, r) => {
-			let i = z9 + r, a = e ? Math.max(2, Math.round(18 * e / t)) : 0;
-			return `<span class="hb${i === n ? " on" : ""}"><i style="height:${a}px"></i><small>${String(i).slice(2)}</small></span>`;
+		let t = Math.max(1, ...e.lastYears), n = e.lastYears.map((e, n) => {
+			let r = z9 + n, i = e ? Math.max(2, Math.round(18 * e / t)) : 0;
+			return `<span class="hb${r === 0 ? " on" : ""}"><i style="height:${i}px"></i><small>${String(r).slice(2)}</small></span>`;
 		}).join("");
-		v.innerHTML = `<b>${_e}</b><span class="hist" title="the share of the patch last dug each year">${i}</span><span class="keys">click or <kbd>Esc</kbd> back · <kbd>O</kbd> outline · <kbd>D</kbd> dim</span>`;
+		v.innerHTML = `<b>${_e}</b><span class="hist" title="the share of the patch last dug each year">${n}</span><span class="keys">click or <kbd>Esc</kbd> back · <kbd>O</kbd> outline · <kbd>D</kbd> dim</span>`;
 	}
 	let ye = null;
 	function be(e) {
@@ -91877,21 +91877,9 @@ function FHe({ model: e, el: t }) {
 		r.open = e, ge = V9(e.runs).map(([e, t, n, r]) => [[e, t], [n, r]]), ye = be(e);
 		let t = e.n * (m$ * 111320) ** 2 * Math.cos((e.box[1] + e.box[3]) / 2 * Math.PI / 180) / 1e4;
 		_e = `${t < 10 ? t.toFixed(1) : t.toFixed(0)} ha`, ve();
-		let n = M9[M9.length - 1], i = Math.max(M9[0], e.first - 1), a = n, o = 0;
-		e.lastYears.forEach((e, t) => {
-			2018 + t < n && e > o && (o = e, a = z9 + t);
-		});
-		let s = [
-			[i, "before"],
-			[a, "dug"],
-			[n, "latest"]
-		];
-		A?.want([
-			i,
-			a,
-			n
-		]), g.classList.add("on"), _.forEach((e, t) => {
-			e.year = s[t]?.[0] ?? 0, e.role = s[t]?.[1] ?? "", e.pass = null, e.wait = !1, e.el.classList.toggle("off", !e.year), e.year || e.overlay?.setProps({ layers: [] });
+		let n = [[M9[0], "before"], [M9[M9.length - 1], "after"]];
+		A?.want(n.map((e) => e[0])), g.classList.add("on"), _.forEach((e, t) => {
+			e.year = n[t]?.[0] ?? 0, e.role = n[t]?.[1] ?? "", e.pass = null, e.wait = !1, e.el.classList.toggle("off", !e.year), e.year || e.overlay?.setProps({ layers: [] });
 		}), _.forEach((e, t) => e.year && me(t));
 		for (let e of _) e.map?.resize();
 		he(), xe();

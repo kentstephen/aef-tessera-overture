@@ -149,7 +149,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   sBox.append(q, E("kbd", "", "/"), hits);
   const s2Card = E("div", "s2card glass showing");
   top.append(sBox, s2Card);
-  // the panels: the clicked patch before, dug and in 2025, side by side over the whole window; a click anywhere goes back
+  // the panels: the clicked patch in 2017 and 2025, side by side over the whole window; a click anywhere goes back
   const tri = E("div", "tri");
   const panels = [0, 1, 2].map(() => {
     const p = E("div", "pan"), m = E("div", "pm"), l = E("div", "pl");
@@ -373,7 +373,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   function drawBack() {
     const p = st.open;
     if (!p) return;
-    const top = Math.max(1, ...p.lastYears), dugYear = panels[1].wait ? 0 : panels[1].year;
+    const top = Math.max(1, ...p.lastYears), dugYear = 0;
     const bars = p.lastYears
       .map((v, i) => {
         const y = FIRST_YEAR + i, h = v ? Math.max(2, Math.round((18 * v) / top)) : 0;
@@ -429,15 +429,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     const ha = (p.n * (RES * 111320) ** 2 * Math.cos((((p.box[1] + p.box[3]) / 2) * Math.PI) / 180)) / 1e4;
     backHa = `${ha < 10 ? ha.toFixed(1) : ha.toFixed(0)} ha`;
     drawBack();
-    // before, dug, 2025: the year before any of it was dug; the year the most of it was last dug (the tallest bar
-    // under the panels, the year the map colors its pixels by), short of 2025 unless it was dug then alone; the latest
-    const last = S2_YEARS[S2_YEARS.length - 1], before = Math.max(S2_YEARS[0], p.first - 1);
-    let dug = last, most = 0;
-    p.lastYears.forEach((v, i) => {
-      if (FIRST_YEAR + i < last && v > most) (most = v), (dug = FIRST_YEAR + i);
-    });
-    const ys: [number, string][] = [[before, "before"], [dug, "dug"], [last, "latest"]];
-    s2?.want([before, dug, last]);
+    // the first year and the latest, side by side
+    const ys: [number, string][] = [[S2_YEARS[0], "before"], [S2_YEARS[S2_YEARS.length - 1], "after"]];
+    s2?.want(ys.map((y) => y[0]));
     tri.classList.add("on");
     panels.forEach((pn, i) => {
       pn.year = ys[i]?.[0] ?? 0;
