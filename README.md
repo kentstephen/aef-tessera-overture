@@ -14,14 +14,14 @@ embeddings alone (AlphaEarth Foundations and TESSERA), scored by the aggregate e
   aef-tessera-earthwork's year map joins them but with no gap (it also joins across one pixel: `PATCH_GAP`) (`patchesIn` in `seasons-widget/src/patch.ts`); each patch is outlined on
   its outer edge, holes filled, not filled in. Every patch is drawn, however small (no size cutoff yet).
 - **A patch's years.** A click on a patch fills the window with it three times side by side, framed the same in each:
-  before (the year before any of it was dug, 2017 at the earliest), dug, and 2025. The dug panel is picked for the most
-  change: of the clear passes (up to three a year) in the years any of it was dug, short of 2025 unless it was dug only
-  then, the one whose ground inside the patch is most unlike both the before and the 2025 image, less the same measured
-  on the ground around it, so a change everywhere (season, haze) cancels and the patch's own change counts (a pass with
-  cloud, shadow or snow over more than 5% of the patch passed over); the best so far shows as each year is checked. The frame fits the patch with room around it and comes no closer than zoom 14.2,
-  so the 10 m pixels stay small. Each panel shows that year's pass chosen for the map's view, so a place already looked
-  at comes back at once; each panel's imagery shows as it arrives. While you look around, every year's pass is read ahead for the view (the year shown first, then the rest, one tile at a time, dropped when the view moves on) into one cache of decoded tiles shared by the map and the panels (600 MB at most, the least lately used let go), and each year's clear passes the dug panel chooses from are found ahead too, so a patch's before and 2025 panels usually draw at once. The patch is outlined in orchid on the panels; `O` takes the outline off. The patch's size is at the bottom, with the model's years for it: the share of its pixels last dug each year (the year the map would color each by) and first dug each year. A click anywhere,
-  or `Esc`, goes back.
+  before (the year before any of it was dug, 2017 at the earliest), dug (the year the most of it was last dug, the year
+  the map colors its pixels by, short of 2025 unless it was dug only then), and 2025. Under them, the patch's size and
+  a small bar a year, 2018 to 2025, as tall as the share of it last dug that year, the dug panel's year in orchid. The
+  frame fits the patch with room around it and comes no closer than zoom 14.2, so the 10 m pixels stay small. Each panel
+  shows that year's pass chosen for the map's view. While you look around, every year's pass is read ahead for the view
+  (the year shown first, then the rest, one tile at a time, dropped when the view moves on) into one cache of decoded
+  tiles shared by the map and the panels (600 MB at most), so the panels usually draw at once. The patch is outlined in
+  orchid on the panels; `O` takes the outline off. A click anywhere, or `Esc`, goes back.
 - **Export.** `K` writes a 4x PNG to `exports/` (the panels side by side while they are open, else the map), each
   image's year and day drawn at its top left, and a copy sized for a LinkedIn post in `exports/for_linkedin/` (long
   side 2048, under 5 MB).

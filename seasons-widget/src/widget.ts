@@ -339,96 +339,6 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   }
 
   // ---- the panels
-  /**
-   * The dug panel's pass: of the clear passes (up to three a year) in the years any of the patch was dug, short of the
-   * after panel's year (unless that is its only year), the one whose ground inside the patch is most unlike both the
-   * before panel's and 2025's (each point's color distance to the nearer of the two, averaged), less the same measured
-   * on the ground around the patch: a change everywhere (the season, haze, another sun) cancels, a change of the
-   * patch's own counts. A pass with cloud, shadow or snow over more than PICK_BAD of the patch is passed over. The panel
-   * shows the best so far as each year is checked.
-   */
-  const PICK_BAD = 0.05;
-  let pickSeq = 0;
-  async function pickDug(p: Patch, before: number, after: number) {
-    const tok = ++pickSeq, pn = panels[1];
-    if (!s2) return;
-    // points on a grid over the patch's box and a third of it around: inside the patch (holes filled), or around it
-    const r = filledRuns(p.runs), rowsIn = new Map<number, number[]>();
-    for (let i = 0; i < r.length; i += 3) {
-      const a = rowsIn.get(r[i]);
-      if (a) a.push(r[i + 1], r[i + 2]);
-      else rowsIn.set(r[i], [r[i + 1], r[i + 2]]);
-    }
-    const isIn = (gx: number, gy: number) => {
-      const a = rowsIn.get(gy);
-      if (a) for (let i = 0; i < a.length; i += 2) if (gx >= a[i] && gx < a[i + 1]) return true;
-      return false;
-    };
-    const [bW, bS, bE, bN] = p.box, mx = (bE - bW) / 3, my = (bN - bS) / 3;
-    const G = 64, inP: number[] = [], outP: number[] = [];
-    for (let j = 0; j < G; j++)
-      for (let i = 0; i < G; i++) {
-        const lon = bW - mx + ((i + 0.5) / G) * (bE - bW + 2 * mx), la = bS - my + ((j + 0.5) / G) * (bN - bS + 2 * my);
-        const [gx, gy] = pixelOf(lon, la);
-        (isIn(gx, gy) ? inP : outP).push(lon, la);
-      }
-    const pts = new Float64Array([...inP, ...outP]), nIn = inP.length / 2;
-    const lat = (bS + bN) / 2;
-    const span = Math.max((bE - bW + 2 * mx) * 111320 * Math.cos((lat * Math.PI) / 180), (bN - bS + 2 * my) * 110540);
-    const fallback = () => {
-      // nothing to compare against or nothing clear: the last year dug, as the map shows it
-      pn.year = p.last;
-      pn.pass = null;
-      pn.wait = false;
-      drawPanels();
-    };
-    const [bp, ap] = await Promise.all([s2.shownPass(before), s2.shownPass(after)]);
-    if (tok !== pickSeq) return;
-    if (!bp || !ap) return fallback();
-    const [B, A] = await Promise.all([s2.sample(bp, pts, span), s2.sample(ap, pts, span)]);
-    if (tok !== pickSeq) return;
-    let best = -Infinity;
-    const n = pts.length / 2;
-    // the dug years, short of the after panel's (2025) unless the patch was dug in it alone
-    const yLast = p.first < after ? Math.min(p.last, after - 1) : p.last;
-    for (let y = p.first; y <= yLast; y++) {
-      const cs = await s2.candidates(y, 3);
-      if (tok !== pickSeq) return;
-      for (const c of cs) {
-        if (c.key === bp.key || c.key === ap.key) continue;
-        const P = await s2.sample(c, pts, span);
-        if (tok !== pickSeq) return;
-        // inside (0) and around (1): points with data, cloudy ones, and the change summed over the clear ones
-        const cov = [0, 0], bad = [0, 0], m = [0, 0], sum = [0, 0];
-        for (let i = 0; i < n; i++) {
-          if (!P.cls[i]) continue;
-          const w = i < nIn ? 0 : 1;
-          cov[w]++;
-          if (s2.isBad(P.cls[i])) {
-            bad[w]++;
-            continue;
-          }
-          if (!B.cls[i] || !A.cls[i] || s2.isBad(B.cls[i]) || s2.isBad(A.cls[i])) continue;
-          const d = (o: Uint8Array) => Math.hypot(P.rgb[3 * i] - o[3 * i], P.rgb[3 * i + 1] - o[3 * i + 1], P.rgb[3 * i + 2] - o[3 * i + 2]);
-          sum[w] += Math.min(d(B.rgb), d(A.rgb));
-          m[w]++;
-        }
-        if (!cov[0] || bad[0] / cov[0] > PICK_BAD || !m[0]) continue;
-        const score = sum[0] / m[0] - (m[1] ? sum[1] / m[1] : 0);
-        if (score > best) {
-          best = score;
-          pn.year = y;
-          pn.pass = c;
-        }
-      }
-      // the best so far shown once a year is checked
-      if (pn.pass) {
-        pn.wait = false;
-        drawPanels();
-      }
-    }
-    if (!pn.pass) fallback();
-  }
   function bootPanel(i: number) {
     const pn = panels[i];
     if (pn.map) return;
@@ -448,6 +358,22 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     for (const pn of panels) pn.map?.jumpTo({ center: cam.center ?? [(W + E) / 2, (S + N) / 2], zoom, bearing: 0 });
   }
   let openPaths: number[][][] = [];
+  // the readout under the panels: the patch's size, and the model's years for it as a small bar chart (each year's bar
+  // as tall as the share of its pixels last dug that year, the year the map colors a pixel by), the dug panel's year in
+  // orchid
+  let backHa = "";
+  function drawBack() {
+    const p = st.open;
+    if (!p) return;
+    const top = Math.max(1, ...p.lastYears), dugYear = panels[1].wait ? 0 : panels[1].year;
+    const bars = p.lastYears
+      .map((v, i) => {
+        const y = FIRST_YEAR + i, h = v ? Math.max(2, Math.round((18 * v) / top)) : 0;
+        return `<span class="hb${y === dugYear ? " on" : ""}"><i style="height:${h}px"></i><small>${String(y).slice(2)}</small></span>`;
+      })
+      .join("");
+    back.innerHTML = `<b>${backHa}</b><span class="hist" title="the share of the patch last dug each year">${bars}</span><span class="keys">click or <kbd>Esc</kbd> back · <kbd>O</kbd> outline</span>`;
+  }
   /** The open patch's pixels (holes filled) as one bitmap over its box, coarser past 2048 across. */
   let openMask: { image: HTMLCanvasElement; bounds: [number, number, number, number] } | null = null;
   function maskOf(p: Patch) {
@@ -487,6 +413,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       const day = d ? `${MONTHS[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}` + (stt === "cloudy" ? ", cloudy" : "") : stt === "cloudy" ? "no scene" : "finding…";
       pn.label.innerHTML = `<b>${pn.year}</b><span>${pn.role}<br>Sentinel-2 · ${day}</span>`;
     });
+    drawBack();
   }
   function openPatch(p: Patch) {
     st.open = p;
@@ -494,23 +421,23 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     openMask = maskOf(p);
     // its size, to see where a cutoff for small patches would sit: hectares from its 10 m pixels at its latitude
     const ha = (p.n * (RES * 111320) ** 2 * Math.cos((((p.box[1] + p.box[3]) / 2) * Math.PI) / 180)) / 1e4;
-    // the model's years for it: the share of its pixels last dug each year (the year the map colors a pixel by), and
-    // first dug each year
-    const share = (c: number[]) =>
-      c.map((v, i) => [FIRST_YEAR + i, v] as const).filter(([, v]) => v > 0).map(([y, v]) => `${y} ${Math.round((100 * v) / p.n) || "<1"}%`).join(", ");
-    back.innerHTML =
-      `<div>${ha < 10 ? ha.toFixed(2) : ha.toFixed(0)} ha, ${p.n.toLocaleString()} pixels · click anywhere or <kbd>Esc</kbd> to go back · <kbd>O</kbd> outline</div>` +
-      `<div class="yrs">Last dug: ${share(p.lastYears)}</div><div class="yrs">First dug: ${share(p.years)}</div>`;
-    // before, dug, 2025: the year before any of it was dug, its dug year picked for the most change, and the latest
+    backHa = `${ha < 10 ? ha.toFixed(1) : ha.toFixed(0)} ha`;
+    drawBack();
+    // before, dug, 2025: the year before any of it was dug; the year the most of it was last dug (the tallest bar
+    // under the panels, the year the map colors its pixels by), short of 2025 unless it was dug then alone; the latest
     const last = S2_YEARS[S2_YEARS.length - 1], before = Math.max(S2_YEARS[0], p.first - 1);
-    const ys: [number, string][] = [[before, "before"], [p.last, "dug"], [last, "latest"]];
-    s2?.want([before, last]);
+    let dug = last, most = 0;
+    p.lastYears.forEach((v, i) => {
+      if (FIRST_YEAR + i < last && v > most) (most = v), (dug = FIRST_YEAR + i);
+    });
+    const ys: [number, string][] = [[before, "before"], [dug, "dug"], [last, "latest"]];
+    s2?.want([before, dug, last]);
     tri.classList.add("on");
     panels.forEach((pn, i) => {
       pn.year = ys[i]?.[0] ?? 0;
       pn.role = ys[i]?.[1] ?? "";
       pn.pass = null;
-      pn.wait = i === 1;
+      pn.wait = false;
       pn.el.classList.toggle("off", !pn.year);
       // the last open patch's imagery off until this one's is drawn
       if (!pn.year) pn.overlay?.setProps({ layers: [] });
@@ -519,11 +446,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     for (const pn of panels) pn.map?.resize();
     frame();
     drawPanels();
-    pickDug(p, before, last);
   }
   function closePatch() {
     st.open = null;
-    pickSeq++;
     tri.classList.remove("on");
     for (const pn of panels) pn.overlay?.setProps({ layers: [] });
   }

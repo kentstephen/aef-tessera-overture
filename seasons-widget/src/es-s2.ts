@@ -343,8 +343,7 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
   let warmGen = 0;
   /**
    * Finds the year's pass for the view, then every other year's after it, one year at a time, each read ahead for the
-   * view as it is found (the year shown first); then every year's clear passes, up to three, that a patch's dug panel
-   * chooses from. Lazily: one thing at a time, and dropped when the view moves on.
+   * view as it is found (the year shown first). Lazily: one thing at a time, and dropped when the view moves on.
    */
   function discover(year: number) {
     const i = recent.indexOf(year);
@@ -357,11 +356,6 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
           if (gen !== warmGen) return;
           await choose(y).catch(() => {});
           await warmView(y, gen).catch(() => {});
-        }
-        for (const y of S2_YEARS) {
-          if (gen !== warmGen) return;
-          const s = years.get(y);
-          if (s && !s.busy) await fill(y, s, 3).catch(() => {});
         }
       });
     });
