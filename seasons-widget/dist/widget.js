@@ -113661,7 +113661,7 @@ var yot = {
 	205,
 	212,
 	210
-], Tot = [
+], Tot = "#4a5058", Eot = [
 	255,
 	196,
 	36,
@@ -113670,9 +113670,9 @@ var yot = {
 	79,
 	214,
 	255
-], Eot = "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"><path d=\"M6 9l6 6 6-6\"/></svg>", Q9 = 12, $9 = "sm-fit-on", Dot = !1;
+], Dot = "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"><path d=\"M6 9l6 6 6-6\"/></svg>", Q9 = 12, $9 = "sm-fit-on", Oot = !1;
 U0e(URL.createObjectURL(new Blob([W0e], { type: "text/javascript" })));
-function Oot({ model: e, el: t }) {
+function kot({ model: e, el: t }) {
 	let n = JSON.parse(String(e.get("config") || "{}"));
 	for (let e of /* @__PURE__ */ new Set([document.head, t.getRootNode()])) {
 		let t = e instanceof ShadowRoot ? e : document.head;
@@ -113698,7 +113698,7 @@ function Oot({ model: e, el: t }) {
 			"chrome-controls-bottom-right"
 		].map((e) => `html.${$9} [data-testid='${e}']`).join(",") + `{display:none!important}html.${$9}{overflow:hidden}html.${$9} *:focus,html.${$9} *:focus-visible,html.${$9} *:focus-within{outline:none!important;box-shadow:none!important}`, document.head.appendChild(e);
 	}
-	Dot ||= (Oze("pmtiles", new f2e().tile), !0);
+	Oot ||= (Oze("pmtiles", new f2e().tile), !0);
 	let r = {
 		look: {
 			src: "ours",
@@ -113718,13 +113718,13 @@ function Oot({ model: e, el: t }) {
 		return t && (r.className = t), n != null && (r.innerHTML = n), r;
 	}, a = i("div", "sm clean"), o = i("div", "map"), s = i("div", "map2"), c = i("div", "load", "<i></i>"), l = i("div", "loadtag glass");
 	a.append(s, o, c, l), t.appendChild(a);
-	let u = i("div", "card glass"), d = i("div", "hd"), f = i("div", "ht"), m = i("button", "cb", Eot);
+	let u = i("div", "card glass"), d = i("div", "hd"), f = i("div", "ht"), m = i("button", "cb", Dot);
 	m.title = "fold the card (H)", d.append(f, m);
 	let h = i("div", "body"), g = i("div", "row"), _ = i("div", "seg"), v = i("button", "", "Ours"), y = i("button", "", "WSF");
 	v.title = "the aggregate earthwork model (AlphaEarth and TESSERA): when the ground was dug or graded", y.title = "the WSF Tracker: when the ground first read as built-up", _.append(v, y), g.append(i("span", "lab", "Color by"), _, i("kbd", "", "C"));
 	let b = i("div", "chips"), x = i("div", "hint"), S = i("div", "zoom"), C = i("div", "notes");
 	C.append(x, S);
-	let w = i("button", "less", Eot), T = (e) => {
+	let w = i("button", "less", Dot), T = (e) => {
 		u.classList.toggle("short", e), w.title = e ? "show the notes" : "hide the notes, the years alone";
 	};
 	w.onclick = () => T(!u.classList.contains("short")), T(!1), h.append(b, C, w);
@@ -113870,7 +113870,7 @@ function Oot({ model: e, el: t }) {
 			id: "hi",
 			data: [t],
 			getPath: (e) => e,
-			getColor: Tot,
+			getColor: Eot,
 			getWidth: 2.5,
 			widthUnits: "pixels",
 			jointRounded: !0
@@ -114046,6 +114046,18 @@ function Oot({ model: e, el: t }) {
 		return r;
 	};
 	function nt(e, t) {
+		let n = [...e].sort((e, t) => e[0] - t[0]).map(([e, t]) => [
+			t,
+			A7[2017 + e - 2018] ?? "#9aa1a9",
+			String(T8 + e)
+		]), r = n.reduce((e, t) => e + t[0], 0);
+		return t > r && n.push([
+			t - r,
+			Tot,
+			"not dug"
+		]), `<div class="bar">${n.map(([e, n]) => `<span style="width:${100 * e / t}%;background:${n}"></span>`).join("")}</div><div class="mix">${n.map(([e, n, r]) => `<span><i style="background:${n}"></i>${r} ${Math.round(100 * e / t)}%</span>`).join("")}</div><span class="dim">of its ${t} pixel${t === 1 ? "" : "s"} (10 m)</span>`;
+	}
+	function rt(e, t) {
 		if (!we) return "";
 		let n = Infinity, i = Infinity, a = -Infinity, o = -Infinity;
 		for (let t of e) for (let [e, r] of t) n = Math.min(n, e), a = Math.max(a, e), i = Math.min(i, r), o = Math.max(o, r);
@@ -114078,24 +114090,25 @@ function Oot({ model: e, el: t }) {
 				let n = e.season(t);
 				n === void 0 || r[n >= 1 && n <= 4 ? n - 1 : 4]++;
 			}
+			f <= 0 && (h += nt(e, d.length));
 		}
 		return `<b>Overture</b><br>Dug or graded: ${h}`;
 	}
-	let rt = {
+	let it = {
 		x: 0,
 		y: 0
 	};
-	function it(e) {
+	function at(e) {
 		if (!e) {
 			O.style.display = "none";
 			return;
 		}
 		O.innerHTML = e, O.style.display = "block";
-		let t = a.getBoundingClientRect(), n = O.offsetWidth, r = O.offsetHeight, i = rt.x + o.offsetLeft, s = rt.y + o.offsetTop, c = i + 14, l = s + 14;
+		let t = a.getBoundingClientRect(), n = O.offsetWidth, r = O.offsetHeight, i = it.x + o.offsetLeft, s = it.y + o.offsetTop, c = i + 14, l = s + 14;
 		c + n > t.width - 8 && (c = i - n - 14), l + r > t.height - 8 && (l = s - r - 14), O.style.left = c + "px", O.style.top = l + "px";
 	}
 	F.on("mousemove", (e) => {
-		if (rt = e.point, !r.picking || !we || !F.getLayer("foot")) return We(-1);
+		if (it = e.point, !r.picking || !we || !F.getLayer("foot")) return We(-1);
 		if (le) {
 			let t = ie.pickObject({
 				x: e.point.x,
@@ -114105,14 +114118,14 @@ function Oot({ model: e, el: t }) {
 			});
 			if (t && t.index >= 0) {
 				let e = `a:${t.index}`;
-				We(t.index), it(nt([ge(t.index)], e));
+				We(t.index), at(rt([ge(t.index)], e));
 				return;
 			}
 		}
 		We(-1);
 		let [t, n] = I7(e.lngLat.lng, e.lngLat.lat), i = we.at(t, n), a = r.look.year == null ? -1 : r.look.year - T8;
 		if (!i || !i.ours || a > 0 && !(i.bits & 1 << a - 1)) {
-			it("");
+			at("");
 			return;
 		}
 		`${t}${n}`;
@@ -114121,11 +114134,11 @@ function Oot({ model: e, el: t }) {
 			let e = a > 0 ? a : i.ours;
 			i.season(e), o = String(T8 + e);
 		}
-		it(`<b>No footprint</b><br>Dug or graded: ${o}`);
+		at(`<b>No footprint</b><br>Dug or graded: ${o}`);
 	}), F.on("click", (e) => Ke(e.point)), o.addEventListener("mouseleave", () => {
-		it(""), We(-1);
+		at(""), We(-1);
 	});
-	let at = [], ot = -1, st = 0, ct = 0, lt = null, ut = null, dt = 0, ft = (e) => {
+	let ot = [], st = -1, ct = 0, lt = 0, ut = null, dt = null, ft = 0, pt = (e) => {
 		let t = e.properties;
 		return [
 			t.name,
@@ -114134,43 +114147,43 @@ function Oot({ model: e, el: t }) {
 			t.state,
 			t.country
 		].filter(Boolean).join(", ");
-	}, pt = (e) => {
+	}, mt = (e) => {
 		let t = e.properties;
 		return [t.osm_value, t.type].filter((e) => e && e !== "yes").join(", ");
-	}, mt = () => {
-		N.style.display = "none", N.replaceChildren(), ot = -1;
 	}, ht = () => {
-		if (N.replaceChildren(), !at.length) return mt();
-		at.forEach((e, t) => {
-			let n = i("div", "hit" + (t === ot ? " sel" : ""));
-			n.textContent = ft(e);
+		N.style.display = "none", N.replaceChildren(), st = -1;
+	}, gt = () => {
+		if (N.replaceChildren(), !ot.length) return ht();
+		ot.forEach((e, t) => {
+			let n = i("div", "hit" + (t === st ? " sel" : ""));
+			n.textContent = pt(e);
 			let r = i("small");
-			r.textContent = pt(e), n.appendChild(r), n.onmousedown = (t) => {
-				t.preventDefault(), bt(e);
+			r.textContent = mt(e), n.appendChild(r), n.onmousedown = (t) => {
+				t.preventDefault(), xt(e);
 			}, n.onmouseenter = () => {
-				ot = t, ht();
+				st = t, gt();
 			}, N.appendChild(n);
 		}), N.style.display = "block";
-	}, gt = (e) => {
-		N.replaceChildren(), ot = -1;
+	}, _t = (e) => {
+		N.replaceChildren(), st = -1;
 		let t = i("div", "hit wait");
 		t.textContent = e, N.appendChild(t), N.style.display = "block";
-	}, _t = async (e, t) => {
+	}, vt = async (e, t) => {
 		let n = new URLSearchParams({
 			q: e,
 			limit: "6",
 			lang: "en"
 		}), r = F.getCenter();
-		n.set("lon", r.lng.toFixed(4)), n.set("lat", r.lat.toFixed(4)), ut?.abort();
-		let i = ut = new AbortController(), a = setTimeout(() => i.abort(), t);
+		n.set("lon", r.lng.toFixed(4)), n.set("lat", r.lat.toFixed(4)), dt?.abort();
+		let i = dt = new AbortController(), a = setTimeout(() => i.abort(), t);
 		try {
 			return ((await (await fetch("https://photon.komoot.io/api/?" + n.toString(), { signal: i.signal })).json()).features || []).filter((e) => e.geometry && e.geometry.coordinates);
 		} finally {
 			clearTimeout(a);
 		}
-	}, vt = async (e) => {
-		let t = dt + 1100 - Date.now();
-		t > 0 && await new Promise((e) => setTimeout(e, t)), dt = Date.now();
+	}, yt = async (e) => {
+		let t = ft + 1100 - Date.now();
+		t > 0 && await new Promise((e) => setTimeout(e, t)), ft = Date.now();
 		let n = new URLSearchParams({
 			q: e,
 			format: "jsonv2",
@@ -114203,39 +114216,39 @@ function Oot({ model: e, el: t }) {
 				}
 			};
 		});
-	}, yt = async (e = !1) => {
+	}, bt = async (e = !1) => {
 		let t = M.value.trim();
-		if (t.length < 2) return at = [], lt = null, mt();
-		let n = ++ct, r = e && lt === t;
-		r && (ut?.abort(), lt = null), gt("searching…");
+		if (t.length < 2) return ot = [], ut = null, ht();
+		let n = ++lt, r = e && ut === t;
+		r && (dt?.abort(), ut = null), _t("searching…");
 		let i = [], a = "";
 		if (!r) {
-			lt = t;
+			ut = t;
 			try {
-				i = await _t(t, e ? 2500 : 6e3);
+				i = await vt(t, e ? 2500 : 6e3);
 			} catch (e) {
 				a = e.name === "AbortError" ? "slow" : "down";
 			}
-			if (n !== ct) return;
-			lt = null;
+			if (n !== lt) return;
+			ut = null;
 		}
 		if (!i.length && e) {
-			gt("searching Nominatim…");
+			_t("searching Nominatim…");
 			try {
-				i = await vt(t);
+				i = await yt(t);
 			} catch {
 				a = "down";
 			}
-			if (n !== ct) return;
+			if (n !== lt) return;
 		}
-		at = i, ot = i.length ? 0 : -1, i.length ? ht() : gt(e ? a ? "search is not answering, try again in a moment" : "no match" : a === "slow" ? "Photon is slow: press Enter to search Nominatim" : a ? "Photon is not answering: press Enter to search Nominatim" : "no match: press Enter to search Nominatim");
-	}, bt = (e) => {
+		ot = i, st = i.length ? 0 : -1, i.length ? gt() : _t(e ? a ? "search is not answering, try again in a moment" : "no match" : a === "slow" ? "Photon is slow: press Enter to search Nominatim" : a ? "Photon is not answering: press Enter to search Nominatim" : "no match: press Enter to search Nominatim");
+	}, xt = (e) => {
 		let [t, n] = e.geometry.coordinates, r = e.properties.extent, i = 13.5;
 		if (r && r.length === 4) {
 			let e = Math.max(Math.abs(r[2] - r[0]), Math.abs(r[1] - r[3]) * 2, .01);
 			i = Math.log2(360 * ((o.clientWidth || 1200) / 512) / e) - .3;
 		}
-		i = Math.max(Q9, Math.min(16, i)), M.value = ft(e), at = [], mt(), M.blur(), F.flyTo({
+		i = Math.max(Q9, Math.min(16, i)), M.value = pt(e), ot = [], ht(), M.blur(), F.flyTo({
 			center: [t, n],
 			zoom: i,
 			duration: 2200,
@@ -114243,15 +114256,15 @@ function Oot({ model: e, el: t }) {
 		});
 	};
 	M.addEventListener("input", () => {
-		clearTimeout(st), st = window.setTimeout(yt, 250);
-	}), M.addEventListener("focus", () => at.length && ht()), M.addEventListener("blur", () => setTimeout(mt, 120)), M.addEventListener("keydown", (e) => {
-		e.stopPropagation(), e.key === "ArrowDown" && at.length ? (ot = (ot + 1) % at.length, ht(), e.preventDefault()) : e.key === "ArrowUp" && at.length ? (ot = (ot - 1 + at.length) % at.length, ht(), e.preventDefault()) : e.key === "Enter" ? (e.preventDefault(), at.length ? bt(at[Math.max(0, ot)]) : (clearTimeout(st), yt(!0).then(() => at.length && bt(at[0])))) : e.key === "Escape" && (mt(), M.blur());
+		clearTimeout(ct), ct = window.setTimeout(bt, 250);
+	}), M.addEventListener("focus", () => ot.length && gt()), M.addEventListener("blur", () => setTimeout(ht, 120)), M.addEventListener("keydown", (e) => {
+		e.stopPropagation(), e.key === "ArrowDown" && ot.length ? (st = (st + 1) % ot.length, gt(), e.preventDefault()) : e.key === "ArrowUp" && ot.length ? (st = (st - 1 + ot.length) % ot.length, gt(), e.preventDefault()) : e.key === "Enter" ? (e.preventDefault(), ot.length ? xt(ot[Math.max(0, st)]) : (clearTimeout(ct), bt(!0).then(() => ot.length && xt(ot[0])))) : e.key === "Escape" && (ht(), M.blur());
 	});
-	let xt = !1, St = (e, t) => {
+	let St = !1, Ct = (e, t) => {
 		let n = t._deck?.device?.canvasContext, r = e.getCanvas();
 		n?.setDrawingBufferSize(r.width, r.height);
 	};
-	async function Ct(e) {
+	async function wt(e) {
 		return await new Promise((t) => {
 			e.once("idle", () => t()), e.triggerRepaint();
 		}), new Promise((t) => {
@@ -114261,7 +114274,7 @@ function Oot({ model: e, el: t }) {
 			}), e.triggerRepaint();
 		});
 	}
-	async function wt(e) {
+	async function Tt(e) {
 		for (let t = 2048;; t -= 128) {
 			let n = Math.min(1, t / Math.max(e.width, e.height)), r = Math.round(e.width * n), i = Math.round(e.height * n), a = e;
 			for (; a.width / 2 >= r;) {
@@ -114282,49 +114295,49 @@ function Oot({ model: e, el: t }) {
 			};
 		}
 	}
-	let Tt = "'Instrument Sans', system-ui, sans-serif";
-	function Et(e, t, n, r) {
+	let Et = "'Instrument Sans', system-ui, sans-serif";
+	function Dt(e, t, n, r) {
 		e.save(), e.shadowColor = "rgba(0,0,0,.75)", e.shadowBlur = 6 * r, e.textBaseline = "middle";
 		let i = n + 10 * r;
-		e.font = `600 ${15 * r}px ${Tt}`, e.fillStyle = "#e6e9ec", e.fillText("Dug by year", t, i);
+		e.font = `600 ${15 * r}px ${Et}`, e.fillStyle = "#e6e9ec", e.fillText("Dug by year", t, i);
 		let a = t + e.measureText("Dug by year").width + 14 * r;
-		e.font = `500 ${13 * r}px ${Tt}`, e.fillStyle = "#c9cfd5";
+		e.font = `500 ${13 * r}px ${Et}`, e.fillStyle = "#c9cfd5";
 		let o = String(j7), s = String(j7 + A7.length - 1);
 		e.fillText(o, a, i), a += e.measureText(o).width + 8 * r, A7.forEach((t) => {
 			e.fillStyle = t, e.fillRect(a, i - 7 * r, 20 * r, 14 * r), a += 22 * r;
 		}), e.fillStyle = "#c9cfd5", e.fillText(s, a + 6 * r, i), e.restore();
 	}
-	function Dt(e, t, n, i) {
+	function Ot(e, t, n, i) {
 		let a = F.getCenter(), o = Te?.dateAt(r.s2Year, a.lng, a.lat) ?? "";
-		e.save(), e.shadowColor = "rgba(0,0,0,.75)", e.shadowBlur = 6 * i, e.textBaseline = "top", e.font = `600 ${34 * i}px ${Tt}`, e.fillStyle = "#e6e9ec", e.fillText(String(r.s2Year), t, n), e.font = `500 ${13 * i}px ${Tt}`, e.fillStyle = "#c9cfd5", e.fillText("Sentinel-2" + (o ? ` · ${ze[o.slice(5, 7) - 1]} ${+o.slice(8, 10)}` : ""), t, n + 40 * i), e.restore();
+		e.save(), e.shadowColor = "rgba(0,0,0,.75)", e.shadowBlur = 6 * i, e.textBaseline = "top", e.font = `600 ${34 * i}px ${Et}`, e.fillStyle = "#e6e9ec", e.fillText(String(r.s2Year), t, n), e.font = `500 ${13 * i}px ${Et}`, e.fillStyle = "#c9cfd5", e.fillText("Sentinel-2" + (o ? ` · ${ze[o.slice(5, 7) - 1]} ${+o.slice(8, 10)}` : ""), t, n + 40 * i), e.restore();
 	}
-	async function Ot() {
-		if (xt) return;
-		xt = !0, te("Exporting a 4x PNG...");
+	async function kt() {
+		if (St) return;
+		St = !0, te("Exporting a 4x PNG...");
 		let t = r.pair && De && Oe ? [[De, Oe], [F, ie]] : [[F, ie]];
 		try {
-			for (let [e, n] of t) e.setPixelRatio(4), St(e, n);
-			let n = await Promise.all(t.map(([e]) => Ct(e))), i = n[n.length - 1].width / F.getContainer().clientWidth, a = n.length > 1 ? Math.round(2 * i) : 0, o = document.createElement("canvas");
+			for (let [e, n] of t) e.setPixelRatio(4), Ct(e, n);
+			let n = await Promise.all(t.map(([e]) => wt(e))), i = n[n.length - 1].width / F.getContainer().clientWidth, a = n.length > 1 ? Math.round(2 * i) : 0, o = document.createElement("canvas");
 			o.width = n.reduce((e, t) => e + t.width, 0) + a, o.height = Math.max(...n.map((e) => e.height));
 			let s = o.getContext("2d"), c = 0;
 			n.forEach((e, t) => {
 				s.drawImage(e, c, 0), c += e.width, t < n.length - 1 && (s.fillStyle = "rgba(255,255,255,.35)", s.fillRect(c, 0, a, o.height), c += a);
 			});
 			let l = 14 * i;
-			Et(s, (n.length > 1 ? n[0].width + a : 0) + l, l, i), n.length > 1 && Dt(s, l, l, i);
+			Dt(s, (n.length > 1 ? n[0].width + a : 0) + l, l, i), n.length > 1 && Ot(s, l, l, i);
 			let u = await new Promise((e) => o.toBlob(e, "image/png"));
 			if (!u) throw Error("the canvas gave no PNG");
-			let d = await wt(o), f = F.getCenter(), p = `z${F.getZoom().toFixed(1)}_${f.lat.toFixed(4)}_${f.lng.toFixed(4)}` + (r.pair ? `_pair-s2-${r.s2Year}` : Le() ? `_s2-${r.s2Year}` : "") + `_${+i.toFixed(1)}x`;
+			let d = await Tt(o), f = F.getCenter(), p = `z${F.getZoom().toFixed(1)}_${f.lat.toFixed(4)}_${f.lng.toFixed(4)}` + (r.pair ? `_pair-s2-${r.s2Year}` : Le() ? `_s2-${r.s2Year}` : "") + `_${+i.toFixed(1)}x`;
 			e.set("snap_name", p), e.set("snap_small", new DataView(await d.png.arrayBuffer())), e.set("snap_small_size", d.size), e.set("snap", new DataView(await u.arrayBuffer())), e.save_changes();
 		} catch (e) {
 			te(`Export failed: ${e.message}`);
 		} finally {
-			for (let [e, n] of t) e.setPixelRatio(null), St(e, n);
-			xt = !1;
+			for (let [e, n] of t) e.setPixelRatio(null), Ct(e, n);
+			St = !1;
 		}
 	}
 	e.on("change:snap_status", () => te(String(e.get("snap_status") || "")));
-	let kt = 0, At = (e) => {
+	let At = 0, jt = (e) => {
 		if (e.metaKey || e.ctrlKey || e.altKey || e.target === M) return;
 		let t = e.key;
 		if (e.code === "Space") e.repeat || Ee(!0);
@@ -114337,19 +114350,19 @@ function Oot({ model: e, el: t }) {
 			r.labels = !r.labels;
 			for (let e of F.getStyle().layers) e.type === "symbol" && F.setLayoutProperty(e.id, "visibility", r.labels ? "visible" : "none");
 			te(r.labels ? "Labels on" : "Labels off");
-		} else if (t === "q" || t === "Q") r.picking = !r.picking, r.picking || it(""), te(r.picking ? "Picking on" : "Picking off");
+		} else if (t === "q" || t === "Q") r.picking = !r.picking, r.picking || at(""), te(r.picking ? "Picking on" : "Picking off");
 		else if (t === "h" || t === "H") Ze(!r.folded);
 		else if ((t === "n" || t === "N") && Re() && Te) Te.next(r.s2Year), Be(), R();
 		else if (t === "x" || t === "X") r.fit = !r.fit, ae();
 		else if (t === "f" || t === "F") se();
-		else if (t === "k" || t === "K") Ot();
+		else if (t === "k" || t === "K") kt();
 		else if (t === "/") M.focus();
 		else if (t === "Escape") r.look.year == null ? r.fit && (r.fit = !1, ae()) : Xe({
 			...r.look,
 			year: null
 		});
-		else if (e.shiftKey && (t === "ArrowLeft" || t === "ArrowRight")) kt = (F.isMoving() ? kt : F.getBearing()) + (t === "ArrowRight" ? 15 : -15), F.easeTo({
-			bearing: kt,
+		else if (e.shiftKey && (t === "ArrowLeft" || t === "ArrowRight")) At = (F.isMoving() ? At : F.getBearing()) + (t === "ArrowRight" ? 15 : -15), F.easeTo({
+			bearing: At,
 			duration: 250
 		});
 		else if (t === "ArrowLeft") F.panBy([-120, 0]);
@@ -114361,30 +114374,30 @@ function Oot({ model: e, el: t }) {
 		else return;
 		e.preventDefault();
 	};
-	window.addEventListener("keydown", At);
-	let jt = (e) => {
+	window.addEventListener("keydown", jt);
+	let Mt = (e) => {
 		e.code === "Space" && r.holding && Ee(!1);
 	};
-	window.addEventListener("keyup", jt);
-	let Mt = () => r.holding && Ee(!1);
-	window.addEventListener("blur", Mt);
-	let Nt = 0, Pt = 0;
+	window.addEventListener("keyup", Mt);
+	let Nt = () => r.holding && Ee(!1);
+	window.addEventListener("blur", Nt);
+	let Pt = 0, Ft = 0;
 	a.addEventListener("wheel", (e) => {
 		if (!r.holding) return;
-		e.preventDefault(), e.stopPropagation(), Nt += e.deltaY;
+		e.preventDefault(), e.stopPropagation(), Pt += e.deltaY;
 		let t = performance.now();
-		Math.abs(Nt) >= 40 && t - Pt > 140 && (Ne(Nt > 0 ? 1 : -1), Nt = 0, Pt = t);
+		Math.abs(Pt) >= 40 && t - Ft > 140 && (Ne(Pt > 0 ? 1 : -1), Pt = 0, Ft = t);
 	}, {
 		capture: !0,
 		passive: !1
 	}), F.on("moveend", $e), F.on("moveend", () => {
 		Re() && (Te?.discover(r.s2Year), Be(), R());
 	});
-	let Ft = 0;
+	let It = 0;
 	return F.on("moveend", () => {
-		if (clearTimeout(Ft), F.getZoom() < Q9 || !Pe) return;
+		if (clearTimeout(It), F.getZoom() < Q9 || !Pe) return;
 		let e = F.getBounds(), t = r.area;
-		t && e.getWest() >= t[0] && e.getEast() <= t[2] && e.getSouth() >= t[1] && e.getNorth() <= t[3] || (Ft = window.setTimeout(Ye, 500));
+		t && e.getWest() >= t[0] && e.getEast() <= t[2] && e.getSouth() >= t[1] && e.getNorth() <= t[3] || (It = window.setTimeout(Ye, 500));
 	}), F.on("zoom", Je), F.on("load", async () => {
 		for (let e of F.getStyle().layers) /building/.test(e.id) && F.setLayoutProperty(e.id, "visibility", "none");
 		let e = F.getStyle().layers, t = e.reduce((e, t, n) => t.type === "symbol" ? e : n, -1), i = e.slice(t + 1).find((e) => e.type === "symbol")?.id;
@@ -114416,12 +114429,12 @@ function Oot({ model: e, el: t }) {
 			Be(), R();
 		}), Be(), we = await wtt(bot, await Fe, () => Ie()), he(), we.setLook(r.look), Pe = !0, Ye();
 	}), qe(), ae(), () => {
-		window.removeEventListener("keydown", At), window.removeEventListener("keyup", jt), window.removeEventListener("blur", Mt), document.removeEventListener("fullscreenchange", ce), document.documentElement.classList.remove($9);
+		window.removeEventListener("keydown", jt), window.removeEventListener("keyup", Mt), window.removeEventListener("blur", Nt), document.removeEventListener("fullscreenchange", ce), document.documentElement.classList.remove($9);
 		try {
 			De?.remove(), F.remove();
 		} catch {}
 	};
 }
-var kot = { render: Oot };
+var Aot = { render: kot };
 //#endregion
-export { kot as default };
+export { Aot as default };

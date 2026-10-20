@@ -37,6 +37,8 @@ const FOOT = "#4fd6ff";
 // a footprint's outline: silver, a neutral with no hue to mix up with any imola year (seen normally or with
 // protanopia), light enough to hold an edge on the dark basemap and on the filled years alike
 const FOOT_LINE: [number, number, number, number] = [200, 205, 212, 210];
+// a footprint's ground the model found not dug, in its tooltip's bar: a neutral gray, apart from every year's color
+const NOT_DUG = "#4a5058";
 // the footprint hovered, drawn over the pair's imagery
 const GOLD: [number, number, number, number] = [255, 196, 36, 255];
 // a footprint with no year, on the Sentinel-2 imagery: solid, so it reads on bright ground
@@ -614,6 +616,17 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   };
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const wsfText = (k: number) => (k >= 2 ? `${2016 + ((k - 1) >> 1)}, ${k % 2 === 0 ? "second half" : "first half"}` : k === 1 ? "built by mid 2016" : "not built-up");
+  /** Every year under a footprint, its share of the footprint's pixels: a bar in the years' colors and the shares. */
+  function yearsHtml(cnt: Map<number, number>, tot: number) {
+    const parts = [...cnt].sort((a, b) => a[0] - b[0]).map(([idx, n]) => [n, YEAR_COL[YEAR_ORIGIN + idx - Y0_RAMP] ?? UNCLEAR, String(YEAR_ORIGIN + idx)] as [number, string, string]);
+    const dug = parts.reduce((a, p) => a + p[0], 0);
+    if (tot > dug) parts.push([tot - dug, NOT_DUG, "not dug"]);
+    return (
+      `<div class="bar">${parts.map(([n, c]) => `<span style="width:${(100 * n) / tot}%;background:${c}"></span>`).join("")}</div>` +
+      `<div class="mix">${parts.map(([n, c, l]) => `<span><i style="background:${c}"></i>${l} ${Math.round((100 * n) / tot)}%</span>`).join("")}</div>` +
+      `<span class="dim">of its ${tot} pixel${tot === 1 ? "" : "s"} (10 m)</span>`
+    );
+  }
   function mixHtml(m: number[]) {
     const tot = m.reduce((a, b) => a + b, 0);
     if (!tot) return "";
@@ -661,7 +674,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
         else m[s >= 1 && s <= 4 ? s - 1 : 4]++;
       }
       if (!QUARTERS) {
-        // quarters off: the year alone
+        // quarters off: the year most of it was last dug in (its fill), then every year under it
+        if (yOpen <= 0) ours += yearsHtml(cnt, pts.length);
       } else if (missing) {
         ours += ` <span class="dim">decoding the quarters...</span>`;
         const tiles = [...new Set(mine.map((p) => p.tile))] as Parameters<NonNullable<typeof codes>["seasonsReady"]>[0];
