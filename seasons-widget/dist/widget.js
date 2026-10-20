@@ -112590,10 +112590,34 @@ var cot = "https://earth-search.aws.element84.com/v1/search", lot = "sentinel-2-
 	2023,
 	2024,
 	2025
-], uot = 30, dot = 4, K9 = /* @__PURE__ */ new Map();
-function fot(e, t) {
-	let n = e + ":" + t.map((e) => e.toFixed(3)).join(","), r = K9.get(n);
-	return r || (r = fetch(cot, {
+], uot = 70, dot = 15, fot = .97, pot = .02, K9 = 48, mot = 3, hot = 24, got = /* @__PURE__ */ new Set([
+	1,
+	3,
+	8,
+	9,
+	10,
+	11
+]), _ot = /* @__PURE__ */ new Set([
+	12,
+	1,
+	2
+]), vot = /* @__PURE__ */ new Set([
+	6,
+	7,
+	8
+]);
+function yot(e, t, n, r) {
+	let i = .9996, a = .0033528106647474805 / 1.9966471893352524, o = 6378137 / 1.0016792203863838 * (1.0000007049452766 + a ** 4 / 64), s = [
+		a / 2 - 2 * a * a / 3 + 5 * a ** 3 / 16,
+		13 * a * a / 48 - 3 * a ** 3 / 5,
+		61 * a ** 3 / 240
+	], c = t * Math.PI / 180, l = (e - (n * 6 - 183)) * Math.PI / 180, u = 2 * Math.sqrt(a) / 1.0016792203863838, d = Math.sinh(Math.atanh(Math.sin(c)) - u * Math.atanh(u * Math.sin(c))), f = Math.atan2(d, Math.cos(l)), p = Math.atanh(Math.sin(l) / Math.sqrt(1 + d * d)), m = p, h = f;
+	for (let e = 1; e <= 3; e++) m += s[e - 1] * Math.cos(2 * e * f) * Math.sinh(2 * e * p), h += s[e - 1] * Math.sin(2 * e * f) * Math.cosh(2 * e * p);
+	return [5e5 + i * o * m, (r ? 1e7 : 0) + i * o * h];
+}
+var bot = (e, t) => e[0] >= t[0] && e[2] <= t[2] && e[1] >= t[1] && e[3] <= t[3];
+async function xot(e, t) {
+	let n = await fetch(cot, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({
@@ -112607,148 +112631,234 @@ function fot(e, t) {
 				direction: "asc"
 			}]
 		})
-	}).then((e) => e.ok ? e.json() : Promise.reject(/* @__PURE__ */ Error(`Earth Search ${e.status}`))).then((e) => e.features), r.catch(() => K9.delete(n)), K9.set(n, r)), r;
-}
-var pot = (e) => e.properties["grid:code"]?.replace(/^MGRS-/, "") ?? /_T?(\d{1,2}[A-Z]{3})_/.exec(e.id)?.[1] ?? e.bbox.map((e) => e.toFixed(1)).join(",");
-async function mot(e, t, n, r) {
-	let i = 2 ** t, a = (e) => e / i * 360 - 180, o = (e) => Math.atan(Math.sinh(Math.PI * (1 - 2 * e / i))) * 180 / Math.PI, s = await fot(e, [
-		a(n),
-		o(r + 1),
-		a(n + 1),
-		o(r)
-	]), c = /* @__PURE__ */ new Map();
-	for (let e of s) {
-		let t = e.assets.visual?.href ?? e.assets.TCI?.href;
-		if (!t || !e.bbox) continue;
-		let n = {
+	});
+	if (!n.ok) throw Error(`Earth Search ${n.status}`);
+	let r = (await n.json()).features, i = (t[1] + t[3]) / 2, a = i > 23.5 ? _ot : i < -23.5 ? vot : null, o = /* @__PURE__ */ new Map();
+	for (let e of r) {
+		let t = e.properties, n = String(t.datetime ?? "").slice(0, 10), r = e.assets.visual?.href ?? e.assets.TCI?.href, i = e.assets.scl?.href ?? e.assets.SCL?.href, s = Number(t["proj:epsg"]);
+		if (!r || !i || !e.bbox || !n || !s || a?.has(+n.slice(5, 7)) || typeof t["view:sun_elevation"] == "number" && t["view:sun_elevation"] < dot) continue;
+		let c = String(t["grid:code"] ?? e.id).replace(/^MGRS-/, ""), l = String(t["s2:datatake_id"] ?? `${t.platform}_${n}`).replace(/_N\d\d\.\d\d$/, ""), u = Number(t["eo:cloud_cover"] ?? 100), d = o.get(l);
+		d || o.set(l, d = {
+			key: l,
+			date: n,
+			cloud: u,
+			scenes: []
+		}), d.cloud = Math.max(d.cloud, u), d.scenes.some((e) => e.tile === c) || d.scenes.push({
 			id: e.id,
 			bbox: e.bbox,
-			date: (e.properties.datetime ?? "").slice(0, 10),
-			cloud: e.properties["eo:cloud_cover"] ?? 100,
-			tile: pot(e),
-			url: t
-		}, r = c.get(n.tile) ?? [];
-		r.length < dot && !r.some((e) => e.date === n.date) && r.push(n), c.set(n.tile, r);
+			tile: c,
+			url: r,
+			scl: i,
+			epsg: s
+		});
 	}
-	return [...c].map(([e, t]) => ({
-		tile: e,
-		scenes: t,
-		bbox: t.reduce((e, t) => [
-			Math.min(e[0], t.bbox[0]),
-			Math.min(e[1], t.bbox[1]),
-			Math.max(e[2], t.bbox[2]),
-			Math.max(e[3], t.bbox[3])
-		], [
-			180,
-			90,
-			-180,
-			-90
-		])
-	}));
+	return [...o.values()].sort((e, t) => e.cloud - t.cloud);
 }
-function hot(e, t) {
+function Sot(e, t) {
 	let n = null, r = () => n ||= new _at({
 		size: Math.min(6, navigator.hardwareConcurrency || 4),
 		createWorker: () => new not()
 	}), i = new oat({ maxRequests: 16 }), a = /* @__PURE__ */ new Map(), o = (e) => {
 		let t = a.get(e);
 		return t || (t = B9.fromUrl(e, { concurrencyLimiter: i }), a.set(e, t), t.catch(() => a.get(e) === t && a.delete(e))), t;
-	}, s = /* @__PURE__ */ new Map(), c = /* @__PURE__ */ new Set(), l = /* @__PURE__ */ new Map();
-	function u(e, t) {
-		let n = t.scenes[(l.get(e) ?? 0) % t.scenes.length];
-		return [...t.scenes.filter((e) => e !== n).sort((e, t) => t.cloud - e.cloud), n];
+	}, s = /* @__PURE__ */ new Map(), c = [], l = () => {
+		let t = e.getBounds();
+		return [
+			t.getWest(),
+			Math.max(-85, t.getSouth()),
+			t.getEast(),
+			Math.min(85, t.getNorth())
+		];
+	}, u = (e, t) => {
+		let n = (e[2] - e[0]) * t, r = (e[3] - e[1]) * t;
+		return [
+			e[0] - n,
+			e[1] - r,
+			e[2] + n,
+			e[3] + r
+		];
+	};
+	async function d(e, t, n) {
+		let i = await o(e.scl), a = e.epsg % 100, s = Math.floor(e.epsg / 100) === 327, c = t.length / 2, l = new Float64Array(t.length);
+		for (let e = 0; e < c; e++) {
+			let [n, r] = yot(t[2 * e], t[2 * e + 1], a, s);
+			l[2 * e] = n, l[2 * e + 1] = r;
+		}
+		let u = [i, ...i.overviews].sort((e, t) => t.transform[0] - e.transform[0]), d = n / K9, f = u.find((e) => e.transform[0] <= d / 2) ?? u[u.length - 1], p = (e) => {
+			let [t, , n, , r, i] = e.transform, a = /* @__PURE__ */ new Map();
+			for (let o = 0; o < c; o++) {
+				let s = Math.floor((l[2 * o] - n) / t), c = Math.floor((l[2 * o + 1] - i) / r);
+				if (s < 0 || c < 0 || s >= e.width || c >= e.height) continue;
+				let u = Math.floor(s / e.tileWidth), d = Math.floor(c / e.tileHeight);
+				a.set(u + "," + d, [u, d]);
+			}
+			return a;
+		}, m = p(f);
+		for (; m.size > 12 && u.indexOf(f) > 0;) f = u[u.indexOf(f) - 1], m = p(f);
+		let h = /* @__PURE__ */ new Map();
+		await Promise.all([...m].map(async ([e, [t, n]]) => {
+			let i = (await f.fetchTile(t, n, {
+				pool: r(),
+				boundless: !0
+			})).array;
+			h.set(e, {
+				w: i.width,
+				data: i.layout === "band-separate" ? i.bands[0] : i.data
+			});
+		}));
+		let g = new Uint8Array(c), [_, , v, , y, b] = f.transform;
+		for (let e = 0; e < c; e++) {
+			let t = Math.floor((l[2 * e] - v) / _), n = Math.floor((l[2 * e + 1] - b) / y);
+			if (t < 0 || n < 0 || t >= f.width || n >= f.height) continue;
+			let r = Math.floor(t / f.tileWidth), i = Math.floor(n / f.tileHeight), a = h.get(r + "," + i);
+			a && (g[e] = a.data[(n - i * f.tileHeight) * a.w + (t - r * f.tileWidth)]);
+		}
+		return g;
 	}
-	function d(e) {
-		l.set(e, (l.get(e) ?? 0) + 1);
+	async function f(e, t) {
+		let n = /* @__PURE__ */ new Float64Array(4608);
+		for (let e = 0; e < K9; e++) for (let r = 0; r < K9; r++) n[2 * (e * K9 + r)] = t[0] + (r + .5) / K9 * (t[2] - t[0]), n[2 * (e * K9 + r) + 1] = t[1] + (e + .5) / K9 * (t[3] - t[1]);
+		let r = (t[1] + t[3]) / 2 * (Math.PI / 180), i = Math.max((t[2] - t[0]) * 111320 * Math.cos(r), (t[3] - t[1]) * 110540), a = e.scenes.filter((e) => e.bbox[0] < t[2] && e.bbox[2] > t[0] && e.bbox[1] < t[3] && e.bbox[3] > t[1]), o = await Promise.all(a.map((e) => d(e, n, i).catch(() => /* @__PURE__ */ new Uint8Array(2304)))), s = 0, c = 0;
+		for (let e = 0; e < 2304; e++) {
+			let t = 0;
+			for (let n of o) if (n[e]) {
+				t = n[e];
+				break;
+			}
+			t && (s++, got.has(t) && c++);
+		}
+		return {
+			...e,
+			cover: s / 2304,
+			bad: s ? c / s : 1
+		};
 	}
-	function f(n) {
-		let r = Math.max(7, Math.min(9, Math.floor(e.getZoom()))), i = 2 ** r, a = e.getBounds(), o = (a.getEast() - a.getWest()) / 2, l = (a.getNorth() - a.getSouth()) / 2, u = (e) => Math.min(i - 1, Math.max(0, Math.floor((e + 180) / 360 * i))), d = (e) => {
-			let t = Math.sin(e * Math.PI / 180);
-			return Math.min(i - 1, Math.max(0, Math.floor((.5 - Math.log((1 + t) / (1 - t)) / (4 * Math.PI)) * i)));
-		}, f = u(a.getWest() - o), p = u(a.getEast() + o), m = d(Math.min(85, a.getNorth() + l)), h = d(Math.max(-85, a.getSouth() - l));
-		if (!((p - f + 1) * (h - m + 1) > 64)) for (let e = f; e <= p; e++) for (let i = m; i <= h; i++) {
-			let a = `${n}/${r}/${e}/${i}`;
-			c.has(a) || (c.add(a), mot(n, r, e, i).then((e) => {
-				let r = s.get(n);
-				r || s.set(n, r = {
-					tiles: /* @__PURE__ */ new Map(),
-					batches: []
-				});
-				let i = e.filter((e) => e.scenes.length && !r.tiles.has(e.tile));
-				if (!i.length) return;
-				i.forEach((e) => r.tiles.set(e.tile, e));
-				let o = i.reduce((e, t) => [
-					Math.min(e[0], t.bbox[0]),
-					Math.min(e[1], t.bbox[1]),
-					Math.max(e[2], t.bbox[2]),
-					Math.max(e[3], t.bbox[3])
-				], [
-					180,
-					90,
-					-180,
-					-90
-				]);
-				r.batches.push({
-					key: a.replace(/\//g, "-"),
-					tiles: i,
-					bbox: o
-				}), t();
-			}, () => c.delete(a)));
+	let p = (e) => e.cover >= fot && e.bad <= pot;
+	async function m(e, n, r) {
+		if (n.busy) return;
+		n.busy = !0;
+		let i = 0;
+		try {
+			for (; n.clear.length < r && n.queue.length && i < hot && s.get(e) === n;) {
+				let r = n.queue.splice(0, mot);
+				i += r.length;
+				let a = await Promise.all(r.map((e) => f(e, n.view)));
+				if (s.get(e) !== n) return;
+				for (let e of a) (!n.best || e.cover - e.bad > n.best.cover - n.best.bad) && (n.best = e);
+				let o = a.filter(p).sort((e, t) => e.bad - t.bad);
+				if (o.length) {
+					let e = n.clear.length;
+					n.clear.push(...o), e || t();
+				}
+			}
+			(!n.queue.length || i >= hot) && (n.done = !0), n.clear.length || t();
+		} finally {
+			n.busy = !1;
 		}
 	}
-	function p(e, t, n) {
-		let r = "";
-		for (let i of s.get(e)?.batches ?? []) for (let a of i.tiles) {
-			let i = u(e, a).at(-1);
-			i.bbox[0] <= t && t <= i.bbox[2] && i.bbox[1] <= n && n <= i.bbox[3] && (r = i.date);
+	async function h(e) {
+		let n = l();
+		if (n[2] - n[0] > 4 || n[3] - n[1] > 4) return;
+		let r = s.get(e);
+		if (r && bot(n, r.hold)) return;
+		let i = r ? g(r) : null, a = {
+			view: n,
+			hold: u(n, .25),
+			clear: [],
+			look: 0,
+			queue: [],
+			best: null,
+			prev: i,
+			busy: !1,
+			done: !1
+		};
+		if (i) {
+			let r = await f(i, n).catch(() => null);
+			if (r && p(r)) {
+				a.clear.push(r), s.set(e, a), xot(e, a.hold).then((e) => a.queue = e.filter((e) => e.key !== i.key), () => {}), t();
+				return;
+			}
 		}
-		return r;
+		s.set(e, a);
+		try {
+			a.queue = await xot(e, a.hold);
+		} catch {
+			s.delete(e);
+			return;
+		}
+		await m(e, a, 1);
 	}
-	function m(t, i, a, c = "") {
-		r();
-		let d = s.get(t);
-		if (!d) return [];
-		let f = e.getBounds(), p = (f.getEast() - f.getWest()) / 2, m = (f.getNorth() - f.getSouth()) / 2, h = f.getWest() - p, g = f.getEast() + p, _ = f.getSouth() - m, v = f.getNorth() + m, y = l.get(t) ?? 0;
-		return d.batches.filter((e) => e.bbox[0] < g && e.bbox[2] > h && e.bbox[1] < v && e.bbox[3] > _).map((e) => {
-			let r = e.tiles.map((e) => u(t, e)), s = [...r.flatMap((e) => e.slice(0, -1)).sort((e, t) => t.cloud - e.cloud), ...r.map((e) => e.at(-1))];
-			return new Qat({
-				id: `s2${c}-${t}-${y}-${e.key}`,
-				sources: s,
-				maxCacheSize: 0,
-				minZoom: 7,
-				visible: i,
-				beforeId: a,
-				getSource: (e) => o(e.url).catch(() => null),
-				renderSource: (e, { data: r, signal: i }) => r ? new Bat({
-					id: `s2${c}-${t}-${e.id}`,
-					geotiff: r,
-					getTileData: (e, t) => iot(e, t),
-					renderTile: (e) => sot(e, 1),
-					pool: n,
-					signal: i,
-					refinementStrategy: "best-available",
-					maxRequests: 16
-				}) : null
+	let g = (e) => e.clear.length ? e.clear[e.look % e.clear.length] : e.done ? e.best : e.prev, _ = Promise.resolve();
+	function v(e) {
+		let t = c.indexOf(e);
+		t >= 0 && c.splice(t, 1), c.push(e), h(e).then(() => {
+			_ = _.then(async () => {
+				for (let t of G9) t !== e && await h(t).catch(() => {});
 			});
 		});
 	}
+	function y(e) {
+		let n = s.get(e);
+		n && (n.look + 1 < n.clear.length ? n.look++ : !n.done && n.queue.length ? m(e, n, n.clear.length + 1).then(() => {
+			n.look + 1 < n.clear.length ? n.look++ : n.look = 0, t();
+		}) : n.look = 0);
+	}
+	function b(e, t, n) {
+		let r = s.get(e);
+		return r && g(r)?.date || "";
+	}
+	function x(e) {
+		let t = s.get(e);
+		return !t || !t.clear.length && !t.done ? "finding" : t.clear.length ? "clear" : "cloudy";
+	}
+	function S(e, t, r, i, a) {
+		return new Qat({
+			id: `s2${a}-${e}-${t.key}`,
+			sources: t.scenes,
+			maxCacheSize: 0,
+			minZoom: 7,
+			visible: r,
+			beforeId: i,
+			getSource: (e) => o(e.url).catch(() => null),
+			renderSource: (t, { data: r, signal: i }) => r ? new Bat({
+				id: `s2${a}-${e}-${t.id}`,
+				geotiff: r,
+				getTileData: (e, t) => iot(e, t),
+				renderTile: (e) => sot(e, 1),
+				pool: n,
+				signal: i,
+				refinementStrategy: "best-available",
+				maxRequests: 16
+			}) : null
+		});
+	}
+	function C(e, t, n, i = "") {
+		r();
+		let a = [...c.filter((t) => t !== e).slice(-3), e], o = [];
+		for (let r of a) {
+			let a = s.get(r), c = a && g(a);
+			c && o.push(S(r, c, t && r === e, n, i));
+		}
+		return o;
+	}
 	return {
-		discover: f,
-		layers: m,
-		dateAt: p,
-		next: d
+		discover: v,
+		layers: C,
+		dateAt: b,
+		status: x,
+		next: y
 	};
 }
 //#endregion
 //#region src/halo.ts
 Lb();
-var got = [
+var Cot = [
 	14,
 	14,
 	14
-].map((e) => (e / 255).toFixed(4)).join(", "), _ot = 4096, q9 = 4096, J9 = 512, vot = 40075016.686, Y9 = (e) => e * J9 / 360, X9 = (e) => J9 / (2 * Math.PI) * Math.log(Math.tan(Math.PI / 4 + e * Math.PI / 360)), yot = /* @__PURE__ */ new WeakMap();
-function bot(e) {
-	let t = yot.get(e);
+].map((e) => (e / 255).toFixed(4)).join(", "), wot = 4096, q9 = 4096, J9 = 512, Tot = 40075016.686, Y9 = (e) => e * J9 / 360, X9 = (e) => J9 / (2 * Math.PI) * Math.log(Math.tan(Math.PI / 4 + e * Math.PI / 360)), Eot = /* @__PURE__ */ new WeakMap();
+function Dot(e) {
+	let t = Eot.get(e);
 	if (t) return t;
 	let n = e.getChild("geometry").data[0], r = n.children[0], i = n.valueOffsets, a = r.valueOffsets, o = r.children[0].children[0].values, s = n.length, c = n.offset, l = new Float64Array(2 * s), u = new Float32Array(2 * s), d = new Float32Array(3 * s), f = 0;
 	for (let e = 0; e < s; e++) {
@@ -112757,13 +112867,13 @@ function bot(e) {
 	}
 	let p = Math.max(1, Math.ceil(f / q9)), m = new Float32Array(2 * q9 * p), h = 0;
 	for (let e = 0; e < s; e++) {
-		let t = i[c + e], n = a[t], r = Math.min(a[t + 1] - 1, n + _ot), s = Infinity, f = -Infinity, p = Infinity, g = -Infinity;
+		let t = i[c + e], n = a[t], r = Math.min(a[t + 1] - 1, n + wot), s = Infinity, f = -Infinity, p = Infinity, g = -Infinity;
 		for (let e = n; e < r; e++) {
 			let t = o[2 * e], n = o[2 * e + 1];
 			t < s && (s = t), t > f && (f = t), n < p && (p = n), n > g && (g = n);
 		}
 		if (r <= n) continue;
-		let _ = (s + f) / 2, v = (p + g) / 2, y = Y9(_), b = X9(v), x = 30 * J9 / (vot * Math.cos(v * Math.PI / 180));
+		let _ = (s + f) / 2, v = (p + g) / 2, y = Y9(_), b = X9(v), x = 30 * J9 / (Tot * Math.cos(v * Math.PI / 180));
 		l[2 * e] = _, l[2 * e + 1] = v, u[2 * e] = (Y9(f) - Y9(s)) / 2 + x * 1.02, u[2 * e + 1] = (X9(g) - X9(p)) / 2 + x * 1.02, d[3 * e] = h, d[3 * e + 1] = r - n, d[3 * e + 2] = x;
 		for (let e = n; e < r; e++, h++) m[2 * h] = Y9(o[2 * e]) - y, m[2 * h + 1] = X9(o[2 * e + 1]) - b;
 	}
@@ -112775,9 +112885,9 @@ function bot(e) {
 		xy: m,
 		height: p
 	};
-	return yot.set(e, g), g;
+	return Eot.set(e, g), g;
 }
-var xot = "#version 300 es\n#define SHADER_NAME foot-halo-vertex-shader\nin vec3 positions;\nin vec3 instancePositions;\nin vec3 instancePositions64Low;\nin vec2 instanceExtent;\nin vec3 instanceVerts;\nout vec2 vLocal;\nflat out vec3 vVerts;\nvoid main(void) {\n  geometry.worldPosition = instancePositions;\n  geometry.uv = positions.xy;\n  vLocal = positions.xy * instanceExtent;\n  vVerts = instanceVerts;\n  gl_Position = project_position_to_clipspace(instancePositions, instancePositions64Low, vec3(vLocal, 0.0), geometry.position);\n  DECKGL_FILTER_GL_POSITION(gl_Position, geometry);\n}\n", Sot = `#version 300 es
+var Oot = "#version 300 es\n#define SHADER_NAME foot-halo-vertex-shader\nin vec3 positions;\nin vec3 instancePositions;\nin vec3 instancePositions64Low;\nin vec2 instanceExtent;\nin vec3 instanceVerts;\nout vec2 vLocal;\nflat out vec3 vVerts;\nvoid main(void) {\n  geometry.worldPosition = instancePositions;\n  geometry.uv = positions.xy;\n  vLocal = positions.xy * instanceExtent;\n  vVerts = instanceVerts;\n  gl_Position = project_position_to_clipspace(instancePositions, instancePositions64Low, vec3(vLocal, 0.0), geometry.position);\n  DECKGL_FILTER_GL_POSITION(gl_Position, geometry);\n}\n", kot = `#version 300 es
 #define SHADER_NAME foot-halo-fragment-shader
 precision highp float;
 precision highp int;
@@ -112795,7 +112905,7 @@ void main(void) {
   bool inside = false;
   vec2 p = vLocal;
   vec2 a = haloVertex(s + n - 1);
-  for (int k = 0; k < ${_ot}; k++) {
+  for (int k = 0; k < ${wot}; k++) {
     if (k >= n) break;
     vec2 b = haloVertex(s + k);
     vec2 e = b - a, w = p - a;
@@ -112806,15 +112916,15 @@ void main(void) {
     a = b;
   }
   if (inside || d >= reach) discard;
-  fragColor = vec4(${got}, 1.0 - smoothstep(0.0, 1.0, d / reach));
+  fragColor = vec4(${Cot}, 1.0 - smoothstep(0.0, 1.0, d / reach));
   DECKGL_FILTER_COLOR(fragColor, geometry);
 }
-`, Cot = class extends aE {
+`, Aot = class extends aE {
 	static layerName = "FootHaloLayer";
 	getShaders() {
 		return super.getShaders({
-			vs: xot,
-			fs: Sot,
+			vs: Oot,
+			fs: kot,
 			modules: [Vv, hy]
 		});
 	}
@@ -112887,9 +112997,9 @@ void main(void) {
 		e && t && (e.setBindings({ haloVerts: t }), e.draw(this.context.renderPass));
 	}
 };
-function wot(e, t) {
-	let n = bot(e);
-	return new Cot({
+function jot(e, t) {
+	let n = Dot(e);
+	return new Aot({
 		id: "foot-halo",
 		data: n,
 		getPosition: (e, { index: t }) => [
@@ -112908,7 +113018,7 @@ function wot(e, t) {
 		beforeId: t.beforeId
 	});
 }
-var Tot = {
+var Mot = {
 	inputs: "[unit AlphaEarth (64, dequantized sign(v) (v / 127.5)^2), unit TESSERA (128, int8 as stored)] / sqrt(2)",
 	target: "sqrt of reflectance, red green blue",
 	net: {
@@ -112935,7 +113045,7 @@ var Tot = {
 			}
 		]
 	}
-}, Eot = {
+}, Not = {
 	aef: {
 		w: [
 			.13020645081996918,
@@ -113721,29 +113831,34 @@ var Tot = {
 		aef: .6035261750221252,
 		tessera: .8016068339347839
 	}
-}, Dot = ".sm{--glass:#1a1d21eb;--card:#1a1d21d9;--glass-hi:#23272c;--line:#ffffff1f;--text:#e6e9ec;--muted:#9ba5af;--faint:#ffffff2e;--cool:#56b4e9;--sel:#ffffff14;--on:#15181b;--col:264px;font-variant-numeric:tabular-nums;width:100%;height:780px;color:var(--text);-webkit-font-smoothing:antialiased;background:#0e0e0e;font:14px/1.45 Instrument Sans,ui-sans-serif,system-ui,sans-serif;position:relative;overflow:hidden}.sm *{box-sizing:border-box}.sm .glass{background:var(--card);-webkit-backdrop-filter:blur(18px)saturate(1.15);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 22px #00000059}.sm kbd{color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:1px 4px;font:10.5px/1 ui-monospace,SFMono-Regular,Menlo,monospace}.sm .load i{background:var(--cool);width:0;height:100%;transition:width .3s ease-out;display:block}.sm .loadtag{z-index:6;white-space:nowrap;pointer-events:none;padding:5px 10px;font-size:12px;display:none;position:absolute;top:12px;left:50%;transform:translate(-50%)}.sm .loadtag span{color:var(--muted);margin-left:6px}.sm .loadtag.on{display:block}.sm .card{width:var(--col);z-index:5;max-width:calc(50vw - 24px);padding:9px 11px;font-size:12.5px;position:absolute;top:12px;right:12px}.sm .card.folded{width:auto;padding:7px 8px 7px 11px}.sm .card.folded .body{display:none}.sm .hd{cursor:pointer;-webkit-user-select:none;user-select:none;justify-content:space-between;align-items:center;gap:8px;display:flex}.sm .ht{flex:1;align-items:baseline;gap:6px;display:flex}.sm .ht b{font-size:14px;font-weight:600}.sm .ht .crumb{color:var(--muted);cursor:pointer}.sm .ht .crumb:hover{color:var(--text)}.sm .ht .sep{color:var(--muted)}.sm .cb{color:var(--muted);cursor:pointer;background:0 0;border:0;border-radius:7px;flex:none;justify-content:center;align-items:center;width:26px;height:26px;margin:-4px -4px -4px 0;padding:0;display:inline-flex}.sm .cb:hover{background:var(--sel);color:var(--text)}.sm .cb svg{transition:transform .15s}.sm .folded .cb svg{transform:rotate(-90deg)}.sm .lab{color:var(--muted);min-width:46px;font-size:12px}.sm .seg{border:1px solid var(--line);border-radius:9px;gap:2px;width:max-content;padding:2px;display:flex}.sm .seg button{color:var(--muted);cursor:pointer;font:inherit;background:0 0;border:0;border-radius:7px;padding:2px 6px;font-size:12.5px}.sm .seg button:hover{color:var(--text)}.sm .seg button.on{background:var(--text);color:var(--on)}.sm .s2card{z-index:5;padding:9px 12px 10px;display:none;position:absolute;top:12px;left:12px}.sm .s2card.on{display:block}.sm .s2hd{flex-direction:column;align-items:flex-start;gap:5px;display:flex}.sm .s2hd b{letter-spacing:-.03em;font-size:34px;font-weight:600;line-height:1}.sm .s2hd span{color:var(--muted);white-space:nowrap;font-size:12px;line-height:1.25}.sm .s2card .keys{flex-wrap:wrap;gap:3px 9px;margin:9px 0 0;font-size:12px;line-height:1.5;display:flex}.sm .s2card .keys>span{white-space:nowrap}.sm .search{box-sizing:border-box;border:1px solid var(--line);width:30px;height:30px;color:var(--muted);cursor:text;border-radius:8px;flex:none;align-items:center;gap:7px;padding:0 7px;transition:width .15s;display:flex;position:relative}.sm .search:hover{color:var(--text)}.sm .search .mag{flex:none;display:flex}.sm .search:focus-within{width:var(--col);color:var(--text);border-color:#ffffff4d}.sm .search input{width:0;min-width:0;color:var(--text);font:inherit;opacity:0;background:0 0;border:0;outline:none;flex:1;padding:0;font-size:13px}.sm .search:focus-within input{opacity:1}.sm .search input::placeholder{color:var(--muted)}.sm .hits{background:var(--glass-hi);border:1px solid var(--line);border-radius:10px;padding:4px;display:none;position:absolute;top:36px;left:-1px;right:-1px;box-shadow:0 6px 22px #00000059}.sm .hit{cursor:pointer;white-space:nowrap;text-overflow:ellipsis;border-radius:8px;padding:7px 10px;font-size:13px;overflow:hidden}.sm .hit small{color:var(--muted);font-size:12px;display:block}.sm .hit:hover,.sm .hit.sel{background:var(--sel)}.sm .tip{pointer-events:none;background:var(--glass-hi);border:1px solid var(--line);z-index:7;border-radius:8px;max-width:260px;padding:6px 9px;font-size:12.5px;line-height:1.4;display:none;position:absolute;box-shadow:0 4px 14px #00000059}.sm .toast{color:var(--muted);z-index:7;opacity:0;pointer-events:none;padding:6px 11px;font-size:13px;transition:opacity .2s;position:absolute;bottom:40px;left:50%;transform:translate(-50%)}.sm .toast.on{opacity:1}.sm .maplibregl-ctrl-attrib{color:var(--muted);background:var(--card)!important}.sm .maplibregl-ctrl-attrib a{color:var(--muted)}.sm.fit{z-index:9999;height:100vh;position:fixed;inset:0}.sm:fullscreen{width:100vw;height:100vh}.sm .map{position:absolute;inset:0}.sm .map2{border-right:2px solid #ffffff59;display:none;position:absolute;inset:0 50% 0 0}.sm.pair .map{left:50%}.sm.pair .map2{display:block}.sm.pair .loadtag{left:calc(50% + 12px);transform:none}.sm.pair .toast{left:75%}.sm :focus,.sm :focus-visible,.sm .maplibregl-canvas:focus{outline:none!important}.sm .load{z-index:6;background:#ffffff14;height:3px;display:none;position:absolute;top:0;left:0;right:0}.sm .load.on{display:block}.sm .body{flex-direction:column;gap:8px;margin-top:8px;display:flex}.sm .row{align-items:center;gap:8px;display:flex}.sm .chips{gap:3px;display:grid}.sm .chip{font:inherit;cursor:pointer;text-align:center;border:0;border-radius:5px;padding:5px 0 4px;font-size:11.5px;font-weight:600}.sm .chip small{opacity:.85;font-size:10px;font-weight:400;display:block}.sm .chip:disabled{opacity:.25;cursor:default}.sm button.chip:not(:disabled):hover{outline:2px solid #fff!important}.sm .notes{flex-direction:column;gap:8px;display:flex}.sm .card.short .notes{display:none}.sm .less{color:var(--muted);cursor:pointer;background:0 0;border:0;border-radius:5px;justify-content:center;align-self:center;align-items:center;width:100%;height:14px;margin:-4px 0 -6px;padding:0;display:flex}.sm .less:hover{background:var(--sel);color:var(--text)}.sm .less svg{transition:transform .15s;transform:rotate(180deg)}.sm .card.short .less svg{transform:none}.sm .hint{color:#b8bec5;font-size:11.5px;line-height:1.4}.sm .zoom{color:var(--muted);font-size:11.5px}.sm .zoom .warn{color:var(--cool);margin-left:4px}.sm .tip .dim{color:var(--muted)}.sm .tip .bar{border-radius:3px;height:8px;margin:4px 0 3px;display:flex;overflow:hidden}.sm .tip .mix{color:#b8bec5;flex-wrap:wrap;gap:2px 10px;font-size:11.5px;display:flex}.sm .tip .mix i{border-radius:2px;width:8px;height:8px;margin-right:4px;display:inline-block}.sm .years{align-items:center;gap:2px;display:flex}.sm .years .allyears{color:#e6e9ec;font:inherit;cursor:pointer;background:0 0;border:1px solid #ffffff38;border-radius:5px;margin-right:2px;padding:2px 6px;font-size:11px}.sm .years .allyears:hover{background:#ffffff1a}.sm .years .yr{min-width:0;font:inherit;cursor:pointer;opacity:.55;border:0;border-radius:4px;flex:1;padding:3px 0;font-size:10.5px;font-weight:600}.sm .years .yr.on{opacity:1;outline-offset:1px;outline:2px solid #fff!important}.sm .years .yr:not(:disabled):hover{opacity:1}.sm .years .yr:disabled{opacity:.15;cursor:default}.sm .years kbd{margin-left:4px}.sm .zoom .keys{flex-wrap:wrap;gap:3px 9px;margin-top:6px;display:flex}.sm .zoom .keys>span{white-space:nowrap}.sm .legend{color:var(--muted);align-items:center;gap:8px;margin-top:8px;font-size:12.5px;display:none}.sm .lline{gap:2px;display:flex}.sm .lline i{width:20px;height:14px}.sm.clean .card{align-items:center;gap:14px;width:auto;padding:10px 14px 10px 10px;display:flex}.sm.clean .card .legend{margin-top:0;display:flex}.sm.clean .card .body,.sm.clean .card .cb{display:none}.sm.clean .hd{cursor:default;pointer-events:none}.sm.clean .s2card .keys{display:none}", Oot = [
+}, Pot = ".sm{--glass:#1a1d21eb;--card:#1a1d21d9;--glass-hi:#23272c;--line:#ffffff1f;--text:#e6e9ec;--muted:#9ba5af;--faint:#ffffff2e;--cool:#56b4e9;--sel:#ffffff14;--on:#15181b;--col:264px;font-variant-numeric:tabular-nums;width:100%;height:780px;color:var(--text);-webkit-font-smoothing:antialiased;background:#0e0e0e;font:14px/1.45 Instrument Sans,ui-sans-serif,system-ui,sans-serif;position:relative;overflow:hidden}.sm *{box-sizing:border-box}.sm .glass{background:var(--card);-webkit-backdrop-filter:blur(18px)saturate(1.15);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 22px #00000059}.sm kbd{color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:1px 4px;font:10.5px/1 ui-monospace,SFMono-Regular,Menlo,monospace}.sm .load i{background:var(--cool);width:0;height:100%;transition:width .3s ease-out;display:block}.sm .loadtag{z-index:6;white-space:nowrap;pointer-events:none;padding:5px 10px;font-size:12px;display:none;position:absolute;top:12px;left:50%;transform:translate(-50%)}.sm .loadtag span{color:var(--muted);margin-left:6px}.sm .loadtag.on{display:block}.sm .card{width:var(--col);z-index:5;max-width:calc(50vw - 24px);padding:9px 11px;font-size:12.5px;position:absolute;top:12px;right:12px}.sm .card.folded{width:auto;padding:7px 8px 7px 11px}.sm .card.folded .body{display:none}.sm .hd{cursor:pointer;-webkit-user-select:none;user-select:none;justify-content:space-between;align-items:center;gap:8px;display:flex}.sm .ht{flex:1;align-items:baseline;gap:6px;display:flex}.sm .ht b{font-size:14px;font-weight:600}.sm .ht .crumb{color:var(--muted);cursor:pointer}.sm .ht .crumb:hover{color:var(--text)}.sm .ht .sep{color:var(--muted)}.sm .cb{color:var(--muted);cursor:pointer;background:0 0;border:0;border-radius:7px;flex:none;justify-content:center;align-items:center;width:26px;height:26px;margin:-4px -4px -4px 0;padding:0;display:inline-flex}.sm .cb:hover{background:var(--sel);color:var(--text)}.sm .cb svg{transition:transform .15s}.sm .folded .cb svg{transform:rotate(-90deg)}.sm .lab{color:var(--muted);min-width:46px;font-size:12px}.sm .seg{border:1px solid var(--line);border-radius:9px;gap:2px;width:max-content;padding:2px;display:flex}.sm .seg button{color:var(--muted);cursor:pointer;font:inherit;background:0 0;border:0;border-radius:7px;padding:2px 6px;font-size:12.5px}.sm .seg button:hover{color:var(--text)}.sm .seg button.on{background:var(--text);color:var(--on)}.sm .s2card{z-index:5;padding:9px 12px 10px;display:none;position:absolute;top:12px;left:12px}.sm .s2card.on{display:block}.sm .s2hd{flex-direction:column;align-items:flex-start;gap:5px;display:flex}.sm .s2hd b{letter-spacing:-.03em;font-size:34px;font-weight:600;line-height:1}.sm .s2hd span{color:var(--muted);white-space:nowrap;font-size:12px;line-height:1.25}.sm .s2card .keys{flex-wrap:wrap;gap:3px 9px;margin:9px 0 0;font-size:12px;line-height:1.5;display:flex}.sm .s2card .keys>span{white-space:nowrap}.sm .search{box-sizing:border-box;border:1px solid var(--line);width:30px;height:30px;color:var(--muted);cursor:text;border-radius:8px;flex:none;align-items:center;gap:7px;padding:0 7px;transition:width .15s;display:flex;position:relative}.sm .search:hover{color:var(--text)}.sm .search .mag{flex:none;display:flex}.sm .search:focus-within{width:var(--col);color:var(--text);border-color:#ffffff4d}.sm .search input{width:0;min-width:0;color:var(--text);font:inherit;opacity:0;background:0 0;border:0;outline:none;flex:1;padding:0;font-size:13px}.sm .search:focus-within input{opacity:1}.sm .search input::placeholder{color:var(--muted)}.sm .hits{background:var(--glass-hi);border:1px solid var(--line);border-radius:10px;padding:4px;display:none;position:absolute;top:36px;left:-1px;right:-1px;box-shadow:0 6px 22px #00000059}.sm .hit{cursor:pointer;white-space:nowrap;text-overflow:ellipsis;border-radius:8px;padding:7px 10px;font-size:13px;overflow:hidden}.sm .hit small{color:var(--muted);font-size:12px;display:block}.sm .hit:hover,.sm .hit.sel{background:var(--sel)}.sm .tip{pointer-events:none;background:var(--glass-hi);border:1px solid var(--line);z-index:7;border-radius:8px;max-width:260px;padding:6px 9px;font-size:12.5px;line-height:1.4;display:none;position:absolute;box-shadow:0 4px 14px #00000059}.sm .toast{color:var(--muted);z-index:7;opacity:0;pointer-events:none;padding:6px 11px;font-size:13px;transition:opacity .2s;position:absolute;bottom:40px;left:50%;transform:translate(-50%)}.sm .toast.on{opacity:1}.sm .maplibregl-ctrl-attrib{color:var(--muted);background:var(--card)!important}.sm .maplibregl-ctrl-attrib a{color:var(--muted)}.sm.fit{z-index:9999;height:100vh;position:fixed;inset:0}.sm:fullscreen{width:100vw;height:100vh}.sm .map{position:absolute;inset:0}.sm .map2{border-right:2px solid #ffffff59;display:none;position:absolute;inset:0 50% 0 0}.sm.pair .map{left:50%}.sm.pair .map2{display:block}.sm.pair .loadtag{left:calc(50% + 12px);transform:none}.sm.pair .toast{left:75%}.sm :focus,.sm :focus-visible,.sm .maplibregl-canvas:focus{outline:none!important}.sm .load{z-index:6;background:#ffffff14;height:3px;display:none;position:absolute;top:0;left:0;right:0}.sm .load.on{display:block}.sm .body{flex-direction:column;gap:8px;margin-top:8px;display:flex}.sm .row{align-items:center;gap:8px;display:flex}.sm .chips{gap:3px;display:grid}.sm .chip{font:inherit;cursor:pointer;text-align:center;border:0;border-radius:5px;padding:5px 0 4px;font-size:11.5px;font-weight:600}.sm .chip small{opacity:.85;font-size:10px;font-weight:400;display:block}.sm .chip:disabled{opacity:.25;cursor:default}.sm button.chip:not(:disabled):hover{outline:2px solid #fff!important}.sm .notes{flex-direction:column;gap:8px;display:flex}.sm .card.short .notes{display:none}.sm .less{color:var(--muted);cursor:pointer;background:0 0;border:0;border-radius:5px;justify-content:center;align-self:center;align-items:center;width:100%;height:14px;margin:-4px 0 -6px;padding:0;display:flex}.sm .less:hover{background:var(--sel);color:var(--text)}.sm .less svg{transition:transform .15s;transform:rotate(180deg)}.sm .card.short .less svg{transform:none}.sm .hint{color:#b8bec5;font-size:11.5px;line-height:1.4}.sm .zoom{color:var(--muted);font-size:11.5px}.sm .zoom .warn{color:var(--cool);margin-left:4px}.sm .tip .dim{color:var(--muted)}.sm .tip .bar{border-radius:3px;height:8px;margin:4px 0 3px;display:flex;overflow:hidden}.sm .tip .mix{color:#b8bec5;flex-wrap:wrap;gap:2px 10px;font-size:11.5px;display:flex}.sm .tip .mix i{border-radius:2px;width:8px;height:8px;margin-right:4px;display:inline-block}.sm .years{align-items:center;gap:2px;display:flex}.sm .years .allyears{color:#e6e9ec;font:inherit;cursor:pointer;background:0 0;border:1px solid #ffffff38;border-radius:5px;margin-right:2px;padding:2px 6px;font-size:11px}.sm .years .allyears:hover{background:#ffffff1a}.sm .years .yr{min-width:0;font:inherit;cursor:pointer;opacity:.55;border:0;border-radius:4px;flex:1;padding:3px 0;font-size:10.5px;font-weight:600}.sm .years .yr.on{opacity:1;outline-offset:1px;outline:2px solid #fff!important}.sm .years .yr:not(:disabled):hover{opacity:1}.sm .years .yr:disabled{opacity:.15;cursor:default}.sm .years kbd{margin-left:4px}.sm .zoom .keys{flex-wrap:wrap;gap:3px 9px;margin-top:6px;display:flex}.sm .zoom .keys>span{white-space:nowrap}.sm .legend{color:var(--muted);align-items:center;gap:8px;margin-top:8px;font-size:12.5px;display:none}.sm .lline{gap:2px;display:flex}.sm .lline i{width:20px;height:14px}.sm.clean .card{align-items:center;gap:14px;width:auto;padding:10px 14px 10px 10px;display:flex}.sm.clean .card .legend{margin-top:0;display:flex}.sm.clean .card .body,.sm.clean .card .cb{display:none}.sm.clean .hd{cursor:default;pointer-events:none}.sm.clean .s2card .keys{display:none}", Fot = [
 	["Q1", "Jan-Mar"],
 	["Q2", "Apr-Jun"],
 	["Q3", "Jul-Sep"],
 	["Q4", "Oct-Dec"]
-], kot = "#4fd6ff", Aot = [
+], Iot = "#4fd6ff", Lot = [
 	200,
 	205,
 	212,
 	210
+], Rot = [
+	255,
+	196,
+	36,
+	255
 ], Z9 = [
 	79,
 	214,
 	255
-], jot = "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"><path d=\"M6 9l6 6 6-6\"/></svg>", Q9 = 12, $9 = "sm-fit-on", Mot = !1;
+], zot = "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"><path d=\"M6 9l6 6 6-6\"/></svg>", Q9 = 12, $9 = "sm-fit-on", Bot = !1;
 K0e(URL.createObjectURL(new Blob([q0e], { type: "text/javascript" })));
-function Not({ model: e, el: t }) {
+function Vot({ model: e, el: t }) {
 	let n = JSON.parse(String(e.get("config") || "{}"));
 	for (let e of /* @__PURE__ */ new Set([document.head, t.getRootNode()])) {
 		let t = e instanceof ShadowRoot ? e : document.head;
 		if (t.querySelector?.("#sm-styles")) continue;
 		let n = document.createElement("style");
-		n.id = "sm-styles", n.textContent = p + "\n" + Dot, t.appendChild(n);
+		n.id = "sm-styles", n.textContent = p + "\n" + Pot, t.appendChild(n);
 	}
 	if (!document.getElementById("sm-fonts")) {
 		let e = document.createElement("link");
@@ -113763,7 +113878,7 @@ function Not({ model: e, el: t }) {
 			"chrome-controls-bottom-right"
 		].map((e) => `html.${$9} [data-testid='${e}']`).join(",") + `{display:none!important}html.${$9}{overflow:hidden}html.${$9} *:focus,html.${$9} *:focus-visible,html.${$9} *:focus-within{outline:none!important;box-shadow:none!important}`, document.head.appendChild(e);
 	}
-	Mot ||= (jze("pmtiles", new h2e().tile), !0);
+	Bot ||= (jze("pmtiles", new h2e().tile), !0);
 	let r = {
 		look: {
 			src: "ours",
@@ -113783,13 +113898,13 @@ function Not({ model: e, el: t }) {
 		return t && (r.className = t), n != null && (r.innerHTML = n), r;
 	}, a = i("div", "sm clean"), o = i("div", "map"), s = i("div", "map2"), c = i("div", "load", "<i></i>"), l = i("div", "loadtag glass");
 	a.append(s, o, c, l), t.appendChild(a);
-	let u = i("div", "card glass"), d = i("div", "hd"), f = i("div", "ht"), m = i("button", "cb", jot);
+	let u = i("div", "card glass"), d = i("div", "hd"), f = i("div", "ht"), m = i("button", "cb", zot);
 	m.title = "fold the card (H)", d.append(f, m);
 	let h = i("div", "body"), g = i("div", "row"), _ = i("div", "seg"), v = i("button", "", "Ours"), y = i("button", "", "WSF");
 	v.title = "the aggregate earthwork model (AlphaEarth and TESSERA): when the ground was dug or graded", y.title = "the WSF Tracker: when the ground first read as built-up", _.append(v, y), g.append(i("span", "lab", "Color by"), _, i("kbd", "", "C"));
 	let b = i("div", "chips"), x = i("div", "hint"), S = i("div", "zoom"), C = i("div", "notes");
 	C.append(x, S);
-	let w = i("button", "less", jot), T = (e) => {
+	let w = i("button", "less", zot), T = (e) => {
 		u.classList.toggle("short", e), w.title = e ? "show the notes" : "hide the notes, the years alone";
 	};
 	w.onclick = () => T(!u.classList.contains("short")), T(!1), h.append(b, C, w);
@@ -113841,7 +113956,7 @@ function Not({ model: e, el: t }) {
 	let ce = null, le = null, ue = null, de = null, fe = 0, pe = "foot";
 	function me() {
 		let t = e.get("foot");
-		t && t.byteLength && Ce && (ce = Kl(t instanceof DataView ? new Uint8Array(t.buffer, t.byteOffset, t.byteLength) : t instanceof Uint8Array ? t : new Uint8Array(t)).batches[0] ?? null, le = ce ? Ntt(ce) : null, ue = null, Ce.setFootMask(le ? le.mask : null), Se());
+		t && t.byteLength && Ce && (ce = Kl(t instanceof DataView ? new Uint8Array(t.buffer, t.byteOffset, t.byteLength) : t instanceof Uint8Array ? t : new Uint8Array(t)).batches[0] ?? null, Ve = He = -1, I(), le = ce ? Ntt(ce) : null, ue = null, Ce.setFootMask(le ? le.mask : null), Se());
 	}
 	e.on("change:foot", me), e.on("change:foot_status", () => ee(String(e.get("foot_status") || "")));
 	let he = (e) => Mtt(ce, e), ge = (e) => [
@@ -113853,7 +113968,7 @@ function Not({ model: e, el: t }) {
 		clearTimeout(be), be = window.setTimeout(Se, 300);
 	}
 	function Se() {
-		if (!Ce || !le) return Be();
+		if (!Ce || !le) return Ke();
 		let e = Ce.at, t = Ptt(le, e, r.look.year, (e) => _e[e - 2018] ?? [
 			0,
 			0,
@@ -113863,11 +113978,11 @@ function Not({ model: e, el: t }) {
 			let r = 4 * e, i = t[r + 3] > 0;
 			n[r] = i ? t[r] : Z9[0], n[r + 1] = i ? t[r + 1] : Z9[1], n[r + 2] = i ? t[r + 2] : Z9[2], n[r + 3] = 255;
 		}
-		ue = Ftt(t, le.rows), de = Ftt(n, le.rows), fe++, Be();
+		ue = Ftt(t, le.rows), de = Ftt(n, le.rows), fe++, Ke();
 	}
 	let Ce = null, we = null;
 	function Te(e) {
-		e && r.pair || (r.holding = e, Le() && we?.discover(r.s2Year), ze(), Be());
+		e && r.pair || (r.holding = e, Le() && we?.discover(r.s2Year), ze(), Ke());
 	}
 	let Ee = null, De = null, Oe = !1, ke = (e) => ({
 		center: e.getCenter(),
@@ -113891,26 +114006,26 @@ function Not({ model: e, el: t }) {
 			layers: []
 		}), e.addControl(De), e.on("load", () => {
 			for (let t of e.getStyle().layers) t.type !== "background" && e.setLayoutProperty(t.id, "visibility", "none");
-			Be();
+			Ke();
 		});
 		let t = (e, t) => e.on("move", () => {
 			!Oe && r.pair && (Oe = !0, t.jumpTo(ke(e)), Oe = !1);
 		});
-		t(F, e), t(e, F), new ResizeObserver(() => e.resize()).observe(s);
+		t(F, e), t(e, F), e.on("mousemove", (e) => Ue(We(e.point))), e.on("click", (e) => Ge(e.point)), s.addEventListener("mouseleave", () => Ue(-1)), new ResizeObserver(() => e.resize()).observe(s);
 	}
 	function je(e) {
-		e !== r.pair && (e && (r.holding = !1), r.pair = e, a.classList.toggle("pair", e), e && (Ae(), Ee.jumpTo(ke(F))), Le() && we?.discover(r.s2Year), ze(), Be());
+		e !== r.pair && (e && (r.holding = !1), r.pair = e, a.classList.toggle("pair", e), e && (Ae(), Ee.jumpTo(ke(F))), Le() && we?.discover(r.s2Year), ze(), Ke());
 	}
 	function Me(e) {
 		let t = Math.max(0, Math.min(G9.length - 1, G9.indexOf(r.s2Year) + e));
-		G9[t] !== r.s2Year && (r.s2Year = G9[t], we?.discover(r.s2Year), ze(), Be());
+		G9[t] !== r.s2Year && (r.s2Year = G9[t], we?.discover(r.s2Year), ze(), Ke());
 	}
 	let Ne = !1, Pe = fetch(Att).then((e) => e.arrayBuffer()).then((e) => ({
 		w: new Float32Array(e),
-		layers: Tot.net.layers
+		layers: Mot.net.layers
 	}));
 	function Fe() {
-		xe(), Be();
+		xe(), Ke();
 	}
 	let Ie = () => r.holding, Le = () => r.holding || r.pair, Re = [
 		"Jan",
@@ -113928,26 +114043,64 @@ function Not({ model: e, el: t }) {
 	];
 	function ze() {
 		if (N.classList.toggle("on", Le()), !Le()) return;
-		let e = r.holding ? "<span>Scroll or <kbd>[</kbd><kbd>]</kbd> year</span><span>let go of <kbd>Space</kbd></span>" : "<span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>P</kbd> one map</span>", t = F.getCenter(), n = we?.dateAt(r.s2Year, t.lng, t.lat) ?? "", i = n ? `${Re[n.slice(5, 7) - 1]} ${+n.slice(8, 10)}` : "finding scenes...";
-		N.innerHTML = `<div class="s2hd"><b>${r.s2Year}</b><span>Sentinel-2<br>${i}</span></div><div class="keys">${e}</div>`;
+		let e = r.holding ? "<span>Scroll or <kbd>[</kbd><kbd>]</kbd> year</span><span>let go of <kbd>Space</kbd></span>" : "<span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>P</kbd> one map</span>", t = F.getCenter(), n = we?.dateAt(r.s2Year, t.lng, t.lat) ?? "", i = we?.status(r.s2Year) ?? "finding", a = (n ? `${Re[n.slice(5, 7) - 1]} ${+n.slice(8, 10)}` : i === "cloudy" ? "no scene found" : "finding a clear scene...") + (n && i === "finding" ? " (finding a clear one...)" : n && i === "cloudy" ? " (least cloudy found)" : "");
+		N.innerHTML = `<div class="s2hd"><b>${r.s2Year}</b><span>Sentinel-2<br>${a}</span></div><div class="keys">${e}</div>`;
 	}
-	function Be() {
+	let Be = [], Ve = -1, He = -1;
+	function I() {
+		if (!De) return;
+		let e = He >= 0 ? He : Ve, t = r.pair && e >= 0 && ce ? he(e) : null, n = t ? [new VD({
+			id: "hi-under",
+			data: [t],
+			getPath: (e) => e,
+			getColor: [
+				0,
+				0,
+				0,
+				170
+			],
+			getWidth: 4.5,
+			widthUnits: "pixels",
+			jointRounded: !0
+		}), new VD({
+			id: "hi",
+			data: [t],
+			getPath: (e) => e,
+			getColor: Rot,
+			getWidth: 2.5,
+			widthUnits: "pixels",
+			jointRounded: !0
+		})] : [];
+		De.setProps({ layers: [...Be, ...n] });
+	}
+	function Ue(e) {
+		e !== Ve && (Ve = e, r.pair && He < 0 && I());
+	}
+	let We = (e) => {
+		let t = r.picking && ce ? re.pickObject({
+			x: e.x,
+			y: e.y,
+			radius: 2,
+			layerIds: ["foot-poly"]
+		}) : null;
+		return t && t.index >= 0 ? t.index : -1;
+	};
+	function Ge(e) {
+		He = He >= 0 ? -1 : We(e), r.pair && I();
+	}
+	function Ke() {
 		if (!Ne || !Ce) return;
 		let e = [];
-		if (we && !r.pair && e.push(...we.layers(r.s2Year, Ie(), "foot")), Ee && De) {
-			let e = r.pair && we ? we.layers(r.s2Year, !0, void 0, "l") : [];
-			De.setProps({ layers: e }), Ee.isStyleLoaded() || Ee.once("idle", () => De.setProps({ layers: e }));
-		}
-		r.area ? (e.push(Ce.layer({
+		we && !r.pair && e.push(...we.layers(r.s2Year, Ie(), "foot")), Ee && De && (Be = r.pair && we ? we.layers(r.s2Year, !0, void 0, "l") : [], I(), Ee.isStyleLoaded() || Ee.once("idle", I)), r.area ? (e.push(Ce.layer({
 			minZoom: 12,
 			area: r.area,
 			readId: r.readId,
 			visible: !Ie(),
 			beforeId: pe,
 			onTile: () => {
-				Ke(), xe();
+				$e(), xe();
 			}
-		})), ce && e.push(wot(ce, {
+		})), ce && e.push(jot(ce, {
 			visible: !Ie(),
 			beforeId: pe
 		}), new rRe({
@@ -113963,7 +114116,7 @@ function Not({ model: e, el: t }) {
 				0,
 				0
 			],
-			getLineColor: Ie() && de ? de : Aot,
+			getLineColor: Ie() && de ? de : Lot,
 			getLineWidth: Ie() ? 1.5 : 2,
 			lineWidthUnits: Ie() ? "pixels" : "meters",
 			lineWidthMinPixels: Ie() ? 1 : .5,
@@ -113975,9 +114128,9 @@ function Not({ model: e, el: t }) {
 				getLineColor: [fe, Ie()]
 			},
 			beforeId: "foot"
-		})), re.setProps({ layers: e }), F.isStyleLoaded() || F.once("idle", () => re.setProps({ layers: e })), Ke()) : re.setProps({ layers: e });
+		})), re.setProps({ layers: e }), F.isStyleLoaded() || F.once("idle", () => re.setProps({ layers: e })), $e()) : re.setProps({ layers: e });
 	}
-	function Ve() {
+	function qe() {
 		let e = r.look;
 		if (v.classList.toggle("on", e.src === "ours"), y.classList.toggle("on", e.src === "wsf"), b.replaceChildren(), h.querySelector(".years")?.remove(), e.year == null) f.innerHTML = "<b>Dug by year</b>", b.style.gridTemplateColumns = "repeat(4, 1fr)", E7.forEach((e, t) => {
 			let n = D7 + t, r = i("button", "chip", String(n));
@@ -113985,23 +114138,23 @@ function Not({ model: e, el: t }) {
 		}), x.textContent = e.src === "ours" ? "Buildings filled by the year their ground was dug or graded. Elsewhere the color is dug ground with no building on it: where to look." : "The ground colored by the year it first read as built-up. Click a year to open it by half-year.";
 		else {
 			f.innerHTML = `<span class="crumb">All years</span><span class="sep">&rsaquo;</span><b>${e.year}</b>`, f.querySelector(".crumb").onclick = (e) => {
-				e.stopPropagation(), Ue({
+				e.stopPropagation(), Xe({
 					...r.look,
 					year: null
 				});
 			};
 			let t = i("div", "years"), n = i("button", "allyears", "All");
-			n.title = "back to every year (Esc)", n.onclick = () => Ue({
+			n.title = "back to every year (Esc)", n.onclick = () => Xe({
 				...r.look,
 				year: null
 			}), t.appendChild(n), E7.forEach((n, a) => {
 				let o = D7 + a, s = i("button", "yr" + (o === e.year ? " on" : ""), String(o).slice(2));
-				s.style.background = n, s.style.color = a < 4 ? "#fff" : "#111", s.title = o === e.year ? "back to every year" : `open ${o}`, s.onclick = () => Ue({
+				s.style.background = n, s.style.color = a < 4 ? "#fff" : "#111", s.title = o === e.year ? "back to every year" : `open ${o}`, s.onclick = () => Xe({
 					...r.look,
 					year: o === e.year ? null : o
 				}), t.appendChild(s);
 			}), b.before(t);
-			let a = e.src === "ours" ? Oot.map(([e, t], n) => [
+			let a = e.src === "ours" ? Fot.map(([e, t], n) => [
 				e,
 				t,
 				O7[n]
@@ -114019,15 +114172,15 @@ function Not({ model: e, el: t }) {
 				o.style.background = r, o.style.color = a === 0 && e.src === "ours" ? "#fff" : "#111", o.style.cursor = "default", b.appendChild(o);
 			}), x.innerHTML = e.src === "ours" ? `${e.year}'s buildings and dug ground by the quarter it changed, from the decoder. <span style="color:${k7}">Gray</span>: no quarter made out. <kbd>[</kbd> <kbd>]</kbd> step the year, <kbd>Esc</kbd> all years.` : `${e.year}'s built-up ground by WSF's half-year. <kbd>[</kbd> <kbd>]</kbd> step the year, <kbd>Esc</kbd> all years.`;
 		}
-		He();
+		Je();
 	}
-	function He() {
+	function Je() {
 		let e = F.getZoom(), t = N.querySelector(".z");
 		t && (t.textContent = e.toFixed(1)), S.innerHTML = `Zoom ${e.toFixed(1)} · reads by itself from zoom ${Q9}` + (e < Q9 ? " <span class=\"warn\">zoom in to read</span>" : "") + "<div class=\"keys\"><span><kbd>Space</kbd> Sentinel-2</span><span><kbd>P</kbd> pair</span><span><kbd>L</kbd> labels</span><span><kbd>Q</kbd> picking</span><span><kbd>H</kbd> fold</span><span><kbd>K</kbd> PNG</span><span><kbd>Shift</kbd><kbd>&larr;</kbd><kbd>&rarr;</kbd> pivot</span></div>";
 	}
-	function I() {
+	function Ye() {
 		if (F.getZoom() < 12) {
-			He();
+			Je();
 			return;
 		}
 		let t = F.getBounds();
@@ -114041,38 +114194,38 @@ function Not({ model: e, el: t }) {
 			t: Date.now()
 		})), e.save_changes(), Fe();
 	}
-	function Ue(e) {
+	function Xe(e) {
 		e.src === "ours" && e.year != null && e.year < 2018 && (e = {
 			...e,
 			year: null
-		}), r.look = e, Ve(), Ce?.setLook(e), Ke();
+		}), r.look = e, qe(), Ce?.setLook(e), $e();
 	}
-	v.onclick = () => Ue({
+	v.onclick = () => Xe({
 		...r.look,
 		src: "ours"
-	}), y.onclick = () => Ue({
+	}), y.onclick = () => Xe({
 		...r.look,
 		src: "wsf"
 	});
-	let We = (e) => {
+	let Ze = (e) => {
 		r.folded = e, u.classList.toggle("folded", e), m.title = e ? "open the card (H)" : "fold the card (H)";
 	};
-	d.onclick = () => We(!r.folded);
-	let Ge = 0;
-	function Ke() {
-		clearTimeout(Ge), Ge = window.setTimeout(qe, 150);
+	d.onclick = () => Ze(!r.folded);
+	let Qe = 0;
+	function $e() {
+		clearTimeout(Qe), Qe = window.setTimeout(et, 150);
 	}
-	function qe() {
-		if (He(), !Ce || F.getZoom() < 12) {
+	function et() {
+		if (Je(), !Ce || F.getZoom() < 12) {
 			c.classList.remove("on"), l.classList.remove("on");
 			return;
 		}
 		let e = Ce.work(), t = e.reading > 0, n = !t && e.decoding > 0, i = t || n;
 		if (c.classList.toggle("on", i), l.classList.toggle("on", i), !i) return;
 		let [a, o] = t ? [e.readDone, e.readDone + e.reading] : [e.decodeDone, e.decodeDone + e.decoding];
-		c.firstChild.style.width = (100 * a / Math.max(1, o)).toFixed(1) + "%", l.innerHTML = t ? `Scoring chunks: ${a} of ${o}, every year 2017 to 2025` + (o > 30 ? " <span>zoom in to load faster</span>" : "") : `Decoding ${r.look.year}'s quarters: ${a} of ${o} chunks`, Ke();
+		c.firstChild.style.width = (100 * a / Math.max(1, o)).toFixed(1) + "%", l.innerHTML = t ? `Scoring chunks: ${a} of ${o}, every year 2017 to 2025` + (o > 30 ? " <span>zoom in to load faster</span>" : "") : `Decoding ${r.look.year}'s quarters: ${a} of ${o} chunks`, $e();
 	}
-	let Je = (e, t, n) => {
+	let tt = (e, t, n) => {
 		let r = !1;
 		for (let i = 0, a = n.length - 1; i < n.length; a = i++) {
 			let [o, s] = n[i], [c, l] = n[a];
@@ -114080,14 +114233,14 @@ function Not({ model: e, el: t }) {
 		}
 		return r;
 	};
-	function Ye(e, t) {
+	function nt(e, t) {
 		if (!Ce) return "";
 		let n = Infinity, i = Infinity, a = -Infinity, o = -Infinity;
 		for (let t of e) for (let [e, r] of t) n = Math.min(n, e), a = Math.max(a, e), i = Math.min(i, r), o = Math.max(o, r);
 		let [s, c] = M7(n, o), [l, u] = M7(a, i), d = [];
 		for (let t = c; t <= u; t++) for (let n = s; n <= l; n++) {
 			let [r, i] = ktt(n, t);
-			if (!e.some((e) => Je(r, i, e))) continue;
+			if (!e.some((e) => tt(r, i, e))) continue;
 			let a = Ce.at(n, t);
 			a && d.push(a);
 		}
@@ -114116,21 +114269,21 @@ function Not({ model: e, el: t }) {
 		}
 		return `<b>Overture</b><br>Dug or graded: ${h}`;
 	}
-	let Xe = {
+	let rt = {
 		x: 0,
 		y: 0
 	};
-	function Ze(e) {
+	function it(e) {
 		if (!e) {
 			j.style.display = "none";
 			return;
 		}
 		j.innerHTML = e, j.style.display = "block";
-		let t = a.getBoundingClientRect(), n = j.offsetWidth, r = j.offsetHeight, i = Xe.x + o.offsetLeft, s = Xe.y + o.offsetTop, c = i + 14, l = s + 14;
+		let t = a.getBoundingClientRect(), n = j.offsetWidth, r = j.offsetHeight, i = rt.x + o.offsetLeft, s = rt.y + o.offsetTop, c = i + 14, l = s + 14;
 		c + n > t.width - 8 && (c = i - n - 14), l + r > t.height - 8 && (l = s - r - 14), j.style.left = c + "px", j.style.top = l + "px";
 	}
 	F.on("mousemove", (e) => {
-		if (Xe = e.point, !r.picking || !Ce || !F.getLayer("foot")) return;
+		if (rt = e.point, !r.picking || !Ce || !F.getLayer("foot")) return Ue(-1);
 		if (ce) {
 			let t = re.pickObject({
 				x: e.point.x,
@@ -114140,13 +114293,14 @@ function Not({ model: e, el: t }) {
 			});
 			if (t && t.index >= 0) {
 				let e = `a:${t.index}`;
-				Ze(Ye([he(t.index)], e));
+				Ue(t.index), it(nt([he(t.index)], e));
 				return;
 			}
 		}
+		Ue(-1);
 		let [t, n] = M7(e.lngLat.lng, e.lngLat.lat), i = Ce.at(t, n), a = r.look.year == null ? -1 : r.look.year - x8;
 		if (!i || !i.ours || a > 0 && !(i.bits & 1 << a - 1)) {
-			Ze("");
+			it("");
 			return;
 		}
 		`${t}${n}`;
@@ -114155,27 +114309,27 @@ function Not({ model: e, el: t }) {
 			let e = a > 0 ? a : i.ours;
 			i.season(e), o = String(x8 + e);
 		}
-		Ze(`<b>No footprint</b><br>Dug or graded: ${o}`);
-	}), o.addEventListener("mouseleave", () => {
-		Ze("");
+		it(`<b>No footprint</b><br>Dug or graded: ${o}`);
+	}), F.on("click", (e) => Ge(e.point)), o.addEventListener("mouseleave", () => {
+		it(""), Ue(-1);
 	});
-	let Qe = [], $e = 0, et = 0, tt = () => {
-		A.replaceChildren(), Qe.forEach((e, t) => {
-			let n = i("div", "hit" + (t === $e ? " sel" : ""));
+	let at = [], ot = 0, st = 0, ct = () => {
+		A.replaceChildren(), at.forEach((e, t) => {
+			let n = i("div", "hit" + (t === ot ? " sel" : ""));
 			n.textContent = e.name;
 			let r = i("small");
 			r.textContent = e.sub, n.appendChild(r), n.onmousedown = (t) => {
-				t.preventDefault(), nt(e);
+				t.preventDefault(), lt(e);
 			}, A.appendChild(n);
-		}), A.style.display = Qe.length ? "block" : "none";
+		}), A.style.display = at.length ? "block" : "none";
 	};
 	k.oninput = () => {
-		clearTimeout(et), et = window.setTimeout(async () => {
+		clearTimeout(st), st = window.setTimeout(async () => {
 			let e = k.value.trim();
-			if (e.length < 2) Qe = [], tt();
+			if (e.length < 2) at = [], ct();
 			else try {
 				let t = F.getCenter();
-				Qe = ((await (await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(e)}&limit=6&lat=${t.lat}&lon=${t.lng}`)).json()).features || []).map((e) => ({
+				at = ((await (await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(e)}&limit=6&lat=${t.lat}&lon=${t.lng}`)).json()).features || []).map((e) => ({
 					name: e.properties.name || e.properties.city || "",
 					sub: [
 						e.properties.city,
@@ -114183,24 +114337,24 @@ function Not({ model: e, el: t }) {
 						e.properties.country
 					].filter((t) => t && t !== e.properties.name).join(", "),
 					center: e.geometry.coordinates
-				})), $e = 0, tt();
+				})), ot = 0, ct();
 			} catch {}
 		}, 250);
 	};
-	let nt = (e) => {
-		Qe = [], tt(), k.blur(), F.flyTo({
+	let lt = (e) => {
+		at = [], ct(), k.blur(), F.flyTo({
 			center: e.center,
 			zoom: 13.5
 		});
 	};
 	k.onkeydown = (e) => {
-		e.stopPropagation(), e.key === "ArrowDown" || e.key === "ArrowUp" ? (e.preventDefault(), $e = Math.max(0, Math.min(Qe.length - 1, $e + (e.key === "ArrowDown" ? 1 : -1))), tt()) : e.key === "Enter" && Qe[$e] ? nt(Qe[$e]) : e.key === "Escape" && (k.value = "", Qe = [], tt(), k.blur());
+		e.stopPropagation(), e.key === "ArrowDown" || e.key === "ArrowUp" ? (e.preventDefault(), ot = Math.max(0, Math.min(at.length - 1, ot + (e.key === "ArrowDown" ? 1 : -1))), ct()) : e.key === "Enter" && at[ot] ? lt(at[ot]) : e.key === "Escape" && (k.value = "", at = [], ct(), k.blur());
 	}, k.onblur = () => window.setTimeout(() => A.style.display = "none", 150);
-	let rt = !1, it = (e, t) => {
+	let ut = !1, dt = (e, t) => {
 		let n = t._deck?.device?.canvasContext, r = e.getCanvas();
 		n?.setDrawingBufferSize(r.width, r.height);
 	};
-	async function at(e) {
+	async function ft(e) {
 		return await new Promise((t) => {
 			e.once("idle", () => t()), e.triggerRepaint();
 		}), new Promise((t) => {
@@ -114210,7 +114364,7 @@ function Not({ model: e, el: t }) {
 			}), e.triggerRepaint();
 		});
 	}
-	async function ot(e) {
+	async function pt(e) {
 		for (let t = 2048;; t -= 128) {
 			let n = Math.min(1, t / Math.max(e.width, e.height)), r = Math.round(e.width * n), i = Math.round(e.height * n), a = e;
 			for (; a.width / 2 >= r;) {
@@ -114231,49 +114385,49 @@ function Not({ model: e, el: t }) {
 			};
 		}
 	}
-	let st = "'Instrument Sans', system-ui, sans-serif";
-	function ct(e, t, n, r) {
+	let mt = "'Instrument Sans', system-ui, sans-serif";
+	function ht(e, t, n, r) {
 		e.save(), e.shadowColor = "rgba(0,0,0,.75)", e.shadowBlur = 6 * r, e.textBaseline = "middle";
 		let i = n + 10 * r;
-		e.font = `600 ${15 * r}px ${st}`, e.fillStyle = "#e6e9ec", e.fillText("Dug by year", t, i);
+		e.font = `600 ${15 * r}px ${mt}`, e.fillStyle = "#e6e9ec", e.fillText("Dug by year", t, i);
 		let a = t + e.measureText("Dug by year").width + 14 * r;
-		e.font = `500 ${13 * r}px ${st}`, e.fillStyle = "#c9cfd5";
+		e.font = `500 ${13 * r}px ${mt}`, e.fillStyle = "#c9cfd5";
 		let o = String(D7), s = String(D7 + E7.length - 1);
 		e.fillText(o, a, i), a += e.measureText(o).width + 8 * r, E7.forEach((t) => {
 			e.fillStyle = t, e.fillRect(a, i - 7 * r, 20 * r, 14 * r), a += 22 * r;
 		}), e.fillStyle = "#c9cfd5", e.fillText(s, a + 6 * r, i), e.restore();
 	}
-	function lt(e, t, n, i) {
+	function gt(e, t, n, i) {
 		let a = F.getCenter(), o = we?.dateAt(r.s2Year, a.lng, a.lat) ?? "";
-		e.save(), e.shadowColor = "rgba(0,0,0,.75)", e.shadowBlur = 6 * i, e.textBaseline = "top", e.font = `600 ${34 * i}px ${st}`, e.fillStyle = "#e6e9ec", e.fillText(String(r.s2Year), t, n), e.font = `500 ${13 * i}px ${st}`, e.fillStyle = "#c9cfd5", e.fillText("Sentinel-2" + (o ? ` · ${Re[o.slice(5, 7) - 1]} ${+o.slice(8, 10)}` : ""), t, n + 40 * i), e.restore();
+		e.save(), e.shadowColor = "rgba(0,0,0,.75)", e.shadowBlur = 6 * i, e.textBaseline = "top", e.font = `600 ${34 * i}px ${mt}`, e.fillStyle = "#e6e9ec", e.fillText(String(r.s2Year), t, n), e.font = `500 ${13 * i}px ${mt}`, e.fillStyle = "#c9cfd5", e.fillText("Sentinel-2" + (o ? ` · ${Re[o.slice(5, 7) - 1]} ${+o.slice(8, 10)}` : ""), t, n + 40 * i), e.restore();
 	}
-	async function ut() {
-		if (rt) return;
-		rt = !0, ee("Exporting a 4x PNG...");
+	async function _t() {
+		if (ut) return;
+		ut = !0, ee("Exporting a 4x PNG...");
 		let t = r.pair && Ee && De ? [[Ee, De], [F, re]] : [[F, re]];
 		try {
-			for (let [e, n] of t) e.setPixelRatio(4), it(e, n);
-			let n = await Promise.all(t.map(([e]) => at(e))), i = n[n.length - 1].width / F.getContainer().clientWidth, a = n.length > 1 ? Math.round(2 * i) : 0, o = document.createElement("canvas");
+			for (let [e, n] of t) e.setPixelRatio(4), dt(e, n);
+			let n = await Promise.all(t.map(([e]) => ft(e))), i = n[n.length - 1].width / F.getContainer().clientWidth, a = n.length > 1 ? Math.round(2 * i) : 0, o = document.createElement("canvas");
 			o.width = n.reduce((e, t) => e + t.width, 0) + a, o.height = Math.max(...n.map((e) => e.height));
 			let s = o.getContext("2d"), c = 0;
 			n.forEach((e, t) => {
 				s.drawImage(e, c, 0), c += e.width, t < n.length - 1 && (s.fillStyle = "rgba(255,255,255,.35)", s.fillRect(c, 0, a, o.height), c += a);
 			});
 			let l = 14 * i;
-			ct(s, (n.length > 1 ? n[0].width + a : 0) + l, l, i), n.length > 1 && lt(s, l, l, i);
+			ht(s, (n.length > 1 ? n[0].width + a : 0) + l, l, i), n.length > 1 && gt(s, l, l, i);
 			let u = await new Promise((e) => o.toBlob(e, "image/png"));
 			if (!u) throw Error("the canvas gave no PNG");
-			let d = await ot(o), f = F.getCenter(), p = `z${F.getZoom().toFixed(1)}_${f.lat.toFixed(4)}_${f.lng.toFixed(4)}` + (r.pair ? `_pair-s2-${r.s2Year}` : Ie() ? `_s2-${r.s2Year}` : "") + `_${+i.toFixed(1)}x`;
+			let d = await pt(o), f = F.getCenter(), p = `z${F.getZoom().toFixed(1)}_${f.lat.toFixed(4)}_${f.lng.toFixed(4)}` + (r.pair ? `_pair-s2-${r.s2Year}` : Ie() ? `_s2-${r.s2Year}` : "") + `_${+i.toFixed(1)}x`;
 			e.set("snap_name", p), e.set("snap_small", new DataView(await d.png.arrayBuffer())), e.set("snap_small_size", d.size), e.set("snap", new DataView(await u.arrayBuffer())), e.save_changes();
 		} catch (e) {
 			ee(`Export failed: ${e.message}`);
 		} finally {
-			for (let [e, n] of t) e.setPixelRatio(null), it(e, n);
-			rt = !1;
+			for (let [e, n] of t) e.setPixelRatio(null), dt(e, n);
+			ut = !1;
 		}
 	}
 	e.on("change:snap_status", () => ee(String(e.get("snap_status") || "")));
-	let dt = 0, ft = (e) => {
+	let vt = 0, yt = (e) => {
 		if (e.metaKey || e.ctrlKey || e.altKey || e.target === k) return;
 		let t = e.key;
 		if (e.code === "Space") e.repeat || Te(!0);
@@ -114286,19 +114440,19 @@ function Not({ model: e, el: t }) {
 			r.labels = !r.labels;
 			for (let e of F.getStyle().layers) e.type === "symbol" && F.setLayoutProperty(e.id, "visibility", r.labels ? "visible" : "none");
 			ee(r.labels ? "Labels on" : "Labels off");
-		} else if (t === "q" || t === "Q") r.picking = !r.picking, r.picking || Ze(""), ee(r.picking ? "Picking on" : "Picking off");
-		else if (t === "h" || t === "H") We(!r.folded);
-		else if ((t === "n" || t === "N") && Le() && we) we.next(r.s2Year), ze(), Be();
+		} else if (t === "q" || t === "Q") r.picking = !r.picking, r.picking || it(""), ee(r.picking ? "Picking on" : "Picking off");
+		else if (t === "h" || t === "H") Ze(!r.folded);
+		else if ((t === "n" || t === "N") && Le() && we) we.next(r.s2Year), ze(), Ke();
 		else if (t === "x" || t === "X") r.fit = !r.fit, ie();
 		else if (t === "f" || t === "F") oe();
-		else if (t === "k" || t === "K") ut();
+		else if (t === "k" || t === "K") _t();
 		else if (t === "/") k.focus();
-		else if (t === "Escape") r.look.year == null ? r.fit && (r.fit = !1, ie()) : Ue({
+		else if (t === "Escape") r.look.year == null ? r.fit && (r.fit = !1, ie()) : Xe({
 			...r.look,
 			year: null
 		});
-		else if (e.shiftKey && (t === "ArrowLeft" || t === "ArrowRight")) dt = (F.isMoving() ? dt : F.getBearing()) + (t === "ArrowRight" ? 15 : -15), F.easeTo({
-			bearing: dt,
+		else if (e.shiftKey && (t === "ArrowLeft" || t === "ArrowRight")) vt = (F.isMoving() ? vt : F.getBearing()) + (t === "ArrowRight" ? 15 : -15), F.easeTo({
+			bearing: vt,
 			duration: 250
 		});
 		else if (t === "ArrowLeft") F.panBy([-120, 0]);
@@ -114310,31 +114464,31 @@ function Not({ model: e, el: t }) {
 		else return;
 		e.preventDefault();
 	};
-	window.addEventListener("keydown", ft);
-	let pt = (e) => {
+	window.addEventListener("keydown", yt);
+	let bt = (e) => {
 		e.code === "Space" && r.holding && Te(!1);
 	};
-	window.addEventListener("keyup", pt);
-	let mt = () => r.holding && Te(!1);
-	window.addEventListener("blur", mt);
-	let ht = 0, gt = 0;
+	window.addEventListener("keyup", bt);
+	let xt = () => r.holding && Te(!1);
+	window.addEventListener("blur", xt);
+	let St = 0, Ct = 0;
 	a.addEventListener("wheel", (e) => {
 		if (!r.holding) return;
-		e.preventDefault(), e.stopPropagation(), ht += e.deltaY;
+		e.preventDefault(), e.stopPropagation(), St += e.deltaY;
 		let t = performance.now();
-		Math.abs(ht) >= 40 && t - gt > 140 && (Me(ht > 0 ? 1 : -1), ht = 0, gt = t);
+		Math.abs(St) >= 40 && t - Ct > 140 && (Me(St > 0 ? 1 : -1), St = 0, Ct = t);
 	}, {
 		capture: !0,
 		passive: !1
-	}), F.on("moveend", Ke), F.on("moveend", () => {
-		Le() && (we?.discover(r.s2Year), ze(), Be());
+	}), F.on("moveend", $e), F.on("moveend", () => {
+		Le() && (we?.discover(r.s2Year), ze(), Ke());
 	});
-	let _t = 0;
+	let wt = 0;
 	return F.on("moveend", () => {
-		if (clearTimeout(_t), F.getZoom() < Q9 || !Ne) return;
+		if (clearTimeout(wt), F.getZoom() < Q9 || !Ne) return;
 		let e = F.getBounds(), t = r.area;
-		t && e.getWest() >= t[0] && e.getEast() <= t[2] && e.getSouth() >= t[1] && e.getNorth() <= t[3] || (_t = window.setTimeout(I, 500));
-	}), F.on("zoom", He), F.on("load", async () => {
+		t && e.getWest() >= t[0] && e.getEast() <= t[2] && e.getSouth() >= t[1] && e.getNorth() <= t[3] || (wt = window.setTimeout(Ye, 500));
+	}), F.on("zoom", Je), F.on("load", async () => {
 		for (let e of F.getStyle().layers) /building/.test(e.id) && F.setLayoutProperty(e.id, "visibility", "none");
 		let e = F.getStyle().layers, t = e.reduce((e, t, n) => t.type === "symbol" ? e : n, -1), i = e.slice(t + 1).find((e) => e.type === "symbol")?.id;
 		pe = e.find((e) => e.type === "line" && /aeroway|tunnel|road|bridge|rail|transport/.test(e.id))?.id ?? "foot", F.addSource("overture", {
@@ -114347,7 +114501,7 @@ function Not({ model: e, el: t }) {
 			"source-layer": "building",
 			layout: { visibility: "none" },
 			paint: {
-				"line-color": kot,
+				"line-color": Iot,
 				"line-width": [
 					"interpolate",
 					["linear"],
@@ -114361,16 +114515,16 @@ function Not({ model: e, el: t }) {
 				],
 				"line-opacity": .85
 			}
-		}, i), we = hot(F, () => {
-			ze(), Be();
-		}), Ce = await Ott(Eot, await Pe, () => Fe()), me(), Ce.setLook(r.look), Ne = !0, I();
-	}), Ve(), ie(), () => {
-		window.removeEventListener("keydown", ft), window.removeEventListener("keyup", pt), window.removeEventListener("blur", mt), document.removeEventListener("fullscreenchange", se), document.documentElement.classList.remove($9);
+		}, i), we = Sot(F, () => {
+			ze(), Ke();
+		}), Ce = await Ott(Not, await Pe, () => Fe()), me(), Ce.setLook(r.look), Ne = !0, Ye();
+	}), qe(), ie(), () => {
+		window.removeEventListener("keydown", yt), window.removeEventListener("keyup", bt), window.removeEventListener("blur", xt), document.removeEventListener("fullscreenchange", se), document.documentElement.classList.remove($9);
 		try {
 			Ee?.remove(), F.remove();
 		} catch {}
 	};
 }
-var Pot = { render: Not };
+var Hot = { render: Vot };
 //#endregion
-export { Pot as default };
+export { Hot as default };

@@ -2,6 +2,7 @@ import maplibreCss from "maplibre-gl/dist/maplibre-gl.css?inline";
 import "./mesh-sampler";
 
 import { MapLibreOverlay as MapboxOverlay } from "@deck.gl/maplibre";
+import { PathLayer } from "@deck.gl/layers";
 import { GeoArrowPolygonLayer } from "@geoarrow/deck.gl-layers";
 import * as arrow from "apache-arrow";
 import * as maplibregl from "maplibre-gl";
@@ -37,6 +38,8 @@ const FOOT = "#4fd6ff";
 // a footprint's outline: silver, a neutral with no hue to mix up with any imola year (seen normally or with
 // protanopia), light enough to hold an edge on the dark basemap and on the filled years alike
 const FOOT_LINE: [number, number, number, number] = [200, 205, 212, 210];
+// the footprint hovered, drawn over the pair's imagery
+const GOLD: [number, number, number, number] = [255, 196, 36, 255];
 // a footprint with no year, on the Sentinel-2 imagery: solid, so it reads on bright ground
 const S2_LINE = [79, 214, 255];
 // the fold chevron, as aef-earthwork-web's cards
@@ -223,6 +226,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     if (!b || !(b as ArrayBuffer).byteLength || !codes) return;
     const bytes = b instanceof DataView ? new Uint8Array(b.buffer, b.byteOffset, b.byteLength) : b instanceof Uint8Array ? b : new Uint8Array(b);
     footBatch = arrow.tableFromIPC(bytes).batches[0] ?? null;
+    // the rows are new: a footprint hovered or pinned by its old row is let go
+    hoverRow = pinRow = -1;
+    setL2();
     join = footBatch ? joinPixels(footBatch) : null;
     fill = null;
     codes.setFootMask(join ? join.mask : null);
@@ -297,6 +303,10 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       });
     follow(map, m2);
     follow(m2, map);
+    // the halves share one camera and size: the pointer on the left picks the footprint at the same point on the right
+    m2.on("mousemove", (e) => setHi(footAt(e.point)));
+    m2.on("click", (e) => pin(e.point));
+    mapEl2.addEventListener("mouseleave", () => setHi(-1));
     new ResizeObserver(() => m2.resize()).observe(mapEl2);
   }
   function setPair(on: boolean) {
@@ -341,11 +351,46 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       ? `<span>Scroll or <kbd>[</kbd><kbd>]</kbd> year</span><span>let go of <kbd>Space</kbd></span>`
       : `<span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>P</kbd> one map</span>`;
     // the day of the scene on top at the map's middle
-    const c = map.getCenter(), d = s2?.dateAt(st.s2Year, c.lng, c.lat) ?? "";
-    const day = d ? `${MONTHS[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}` : "finding scenes...";
+    // the day of the year's pass; while one is being chosen, the one still on screen
+    const c = map.getCenter(), d = s2?.dateAt(st.s2Year, c.lng, c.lat) ?? "", stt = s2?.status(st.s2Year) ?? "finding";
+    const day =
+      (d ? `${MONTHS[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}` : stt === "cloudy" ? "no scene found" : "finding a clear scene...") +
+      (d && stt === "finding" ? " (finding a clear one...)" : d && stt === "cloudy" ? " (least cloudy found)" : "");
     s2Card.innerHTML =
       `<div class="s2hd"><b>${st.s2Year}</b><span>Sentinel-2<br>${day}</span></div>` +
       `<div class="keys">${keys}</div>`;
+  }
+  // the pair's left map: its imagery, and over it in gold the footprint pinned by a click, else the one hovered, on
+  // either half
+  let l2: unknown[] = [];
+  let hoverRow = -1, pinRow = -1;
+  function setL2() {
+    if (!overlay2) return;
+    const row = pinRow >= 0 ? pinRow : hoverRow;
+    const ring = st.pair && row >= 0 && footBatch ? ringOf(row) : null;
+    const hi = ring
+      ? [
+          // a dark edge under the gold, so it holds on bright roofs and pale ground
+          new PathLayer({ id: "hi-under", data: [ring], getPath: (r: number[][]) => r as never, getColor: [0, 0, 0, 170], getWidth: 4.5, widthUnits: "pixels", jointRounded: true }),
+          new PathLayer({ id: "hi", data: [ring], getPath: (r: number[][]) => r as never, getColor: GOLD, getWidth: 2.5, widthUnits: "pixels", jointRounded: true }),
+        ]
+      : [];
+    overlay2.setProps({ layers: [...l2, ...hi] as never });
+  }
+  function setHi(row: number) {
+    if (row === hoverRow) return;
+    hoverRow = row;
+    if (st.pair && pinRow < 0) setL2();
+  }
+  /** The footprint's row at a point (the halves share one camera and size, so a point on either is the same place). */
+  const footAt = (pt: { x: number; y: number }) => {
+    const info = st.picking && footBatch ? overlay.pickObject({ x: pt.x, y: pt.y, radius: 2, layerIds: ["foot-poly"] }) : null;
+    return info && info.index >= 0 ? info.index : -1;
+  };
+  /** A click pins the footprint under it, so the years can be stepped with it held; with one pinned, any click lets go. */
+  function pin(pt: { x: number; y: number }) {
+    pinRow = pinRow >= 0 ? -1 : footAt(pt);
+    if (st.pair) setL2();
   }
   function render() {
     if (!ready || !codes) return;
@@ -354,9 +399,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     // paired, the imagery is the left map's alone
     if (s2 && !st.pair) layers.push(...s2.layers(st.s2Year, s2Shown(), "foot"));
     if (map2 && overlay2) {
-      const l2 = st.pair && s2 ? s2.layers(st.s2Year, true, undefined, "l") : [];
-      overlay2.setProps({ layers: l2 as never });
-      if (!map2.isStyleLoaded()) map2.once("idle", () => overlay2!.setProps({ layers: l2 as never }));
+      l2 = st.pair && s2 ? s2.layers(st.s2Year, true, undefined, "l") : [];
+      setL2();
+      if (!map2.isStyleLoaded()) map2.once("idle", setL2);
     }
     if (!st.area) {
       overlay.setProps({ layers: layers as never });
@@ -635,17 +680,18 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   }
   map.on("mousemove", (e) => {
     lastPoint = e.point;
-    if (!st.picking) return;
-    if (!codes || !map.getLayer("foot")) return;
+    if (!st.picking || !codes || !map.getLayer("foot")) return setHi(-1);
     if (footBatch) {
       const info = overlay.pickObject({ x: e.point.x, y: e.point.y, radius: 2, layerIds: ["foot-poly"] });
       if (info && info.index >= 0) {
         const key = `a:${info.index}`;
+        setHi(info.index);
         hoverKey = key;
         showTip(footHtml([ringOf(info.index)], key));
         return;
       }
     }
+    setHi(-1);
     // the building tiles are only the layers' anchor now: their features are not asked
     const f = null as { geometry: { type: string; coordinates: unknown }; id?: unknown } | null;
     if (f) {
@@ -687,9 +733,11 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     }
     showTip(`<b>No footprint</b><br>Dug or graded: ${ours}`);
   });
+  map.on("click", (e) => pin(e.point));
   mapEl.addEventListener("mouseleave", () => {
     hoverKey = "";
     showTip("");
+    setHi(-1);
   });
 
   // ---- search

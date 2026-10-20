@@ -15,10 +15,16 @@ GeoParquet; Sentinel-2 scenes from Element 84's Earth Search, beside the map or 
   aside and the buildings carry the color.
 - **Sentinel-2.** `P` pairs the map with Sentinel-2: a second map on the left, moving with the map on the right.
   Hold space for the imagery over the map itself, the raster and the footprints stepped aside (scroll steps the
-  year). `[` `]` step the year, 2017 to 2025; `B` jumps to 2025, then between 2017 and 2025. A year shows, for each
-  Sentinel-2 tile, its clearest scenes on up to four days, the clearest on top and the others under it to fill any
-  gap (as deckgl-raster-mapterhorn-s2 picks them), each drawn from the scene's own true-color image (TCI). `N` puts
-  each tile's next scene on top; the card shows the day.
+  year). `[` `]` step the year, 2017 to 2025; `B` jumps to 2025, then between 2017 and 2025. A year shows one
+  acquisition (one pass, one day), never a mix of days, drawn from its true-color image (TCI) as it is, with no
+  masking or blending. The pass is chosen for the view: each candidate's scene classification (SCL) is read over the
+  view, and the first pass with data over all of it and at most 2% cloud, cloud shadow, cirrus or snow there is
+  taken (none: the least cloudy, and the card says so). Winter is skipped by hemisphere (December to February north of
+  the tropics, June to August south of them) along with scenes under a sun below 15 degrees. The pass stays while the
+  view stays near where it was chosen, and the last few years shown stay loaded, so blinking between years swaps two
+  finished images. `N` steps to the year's next clear pass; the card shows the day. Paired, the footprint under the
+  pointer on either half is outlined in gold on the imagery; a click pins it there while the years are stepped, and
+  with one pinned any click lets it go.
 - **Export.** `K` writes a 4x PNG of the map to `exports/` (paired, both halves side by side), with the legend drawn
   at its top left (paired, the right half's) and the imagery's year and day at the left half's, and a copy sized for
   a LinkedIn post in `exports/for_linkedin/` (long side 2048, under 5 MB).
@@ -38,7 +44,7 @@ settles (below it nothing is read). Reading scores the view in the
 browser; the footprints are read by the notebook's kernel and sent as GeoArrow.
 
 Keys: `P` pair with Sentinel-2, hold space Sentinel-2 over the map, `[` `]` its year, `B` 2017 or 2025, `N` another
-scene, `L` labels, `Q` picking and the tooltip, `/` search (the magnifier in the year card), `K` export, `Shift` `←`
+clear pass, `L` labels, `Q` picking and the tooltip, `/` search (the magnifier in the year card), `K` export, `Shift` `←`
 `→` pivot, `X` notebook view, `F` full screen, `Esc` back.
 
 ## How it is built
