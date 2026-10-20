@@ -7,12 +7,12 @@ GeoParquet; Sentinel-2 scenes from Element 84's Earth Search, beside the map or 
 
 ## What the map shows
 
-- **Buildings by year.** Each Overture footprint is joined to the 10 m pixels under it. Where the model found the
-  ground dug in a pair of years (2017 to 2018 through 2024 to 2025), the footprint is filled in the color of the year
-  most of its pixels were last dug in, 2018 (blue) to 2025 (yellow). Footprints with no year are outlines.
-- **Where to look.** The raster of dug ground shows only where there is no Overture building on it or within about
-  30 m: graded land, pads and sites nothing has been built or mapped on yet. Inside built neighborhoods it steps
-  aside and the buildings carry the color.
+- **Digging.** The raster is where the model found the ground dug in a pair of years (2017 to 2018 through 2024 to
+  2025), colored by the year it was last dug, 2018 (blue) to 2025 (yellow). It shows wherever it is found, buildings
+  or not.
+- **Buildings.** Overture footprints lie under the raster as silver outlines. Each is joined to the 10 m pixels
+  under it, and its year (the one most of its dug pixels were last dug in) is in its tooltip: a building's year is
+  the pixels under it read together, the raster is the digging itself.
 - **Sentinel-2.** `P` pairs the map with Sentinel-2: a second map on the left, moving with the map on the right.
   Hold space for the imagery over the map itself, the raster and the footprints stepped aside (scroll steps the
   year). `[` `]` step the year, 2017 to 2025; `B` jumps to 2025, then between 2017 and 2025. A year shows one

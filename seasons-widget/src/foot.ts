@@ -1,15 +1,13 @@
 import * as arrow from "apache-arrow";
 
-import { CHUNK, RES, X0, Y0, YEAR_ORIGIN } from "./aef";
+import { RES, X0, Y0, YEAR_ORIGIN } from "./aef";
 
 /**
  * The Overture footprints of the area read (the kernel's GeoArrow: a geoarrow.polygon a row, its exterior ring only)
  * joined to the 10 m pixels under them. Each row's pixels are the AlphaEarth pixels whose centers fall inside it (the
- * one under its middle when none does). From them: the mask the raster leaves out (every footprint's pixels, and
- * the ground within MASK_PX pixels of them; 0 now that halo.ts fades the ground toward each building on an even
- * edge instead of the pixels' staircase), and each footprint's color.
+ * one under its middle when none does). From them, each footprint's year: the one most of its dug pixels were last
+ * dug in.
  */
-export const MASK_PX = 0;
 
 export type FootJoin = {
   rows: number;
@@ -17,8 +15,6 @@ export type FootJoin = {
   start: Int32Array;
   px: Int32Array;
   py: Int32Array;
-  /** the raster's mask, by chunk ("r-c"): 1 where it is left out */
-  mask: Map<string, Uint8Array>;
 };
 
 /** The polygon column's raw arrays: polygon -> ring offsets, ring -> coordinate offsets, the coordinates (x, y). */
@@ -86,18 +82,7 @@ export function joinPixels(batch: arrow.RecordBatch): FootJoin {
   }
   start[rows] = pxs.length;
   const px = Int32Array.from(pxs), py = Int32Array.from(pys);
-
-  // the mask: every footprint pixel and the square of MASK_PX around it
-  const mask = new Map<string, Uint8Array>();
-  const set = (x: number, y: number) => {
-    const r = Math.floor(y / CHUNK), c = Math.floor(x / CHUNK), k = `${r}-${c}`;
-    let m = mask.get(k);
-    if (!m) mask.set(k, (m = new Uint8Array(CHUNK * CHUNK)));
-    m[(y - r * CHUNK) * CHUNK + (x - c * CHUNK)] = 1;
-  };
-  for (let i = 0; i < px.length; i++)
-    for (let dy = -MASK_PX; dy <= MASK_PX; dy++) for (let dx = -MASK_PX; dx <= MASK_PX; dx++) set(px[i] + dx, py[i] + dy);
-  return { rows, start, px, py, mask };
+  return { rows, start, px, py };
 }
 
 type At = (px: number, py: number) => { ours: number; bits: number; season: (idx: number) => number | undefined } | null;

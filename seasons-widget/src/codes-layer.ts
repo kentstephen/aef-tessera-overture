@@ -130,9 +130,6 @@ export async function createCodesLayer(model: WorldModel, decoder: { w: Float32A
   }
 
   let look: Look = { src: "ours", year: null };
-  // the raster's mask (foot.ts): where an Overture footprint stands, or near one, the raster is left out
-  let footMask: Map<string, Uint8Array> | null = null;
-  let maskN = 0;
   // the area read, in mosaic pixels: the raster stops at its edge (its footprints were read only inside it)
   let areaPx = [-Infinity, -Infinity, Infinity, Infinity];
   // what is being worked on now, for the loading bar: chunks asked of the worker and not back yet (and how many this
@@ -142,7 +139,7 @@ export async function createCodesLayer(model: WorldModel, decoder: { w: Float32A
   let version = 0;
   const live = new Map<string, Tile>();
   const keyOf = (r: number, c: number) => `${r}-${c}`;
-  const lookKey = (l: Look, t: Tile) => `${l.src}:${l.year ?? "all"}:${l.year != null && l.src === "ours" && t.seasons.has(l.year - YEAR_ORIGIN) ? "s" : "-"}:m${maskN}`;
+  const lookKey = (l: Look, t: Tile) => `${l.src}:${l.year ?? "all"}:${l.year != null && l.src === "ours" && t.seasons.has(l.year - YEAR_ORIGIN) ? "s" : "-"}`;
 
   function paint(t: Tile) {
     if (!device || t.gone) return;
@@ -153,13 +150,10 @@ export async function createCodesLayer(model: WorldModel, decoder: { w: Float32A
     // a year opened: every pixel over the cutoff that year, whatever came after (not only those it was last for)
     const yBit = yIdx >= 0 ? 1 << ALL_IDX.indexOf(yIdx) : 0;
     const sea = look.src === "ours" && yIdx >= 0 ? t.seasons.get(yIdx) : undefined;
-    const fm = footMask?.get(t.key);
     const [ax0, ay0, ax1, ay1] = areaPx;
     for (let i = 0; i < n; i++) {
       const gx = t.px0 + (i % t.width), gy = t.py0 + Math.floor(i / t.width);
       if (gx < ax0 || gx > ax1 || gy < ay0 || gy > ay1) continue;
-      // a footprint here or near: the building carries the color, the raster is left out
-      if (fm && fm[Math.floor(i / t.width) * CHUNK + (i % t.width)]) continue;
       let c: number[] | null = null;
       if (look.src === "ours") {
         const idx = t.ours[i];
@@ -354,15 +348,6 @@ export async function createCodesLayer(model: WorldModel, decoder: { w: Float32A
     ).then(() => undefined);
   }
 
-  /** The raster's mask from the footprints of the area read (foot.ts), every tile painted again with it. */
-  function setFootMask(m: Map<string, Uint8Array> | null) {
-    footMask = m;
-    maskN++;
-    for (const t of live.values()) paint(t);
-    version++;
-    redraw();
-  }
-
   /** For the year opened, the chunks under a box with their quarters in hand, and how many it has. */
   function quartersIn(bbox: [number, number, number, number], year: number) {
     const [W, S, E, N] = bbox, idx = year - YEAR_ORIGIN;
@@ -376,7 +361,7 @@ export async function createCodesLayer(model: WorldModel, decoder: { w: Float32A
     return { done, wanted };
   }
 
-  return { layer, setLook, setFootMask, loadedIn, quartersIn, at, seasonsReady, work: () => ({ ...work }), version: () => version };
+  return { layer, setLook, loadedIn, quartersIn, at, seasonsReady, work: () => ({ ...work }), version: () => version };
 }
 
 /** Lon/lat to the mosaic pixel. */

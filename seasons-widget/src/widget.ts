@@ -15,7 +15,6 @@ import decoderBin from "./decoder_month.bin?url";
 import { colorData, type FootJoin, joinColors, joinPixels, ringOf as footRing } from "./foot";
 // Earth Genome's yearly mosaics (eg-s2.ts) swapped for single scenes from Earth Search
 import { createS2, S2_YEARS } from "./es-s2";
-import { haloLayer } from "./halo";
 import decoderMeta from "./decoder_month.json";
 import type { WorldModel } from "./earthwork-cpu";
 import world from "./earthwork_world.json";
@@ -215,11 +214,10 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   // ---- the footprints of the area read, as GeoArrow (a polygon a row; `fid` the footprint), joined to the pixels
   let footBatch: arrow.RecordBatch | null = null;
   let join: FootJoin | null = null;
-  let fill: ReturnType<typeof colorData> | null = null;
   // on the imagery: each footprint's outline, its year's color where it has one, solid light blue where not
   let line: ReturnType<typeof colorData> | null = null;
   let fillN = 0;
-  // the basemap layer our raster and the footprints' fade go under: its first road, so the streets stay over both
+  // the basemap layer our raster and the footprints go under: its first road, so the streets stay over both
   let groundId = "foot";
   function loadFoot() {
     const b = model.get("foot") as DataView | ArrayBuffer | Uint8Array | null;
@@ -230,15 +228,14 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     hoverRow = pinRow = -1;
     setL2();
     join = footBatch ? joinPixels(footBatch) : null;
-    fill = null;
-    codes.setFootMask(join ? join.mask : null);
     recolor();
   }
   model.on("change:foot", loadFoot);
   model.on("change:foot_status", () => note(String(model.get("foot_status") || "")));
   const ringOf = (row: number): number[][] => footRing(footBatch!, row);
 
-  // each footprint's fill from the pixels under it, again as chunks and quarters come in (a few times a second at most)
+  // each footprint's year from the pixels under it (its outline's color on the imagery), again as chunks and quarters
+  // come in (a few times a second at most)
   const hexRgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   const YEAR_RGB = YEAR_COL.map(hexRgb), QUARTER_RGB = SEASON_COL.map(hexRgb), UNCLEAR_RGB = hexRgb(UNCLEAR);
   let joinT = 0;
@@ -258,7 +255,6 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       ln[o + 2] = has ? rgba[o + 2] : S2_LINE[2];
       ln[o + 3] = 255;
     }
-    fill = colorData(rgba, join.rows);
     line = colorData(ln, join.rows);
     fillN++;
     render();
@@ -407,6 +403,36 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       overlay.setProps({ layers: layers as never });
       return;
     }
+    // the digging raster over the buildings: it shows wherever the model found ground dug, buildings or not. A
+    // building's year is the pixels under it read together (the tooltip); the raster is the digging itself
+    if (footBatch)
+      layers.push(
+        // the buildings: a silver outline each, under the raster and the roads. Filled clear, so the whole footprint
+        // picks, not only its outline
+        new GeoArrowPolygonLayer({
+          id: "foot-poly",
+          data: footBatch,
+          getPolygon: footBatch.getChild("geometry")!.data[0] as never,
+          // the imagery alone while it shows: no footprints over it
+          visible: !s2Shown(),
+          filled: true,
+          stroked: true,
+          getFillColor: [0, 0, 0, 0],
+          // on the imagery the outlines carry the years: solid, a pixel and a half; on the map, silver
+          getLineColor: (s2Shown() && line ? line : FOOT_LINE) as never,
+          // in meters, held between half a pixel and two: zoomed out the outlines thin instead of adding up to a glare
+          getLineWidth: s2Shown() ? 1.5 : 2,
+          lineWidthUnits: s2Shown() ? "pixels" : "meters",
+          lineWidthMinPixels: s2Shown() ? 1 : 0.5,
+          lineWidthMaxPixels: 2,
+          // triangulated here, not in a worker fetched from a CDN
+          earcutWorkerUrl: null,
+          pickable: true,
+          updateTriggers: { getLineColor: [fillN, s2Shown()] },
+          // read by the MapLibre overlay: under the roads, drawn before the raster so the raster lies over it
+          beforeId: groundId,
+        } as never),
+      );
     layers.push(
       codes.layer({
         minZoom: MIN_ZOOM,
@@ -420,36 +446,6 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
         },
       }),
     );
-    if (footBatch)
-      layers.push(
-        // the ground dimmed toward each building on an even edge, over the raster and under the roads
-        haloLayer(footBatch, { visible: !s2Shown(), beforeId: groundId }),
-        // the buildings: filled in their year's color (a year opened: their quarter's) where the join gives one, a
-        // silver outline each; over the raster, under the labels
-        new GeoArrowPolygonLayer({
-          id: "foot-poly",
-          data: footBatch,
-          getPolygon: footBatch.getChild("geometry")!.data[0] as never,
-          // the imagery alone while it shows: no footprints over it
-          visible: !s2Shown(),
-          filled: true,
-          stroked: true,
-          getFillColor: (fill ?? [0, 0, 0, 0]) as never,
-          // on the imagery the outlines carry the years (no fills there): solid, a pixel and a half; on the map, silver
-          getLineColor: (s2Shown() && line ? line : FOOT_LINE) as never,
-          // in meters, held between half a pixel and two: zoomed out the outlines thin instead of adding up to a glare
-          getLineWidth: s2Shown() ? 1.5 : 2,
-          lineWidthUnits: s2Shown() ? "pixels" : "meters",
-          lineWidthMinPixels: s2Shown() ? 1 : 0.5,
-          lineWidthMaxPixels: 2,
-          // triangulated here, not in a worker fetched from a CDN
-          earcutWorkerUrl: null,
-          pickable: true,
-          updateTriggers: { getFillColor: fillN, getLineColor: [fillN, s2Shown()] },
-          // read by the MapLibre overlay
-          beforeId: "foot",
-        } as never),
-      );
     overlay.setProps({ layers: layers as never });
     // deck.gl slots the layer under the footprints only while MapLibre calls its style loaded, which it does not while
     // any source's tiles are still coming: set again once the map is idle, so it lands under them, not over everything
