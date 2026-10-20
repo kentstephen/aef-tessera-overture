@@ -1,9 +1,8 @@
-import { MosaicLayer, MultiCOGLayer } from "@developmentseed/deck.gl-geotiff";
-import { DecoderPool, PerOriginSemaphore } from "@developmentseed/geotiff";
+import { COGLayer, MosaicLayer } from "@developmentseed/deck.gl-geotiff";
+import { DecoderPool, GeoTIFF, PerOriginSemaphore } from "@developmentseed/geotiff";
 import GeoTiffWorker from "@developmentseed/geotiff/pool/worker?worker&inline";
-import { epsgResolver } from "@developmentseed/proj";
 import type * as maplibregl from "maplibre-gl";
-import { CLEAR_PIPELINE } from "./s2-shaders";
+import { getTileData, renderTile, type S2TileData } from "./s2-shaders";
 
 /**
  * Sentinel-2 behind the map from single L2A scenes found through Element 84's Earth Search (AWS Open Data's
@@ -11,8 +10,8 @@ import { CLEAR_PIPELINE } from "./s2-shaders";
  * (its earthSearchStac.ts and its cloud-masked true color in App.tsx):
  * - the year's candidates under 30% cloud, clearest first;
  * - coverage first: every MGRS tile keeps up to PER_TILE scenes on different days, its clearest drawn last, on top;
- * - each scene's raw B04, B03, B02 and its Scene Classification Layer read together (MultiCOGLayer), stretched,
- *   and cloud, shadow and nodata dropped (s2-shaders.ts), so the clearer scene beneath fills the hole.
+ * - each scene's precomposed true color (TCI) drawn as that app draws it (s2-shaders.ts: gain 1.0, the TCI as it
+ *   is), its black nodata dropped so the scene beneath fills an orbit's edge.
  * `next` steps a year's look: each tile's next scene goes on top. Every year the model reads, 2017 to 2025.
  */
 const STAC = "https://earth-search.aws.element84.com/v1/search";
@@ -28,7 +27,7 @@ type Feature = {
   assets: Record<string, { href?: string }>;
   properties: { datetime?: string; "eo:cloud_cover"?: number; "grid:code"?: string };
 };
-type Scene = { id: string; bbox: [number, number, number, number]; date: string; cloud: number; tile: string; bands: { r: string; g: string; b: string; scl: string } };
+type Scene = { id: string; bbox: [number, number, number, number]; date: string; cloud: number; tile: string; url: string };
 /** A tile's scenes, clearest first. */
 type Tile = { tile: string; scenes: Scene[]; bbox: [number, number, number, number] };
 
@@ -69,9 +68,9 @@ async function tilesUnder(year: number, z: number, x: number, y: number): Promis
   const features = await search(year, [lon(x), lat(y + 1), lon(x + 1), lat(y)]);
   const byTile = new Map<string, Scene[]>();
   for (const f of features) {
-    const a = f.assets, r = a.red?.href, g = a.green?.href, b = a.blue?.href, scl = a.scl?.href;
-    if (!r || !g || !b || !scl || !f.bbox) continue;
-    const s: Scene = { id: f.id, bbox: f.bbox, date: (f.properties.datetime ?? "").slice(0, 10), cloud: f.properties["eo:cloud_cover"] ?? 100, tile: tileOf(f), bands: { r, g, b, scl } };
+    const url = f.assets.visual?.href ?? f.assets.TCI?.href;
+    if (!url || !f.bbox) continue;
+    const s: Scene = { id: f.id, bbox: f.bbox, date: (f.properties.datetime ?? "").slice(0, 10), cloud: f.properties["eo:cloud_cover"] ?? 100, tile: tileOf(f), url };
     const kept = byTile.get(s.tile) ?? [];
     // the answer is clearest first: the first PER_TILE days of each tile, never the same pass twice
     if (kept.length < PER_TILE && !kept.some((k) => k.date === s.date)) kept.push(s);
@@ -87,8 +86,18 @@ async function tilesUnder(year: number, z: number, x: number, y: number): Promis
 export function createS2(map: maplibregl.Map, onChange: () => void) {
   let pool: DecoderPool | null = null;
   const poolGet = () => pool || (pool = new DecoderPool({ size: Math.min(6, navigator.hardwareConcurrency || 4), createWorker: () => new GeoTiffWorker() }));
-  // the sentinel-cogs bucket serves many requests at once; four bands a scene
-  const limiter = new PerOriginSemaphore({ maxRequests: 24 });
+  const limiter = new PerOriginSemaphore({ maxRequests: 16 });
+  // each scene's GeoTIFF opened once, kept for the session (a failed open is let go, to be asked again)
+  const tiffs = new Map<string, Promise<GeoTIFF>>();
+  const tiff = (url: string) => {
+    let p = tiffs.get(url);
+    if (!p) {
+      p = GeoTIFF.fromUrl(url, { concurrencyLimiter: limiter } as never);
+      tiffs.set(url, p);
+      p.catch(() => tiffs.get(url) === p && tiffs.delete(url));
+    }
+    return p;
+  };
   // year -> the MGRS tiles found and their scenes, in batches (a batch a search's answer: its own MosaicLayer, so it
   // shows at once). A tile is taken once a year: a later search that meets it again leaves it be
   const src = new Map<number, { tiles: Map<string, Tile>; batches: { key: string; tiles: Tile[]; bbox: number[] }[] }>();
@@ -170,20 +179,20 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
           minZoom: 7,
           visible,
           beforeId,
-          // each scene's bands are opened by its own MultiCOGLayer
-          getSource: async () => null,
-          renderSource: (s: Scene) =>
-            new MultiCOGLayer({
-              id: `s2${tag}-${year}-${s.id}`,
-              sources: { r: { url: s.bands.r }, g: { url: s.bands.g }, b: { url: s.bands.b }, scl: { url: s.bands.scl } },
-              composite: { r: "r", g: "g", b: "b", a: "scl" },
-              renderPipeline: CLEAR_PIPELINE,
-              epsgResolver,
-              pool: pool!,
-              concurrencyLimiter: limiter,
-              refinementStrategy: "best-available",
-              maxRequests: 16,
-            } as never),
+          getSource: (s: Scene) => tiff(s.url).catch(() => null),
+          renderSource: (s: Scene, { data, signal }: { data: GeoTIFF | null; signal?: AbortSignal }) =>
+            !data
+              ? null
+              : new COGLayer({
+                  id: `s2${tag}-${year}-${s.id}`,
+                  geotiff: data,
+                  getTileData: (img: never, o: never) => getTileData(img, o),
+                  renderTile: (d: S2TileData) => renderTile(d, 1.0),
+                  pool: pool!,
+                  signal,
+                  refinementStrategy: "best-available",
+                  maxRequests: 16,
+                } as never),
         } as never);
       });
   }

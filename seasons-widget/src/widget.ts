@@ -280,9 +280,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     m2.keyboard.disable();
     overlay2 = new MapboxOverlay({ interleaved: true, layers: [] });
     m2.addControl(overlay2 as unknown as maplibregl.IControl);
-    // no place names over the imagery
+    // the imagery alone: every basemap layer but its background hidden, so no road or name lands over it
     m2.on("load", () => {
-      for (const l of m2.getStyle().layers) if (l.type === "symbol") m2.setLayoutProperty(l.id, "visibility", "none");
+      for (const l of m2.getStyle().layers) if (l.type !== "background") m2.setLayoutProperty(l.id, "visibility", "none");
       render();
     });
     const follow = (a: maplibregl.Map, b: maplibregl.Map) =>
