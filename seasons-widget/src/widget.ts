@@ -340,23 +340,41 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
 
   // ---- the panels
   /**
-   * The dug panel's pass: of the clear passes (up to three a year) in the years any of the patch was dug, the one whose
-   * ground inside the patch is most unlike both the before panel's and 2025's (each point's color distance to the
-   * nearer of the two, averaged), so the three show the most change. A pass with cloud, shadow or snow over more than
-   * PICK_BAD of the patch is passed over. The panel shows the best so far as each year is checked.
+   * The dug panel's pass: of the clear passes (up to three a year) in the years any of the patch was dug, short of the
+   * after panel's year (unless that is its only year), the one whose ground inside the patch is most unlike both the
+   * before panel's and 2025's (each point's color distance to the nearer of the two, averaged), less the same measured
+   * on the ground around the patch: a change everywhere (the season, haze, another sun) cancels, a change of the
+   * patch's own counts. A pass with cloud, shadow or snow over more than PICK_BAD of the patch is passed over. The panel
+   * shows the best so far as each year is checked.
    */
   const PICK_BAD = 0.05;
   let pickSeq = 0;
   async function pickDug(p: Patch, before: number, after: number) {
     const tok = ++pickSeq, pn = panels[1];
     if (!s2) return;
-    // the patch's pixels (holes filled), at most about 1500 of them, as points
-    const r = filledRuns(p.runs), all: number[] = [];
-    for (let i = 0; i < r.length; i += 3) for (let x = r[i + 1]; x < r[i + 2]; x++) all.push(X0 + (x + 0.5) * RES, Y0 - (r[i] + 0.5) * RES);
-    const k = Math.max(1, Math.ceil(all.length / 2 / 1500)), pts = new Float64Array(2 * Math.ceil(all.length / 2 / k));
-    for (let i = 0, j = 0; i < all.length / 2; i += k, j++) (pts[2 * j] = all[2 * i]), (pts[2 * j + 1] = all[2 * i + 1]);
-    const lat = (p.box[1] + p.box[3]) / 2;
-    const span = Math.max((p.box[2] - p.box[0]) * 111320 * Math.cos((lat * Math.PI) / 180), (p.box[3] - p.box[1]) * 110540);
+    // points on a grid over the patch's box and a third of it around: inside the patch (holes filled), or around it
+    const r = filledRuns(p.runs), rowsIn = new Map<number, number[]>();
+    for (let i = 0; i < r.length; i += 3) {
+      const a = rowsIn.get(r[i]);
+      if (a) a.push(r[i + 1], r[i + 2]);
+      else rowsIn.set(r[i], [r[i + 1], r[i + 2]]);
+    }
+    const isIn = (gx: number, gy: number) => {
+      const a = rowsIn.get(gy);
+      if (a) for (let i = 0; i < a.length; i += 2) if (gx >= a[i] && gx < a[i + 1]) return true;
+      return false;
+    };
+    const [bW, bS, bE, bN] = p.box, mx = (bE - bW) / 3, my = (bN - bS) / 3;
+    const G = 64, inP: number[] = [], outP: number[] = [];
+    for (let j = 0; j < G; j++)
+      for (let i = 0; i < G; i++) {
+        const lon = bW - mx + ((i + 0.5) / G) * (bE - bW + 2 * mx), la = bS - my + ((j + 0.5) / G) * (bN - bS + 2 * my);
+        const [gx, gy] = pixelOf(lon, la);
+        (isIn(gx, gy) ? inP : outP).push(lon, la);
+      }
+    const pts = new Float64Array([...inP, ...outP]), nIn = inP.length / 2;
+    const lat = (bS + bN) / 2;
+    const span = Math.max((bE - bW + 2 * mx) * 111320 * Math.cos((lat * Math.PI) / 180), (bN - bS + 2 * my) * 110540);
     const fallback = () => {
       // nothing to compare against or nothing clear: the last year dug, as the map shows it
       pn.year = p.last;
@@ -369,31 +387,36 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     if (!bp || !ap) return fallback();
     const [B, A] = await Promise.all([s2.sample(bp, pts, span), s2.sample(ap, pts, span)]);
     if (tok !== pickSeq) return;
-    let best = -1;
+    let best = -Infinity;
     const n = pts.length / 2;
-    for (let y = p.first; y <= p.last; y++) {
+    // the dug years, short of the after panel's (2025) unless the patch was dug in it alone
+    const yLast = p.first < after ? Math.min(p.last, after - 1) : p.last;
+    for (let y = p.first; y <= yLast; y++) {
       const cs = await s2.candidates(y, 3);
       if (tok !== pickSeq) return;
       for (const c of cs) {
         if (c.key === bp.key || c.key === ap.key) continue;
         const P = await s2.sample(c, pts, span);
         if (tok !== pickSeq) return;
-        let cov = 0, bad = 0, m = 0, sum = 0;
+        // inside (0) and around (1): points with data, cloudy ones, and the change summed over the clear ones
+        const cov = [0, 0], bad = [0, 0], m = [0, 0], sum = [0, 0];
         for (let i = 0; i < n; i++) {
           if (!P.cls[i]) continue;
-          cov++;
+          const w = i < nIn ? 0 : 1;
+          cov[w]++;
           if (s2.isBad(P.cls[i])) {
-            bad++;
+            bad[w]++;
             continue;
           }
-          if (!B.cls[i] || !A.cls[i]) continue;
+          if (!B.cls[i] || !A.cls[i] || s2.isBad(B.cls[i]) || s2.isBad(A.cls[i])) continue;
           const d = (o: Uint8Array) => Math.hypot(P.rgb[3 * i] - o[3 * i], P.rgb[3 * i + 1] - o[3 * i + 1], P.rgb[3 * i + 2] - o[3 * i + 2]);
-          sum += Math.min(d(B.rgb), d(A.rgb));
-          m++;
+          sum[w] += Math.min(d(B.rgb), d(A.rgb));
+          m[w]++;
         }
-        if (!cov || bad / cov > PICK_BAD || !m) continue;
-        if (sum / m > best) {
-          best = sum / m;
+        if (!cov[0] || bad[0] / cov[0] > PICK_BAD || !m[0]) continue;
+        const score = sum[0] / m[0] - (m[1] ? sum[1] / m[1] : 0);
+        if (score > best) {
+          best = score;
           pn.year = y;
           pn.pass = c;
         }

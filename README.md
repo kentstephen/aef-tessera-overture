@@ -15,9 +15,10 @@ embeddings alone (AlphaEarth Foundations and TESSERA), scored by the aggregate e
   its outer edge, holes filled, not filled in. Every patch is drawn, however small (no size cutoff yet).
 - **A patch's years.** A click on a patch fills the window with it three times side by side, framed the same in each:
   before (the year before any of it was dug, 2017 at the earliest), dug, and 2025. The dug panel is picked for the most
-  change: of the clear passes (up to three a year) in the years any of it was dug, the one whose ground inside the
-  patch is most unlike both the before and the 2025 image (a pass with cloud, shadow or snow over more than 5% of the
-  patch passed over); the best so far shows as each year is checked. The frame fits the patch with room around it and comes no closer than zoom 14.2,
+  change: of the clear passes (up to three a year) in the years any of it was dug, short of 2025 unless it was dug only
+  then, the one whose ground inside the patch is most unlike both the before and the 2025 image, less the same measured
+  on the ground around it, so a change everywhere (season, haze) cancels and the patch's own change counts (a pass with
+  cloud, shadow or snow over more than 5% of the patch passed over); the best so far shows as each year is checked. The frame fits the patch with room around it and comes no closer than zoom 14.2,
   so the 10 m pixels stay small. Each panel shows that year's pass chosen for the map's view, so a place already looked
   at comes back at once; each panel's imagery shows as it arrives. The patch is outlined in orchid on the panels; `O` takes the outline off. (Dimming the imagery around the patch, as aef-tessera-earthwork's spotlight does, is in the code, commented out.) The patch's size is at the bottom. A click anywhere,
   or `Esc`, goes back.
