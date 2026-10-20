@@ -217,15 +217,13 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   // ---- the footprints of the area read, as GeoArrow (a polygon a row; `fid` the footprint), joined to the pixels
   let footBatch: arrow.RecordBatch | null = null;
   let join: FootJoin | null = null;
-  // each footprint's fill: its year's color where it has one
-  let fill: ReturnType<typeof colorData> | null = null;
   // on the imagery: each footprint's outline, its year's color where it has one, solid light blue where not
   let line: ReturnType<typeof colorData> | null = null;
   // on the map: amber where digging is under it, silver where not
   let mapLine: ReturnType<typeof colorData> | null = null;
   // the arrays behind them, to tell a change; and a count for each, read by its layer's update trigger
-  let fillRgba: Uint8Array | null = null, lineRgba: Uint8Array | null = null, mapLineRgba: Uint8Array | null = null;
-  let fillN = 0, lineN = 0, mapLineN = 0;
+  let lineRgba: Uint8Array | null = null, mapLineRgba: Uint8Array | null = null;
+  let lineN = 0, mapLineN = 0;
   // the basemap layer our raster, the footprints and their fade go under: its first road, so the streets stay over both
   let groundId = "foot";
   function loadFoot() {
@@ -237,15 +235,15 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     hoverRow = pinRow = -1;
     setL2();
     join = footBatch ? joinPixels(footBatch) : null;
-    fill = line = mapLine = fillRgba = lineRgba = mapLineRgba = null;
+    line = mapLine = lineRgba = mapLineRgba = null;
     recolor();
   }
   model.on("change:foot", loadFoot);
   model.on("change:foot_status", () => note(String(model.get("foot_status") || "")));
   const ringOf = (row: number): number[][] => footRing(footBatch!, row);
 
-  // each footprint's year from the pixels under it (its fill, and its outline's color on the imagery), again as chunks
-  // and quarters come in (a few times a second at most)
+  // each footprint's year from the pixels under it (its outline's color), again as chunks and quarters come in (a few
+  // times a second at most)
   const hexRgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   const YEAR_RGB = YEAR_COL.map(hexRgb), QUARTER_RGB = SEASON_COL.map(hexRgb), UNCLEAR_RGB = hexRgb(UNCLEAR);
   let joinT = 0;
@@ -269,12 +267,6 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     // a color array swapped (and its layer's colors laid out again) only when it changed: tiles come in a few times a
     // second, and most leave every building as it was
     let changed = false;
-    if (!fill || !same(fillRgba, rgba)) {
-      fillRgba = rgba;
-      fill = colorData(rgba, join.rows);
-      fillN++;
-      changed = true;
-    }
     if (!line || !same(lineRgba, ln)) {
       lineRgba = ln;
       line = colorData(ln, join.rows);
@@ -437,8 +429,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       return;
     }
     // the digging raster over the buildings: it shows wherever the model found ground dug, buildings or not. A
-    // building's year is the pixels under it read together; the raster is the digging itself. In order: the buildings'
-    // fills, the raster over them, each building's silver outline on top
+    // building's year is the pixels under it read together; the raster is the digging itself. Buildings are outlines
+    // only, over the raster
     const footProps = footBatch && {
       data: footBatch,
       getPolygon: footBatch.getChild("geometry")!.data[0] as never,
@@ -449,16 +441,15 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     };
     if (footBatch)
       layers.push(
-        // the buildings filled in their year's color (a year opened: their quarter's) where the join gives one, under
-        // the raster and the roads, so the dug pixels lie over the building's color; the layer the pointer picks
+        // the buildings as the pointer's target: not drawn (filled clear), so the whole footprint picks, not only its
+        // outline
         new GeoArrowPolygonLayer({
           ...footProps,
           id: "foot-poly",
           filled: true,
           stroked: false,
-          getFillColor: (fill ?? [0, 0, 0, 0]) as never,
+          getFillColor: [0, 0, 0, 0],
           pickable: true,
-          updateTriggers: { getFillColor: fillN },
           beforeId: groundId,
         } as never),
       );
