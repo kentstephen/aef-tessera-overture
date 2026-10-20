@@ -34,9 +34,10 @@ const QUARTERS = false;
 const SEASONS = [["Q1", "Jan-Mar"], ["Q2", "Apr-Jun"], ["Q3", "Jul-Sep"], ["Q4", "Oct-Dec"]];
 // the Overture outlines: one color, apart from every color of the ramp
 const FOOT = "#4fd6ff";
-// a footprint with digging under it: amber, solid, deeper than the ramp's yellow end so the two stay apart (seen
-// normally or with protanopia, where it reads darker than that yellow)
-const DUG_LINE: [number, number, number, number] = [245, 166, 35, 255];
+// a footprint with digging under it: light orchid, solid. A hue the ramp (blue to green to yellow) never takes, and
+// light: with protanopia it reads as a pale lavender, lighter than every blue of the ramp and apart from its greens,
+// its yellow and the silver (the farthest from all of them of the bright colors that are not red)
+const DUG_LINE: [number, number, number, number] = [240, 165, 255, 255];
 // a footprint's outline: silver, a neutral with no hue to mix up with any imola year (seen normally or with
 // protanopia), light enough to hold an edge on the dark basemap and on the filled years alike
 const FOOT_LINE: [number, number, number, number] = [200, 205, 212, 210];
@@ -219,7 +220,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   let join: FootJoin | null = null;
   // on the imagery: each footprint's outline, its year's color where it has one, solid light blue where not
   let line: ReturnType<typeof colorData> | null = null;
-  // on the map: amber where digging is under it, silver where not
+  // on the map: orchid where digging is under it, silver where not
   let mapLine: ReturnType<typeof colorData> | null = null;
   // the arrays behind them, to tell a change; and a count for each, read by its layer's update trigger
   let lineRgba: Uint8Array | null = null, mapLineRgba: Uint8Array | null = null;
@@ -478,8 +479,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
           data: footBatch,
           getPath: footBatch.getChild("geometry")!.data[0] as never,
           visible: !s2Shown(),
-          // on the imagery the outlines carry the years: solid, a pixel and a half; on the map, amber where digging is
-          // under the building, silver where not
+          // on the imagery the outlines carry the years: solid, a pixel and a half; on the map, orchid where digging
+          // is under the building, silver where not
           getColor: (s2Shown() ? (line ?? FOOT_LINE) : (mapLine ?? FOOT_LINE)) as never,
           // in meters, held between half a pixel and two: zoomed out the outlines thin instead of adding up to a glare
           getWidth: s2Shown() ? 1.5 : 2,
