@@ -2,15 +2,17 @@ import maplibreCss from "maplibre-gl/dist/maplibre-gl.css?inline";
 import "./mesh-sampler";
 
 import { MapLibreOverlay as MapboxOverlay } from "@deck.gl/maplibre";
-import { LineLayer, PathLayer } from "@deck.gl/layers";
+import { COORDINATE_SYSTEM, LayerExtension } from "@deck.gl/core";
+import { MaskExtension } from "@deck.gl/extensions";
+import { BitmapLayer, LineLayer, PathLayer } from "@deck.gl/layers";
 import * as maplibregl from "maplibre-gl";
 import maplibreWorker from "maplibre-gl/dist/maplibre-gl-worker.mjs?raw";
 
-import { MIN_ZOOM, RES } from "./aef";
+import { MIN_ZOOM, RES, X0, Y0 } from "./aef";
 import { createCodesLayer, pixelOf } from "./codes-layer";
 import decoderBin from "./decoder_month.bin?url";
 import { createS2, S2_YEARS } from "./es-s2";
-import { outlineOfRuns, type Patch, patchesIn } from "./patch";
+import { filledRuns, outlineOfRuns, type Patch, patchesIn } from "./patch";
 import decoderMeta from "./decoder_month.json";
 import type { WorldModel } from "./earthwork-cpu";
 import world from "./earthwork_world.json";
@@ -34,6 +36,60 @@ const FIT_CLS = "sm-fit-on";
 // the panels' maps: no basemap, the imagery alone on a dark ground
 const BLANK = { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": "#0e0e0e" } }] } as maplibregl.StyleSpecification;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// ---- the spotlight, as aef-tessera-earthwork's year map dims around a patch (its ui.js on the year-map branch:
+// SpotExtension, DiscardClear, SpotMaskLayer, copied): deck.gl's mask extension with the patch's pixels as the mask, the
+// imagery outside it darkened (or grayed, J) in place of dropped, inside it as it is
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const MASK_MOD = (MaskExtension.prototype as any).getShaders.call({ getAttributeManager: () => ({ attributes: {} }), props: {}, state: {} }).modules[0];
+const { "fs:#main-start": _maskDiscard, ...maskInject } = MASK_MOD.inject;
+const SPOT_FILL = { name: "spotFill", fs: "layout(std140) uniform spotFillUniforms {\n  float k;\n  float gray;\n} spotFill;\n", uniformTypes: { k: "f32", gray: "f32" } };
+const SPOT_MOD = {
+  ...MASK_MOD,
+  inject: {
+    ...maskInject,
+    "fs:#main-end": `
+  if (mask.enabled && spotFill.k > 0.0 && !mask_isInBounds(mask_texCoords)) {
+    float l = dot(fragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+    vec3 o = mix(fragColor.rgb * 0.3, vec3(l) * 0.8, spotFill.gray);
+    fragColor.rgb = mix(fragColor.rgb, o, spotFill.k);
+  }
+`,
+  },
+};
+/** around the patch: darkened (false) or gray (true), J; and how far (1: all the way, 0: not at all) */
+const spot = { gray: false, k: 1 };
+class SpotExtension extends MaskExtension {
+  getShaders() {
+    (this as unknown as { state: { maskByInstance: boolean } }).state.maskByInstance = false;
+    return { modules: [SPOT_MOD, SPOT_FILL] };
+  }
+  // called with the layer as `this`, as every extension's draw
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  draw(this: any, ...args: any[]) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (MaskExtension.prototype.draw as any).apply(this, args);
+    this.setShaderModuleProps({ spotFill: { k: spot.k, gray: spot.gray ? 1 : 0 } });
+  }
+}
+SpotExtension.extensionName = "SpotExtension";
+const SPOT = new SpotExtension();
+// the mask: a bitmap of the patch's pixels, its clear pixels dropped so only the patch counts
+class DiscardClear extends LayerExtension {
+  getShaders() {
+    return { inject: { "fs:DECKGL_FILTER_COLOR": "if (color.a < 0.5) discard;" } };
+  }
+}
+DiscardClear.extensionName = "DiscardClear";
+const DISCARD_CLEAR = new DiscardClear();
+// a BitmapLayer gives deck no bounds (its positions are not kept), so its mask was never drawn: its own bounds here
+class SpotMaskLayer extends BitmapLayer {
+  getBounds() {
+    const [w, s, e, n] = this.props.bounds as number[];
+    return [[w, s], [e, n]] as [number[], number[]];
+  }
+}
+SpotMaskLayer.layerName = "SpotMaskLayer";
 
 // maplibre's worker from the bundle itself, as a blob: the widget is one file with nothing beside it
 maplibregl.setWorkerUrl(URL.createObjectURL(new Blob([maplibreWorker], { type: "text/javascript" })));
@@ -210,7 +266,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     segV++;
     draw();
   }
-  /** The patch at a point: the one under it, else one within two pixels (the gap a patch joins across). */
+  /** The patch at a point: the one under it, else the nearest within two pixels (so a click on an outline finds it). */
   function patchAt(lng: number, lat: number): Patch | null {
     const [gx, gy] = pixelOf(lng, lat);
     let best: Patch | null = null, bestD = Infinity;
@@ -313,12 +369,33 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     for (const pn of panels) pn.map?.jumpTo({ center: cam.center ?? [(W + E) / 2, (S + N) / 2], zoom, bearing: 0 });
   }
   let openPaths: number[][][] = [];
+  /** The open patch's pixels (holes filled) as one bitmap over its box, coarser past 2048 across. */
+  let openMask: { image: HTMLCanvasElement; bounds: [number, number, number, number] } | null = null;
+  function maskOf(p: Patch) {
+    const r = filledRuns(p.runs);
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (let i = 0; i < r.length; i += 3) (y0 = Math.min(y0, r[i])), (y1 = Math.max(y1, r[i] + 1)), (x0 = Math.min(x0, r[i + 1])), (x1 = Math.max(x1, r[i + 2]));
+    const f = Math.max(1, Math.ceil(Math.max(x1 - x0, y1 - y0) / 2048)), w = Math.ceil((x1 - x0) / f), h = Math.ceil((y1 - y0) / f);
+    const cv = document.createElement("canvas");
+    cv.width = w;
+    cv.height = h;
+    const img = new ImageData(w, h), d = img.data;
+    for (let i = 0; i < r.length; i += 3) {
+      const row = Math.floor((r[i] - y0) / f);
+      for (let c = Math.floor((r[i + 1] - x0) / f); c < Math.ceil((r[i + 2] - x0) / f); c++) d.fill(255, 4 * (row * w + c), 4 * (row * w + c) + 4);
+    }
+    cv.getContext("2d")!.putImageData(img, 0, 0);
+    return { image: cv, bounds: [X0 + x0 * RES, Y0 - y1 * RES, X0 + x1 * RES, Y0 - y0 * RES] as [number, number, number, number] };
+  }
   function drawPanels() {
     if (!st.open || !s2) return;
     panels.forEach((pn, i) => {
       if (!pn.year || !pn.map || !pn.overlay) return;
       const line = new PathLayer({ id: "patch", data: openPaths, getPath: (r: number[][]) => r as never, getColor: ORCHID, getWidth: 2.5, widthUnits: "pixels", jointRounded: true, capRounded: true });
-      pn.overlay.setProps({ layers: [...s2!.layerFor(pn.year, `t${i}`), ...(st.panelLines ? [line] : [])] as never });
+      // the mask first, then the imagery dimmed outside it (each scene's layer given the mask from its first tile)
+      const mask = openMask && new SpotMaskLayer({ id: "spot-mask", image: openMask.image, bounds: openMask.bounds, operation: "mask", extensions: [DISCARD_CLEAR], _imageCoordinateSystem: COORDINATE_SYSTEM.LNGLAT } as never);
+      const img = s2!.layerFor(pn.year, `t${i}`, mask ? { extensions: [SPOT], maskId: "spot-mask", maskByInstance: false } : {});
+      pn.overlay.setProps({ layers: [...(mask ? [mask] : []), ...img, ...(st.panelLines ? [line] : [])] as never });
       const d = s2!.dateAt(pn.year), stt = s2!.status(pn.year);
       const day = d ? `${MONTHS[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}` + (stt === "cloudy" ? ", cloudy" : "") : stt === "cloudy" ? "no scene" : "finding…";
       pn.label.innerHTML = `<b>${pn.year}</b><span>${pn.role}<br>Sentinel-2 · ${day}</span>`;
@@ -327,9 +404,10 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   function openPatch(p: Patch) {
     st.open = p;
     openPaths = outlineOfRuns(p.runs).map(([a, b, c, d]) => [[a, b], [c, d]]);
+    openMask = maskOf(p);
     // its size, to see where a cutoff for small patches would sit: hectares from its 10 m pixels at its latitude
     const ha = (p.n * (RES * 111320) ** 2 * Math.cos((((p.box[1] + p.box[3]) / 2) * Math.PI) / 180)) / 1e4;
-    back.innerHTML = `${ha < 10 ? ha.toFixed(2) : ha.toFixed(0)} ha, ${p.n.toLocaleString()} pixels · click anywhere or <kbd>Esc</kbd> to go back · <kbd>O</kbd> outlines`;
+    back.innerHTML = `${ha < 10 ? ha.toFixed(2) : ha.toFixed(0)} ha, ${p.n.toLocaleString()} pixels · click anywhere or <kbd>Esc</kbd> to go back · <kbd>O</kbd> outline · <kbd>J</kbd> dark or gray around it`;
     const ys = yearsOf(p);
     s2?.want(ys.map((y) => y[0]));
     tri.classList.add("on");
@@ -727,6 +805,11 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
         st.fit = false;
         sizes();
       }
+    } else if (k === "j" || k === "J") {
+      // around the patch in the panels: darkened or gray
+      spot.gray = !spot.gray;
+      for (const pn of panels) pn.map?.triggerRepaint();
+      note(spot.gray ? "Around the patch: gray (J for dark)" : "Around the patch: dark (J for gray)");
     } else if (k === "f" || k === "F") fullScreen();
     else if (k === "x" || k === "X") {
       st.fit = !st.fit;

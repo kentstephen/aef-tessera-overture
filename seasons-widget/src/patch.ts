@@ -8,10 +8,11 @@ import { RES, X0, Y0 } from "./aef";
  */
 
 /**
- * Found ground this many pixels apart or less still joins into one patch (a building and its graded lot with a road or
- * a curb between them): 1, ten meters, one pixel not found between them.
+ * Found ground this many pixels apart or less still joins into one patch. The year map uses 1 (ten meters: a building
+ * and its graded lot with a road or a curb between them); here 0, pixels joined only where they touch by side or
+ * corner, so neighboring sites dug in different years stay apart.
  */
-export const PATCH_GAP = 1;
+export const PATCH_GAP = 0;
 
 type Run = [number, number];
 /** A row's columns (unsorted) as runs [start, end), row by row. */
@@ -164,6 +165,20 @@ export function outlineOfRuns(runs: number[]) {
   }
   for (const rs of runsOf.values()) rs.sort((u, v) => u[0] - v[0]);
   return traceOutline(runsOf).edges;
+}
+
+/** A patch's runs ([row, start, end, ...]) with its holes filled, the same layout. */
+export function filledRuns(runs: number[]) {
+  const runsOf = new Map<number, Run[]>();
+  for (let i = 0; i < runs.length; i += 3) {
+    const rs = runsOf.get(runs[i]);
+    if (rs) rs.push([runs[i + 1], runs[i + 2]]);
+    else runsOf.set(runs[i], [[runs[i + 1], runs[i + 2]]]);
+  }
+  for (const rs of runsOf.values()) rs.sort((u, v) => u[0] - v[0]);
+  const out: number[] = [];
+  for (const [y, rs] of traceOutline(runsOf).filled) for (const [s0, e] of rs) out.push(y, s0, e);
+  return out;
 }
 
 /** A chunk of the codes: its size, and each pixel's year bits (bit k: dug in the pair of years ending FIRST_YEAR + k). */

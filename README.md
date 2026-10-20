@@ -10,14 +10,14 @@ embeddings alone (AlphaEarth Foundations and TESSERA), scored by the aggregate e
 - **Sentinel-2.** One clear pass for the view, 2025 to start; `[` `]` step the year, 2017 to 2025, `B` jumps to 2025
   and then between 2017 and 2025, `N` steps to the year's next clear pass. The card shows the year and the pass's day.
 - **Patches.** From zoom 12 the view is read by itself once the map settles. Every pixel the model found dug in any
-  pair of years is joined to its neighbors by side or corner, or across a one pixel gap, whatever its year, as
-  aef-tessera-earthwork's year map joins them (`patchesIn` in `seasons-widget/src/patch.ts`); each patch is outlined on
+  pair of years is joined to its neighbors where they touch by side or corner, whatever its year, as
+  aef-tessera-earthwork's year map joins them but with no gap (it also joins across one pixel: `PATCH_GAP`) (`patchesIn` in `seasons-widget/src/patch.ts`); each patch is outlined on
   its outer edge, holes filled, not filled in. Every patch is drawn, however small (no size cutoff yet).
 - **A patch's years.** A click on a patch fills the window with it in three years side by side, framed the same in
   each: the year before any of it was first dug, the year most of its pixels were first dug, and 2025 (two panels when
   the year most of it was dug is 2025). The frame fits the patch with room around it and comes no closer than zoom 15,
   so the 10 m pixels stay small. Each panel shows that year's pass chosen for the map's view, so a place already looked
-  at comes back at once; each panel's imagery shows as it arrives. The panels show the imagery alone; `O` outlines the patch on them. The patch's size is at the bottom. A click anywhere,
+  at comes back at once; each panel's imagery shows as it arrives. In the panels the imagery outside the patch is dimmed, as aef-tessera-earthwork's spotlight dims around a patch (the patch's pixels, holes filled, as a mask): darkened, or `J` grays it. `O` outlines the patch. The patch's size is at the bottom. A click anywhere,
   or `Esc`, goes back.
 - **Export.** `K` writes a 4x PNG to `exports/` (the panels side by side while they are open, else the map), each
   image's year and day drawn at its top left, and a copy sized for a LinkedIn post in `exports/for_linkedin/` (long
@@ -81,7 +81,7 @@ The map fills the window. Search a place (`/`) and zoom in: from zoom 12 the vie
 settles (below it nothing is read). Reading scores the view in the
 browser.
 
-Keys: `[` `]` the imagery's year, `B` 2017 or 2025, `N` a new look (another clear pass), `O` outlines on or off (the panels' own while they are open), `/` search, `K` export, `Shift` `←` `→`
+Keys: `[` `]` the imagery's year, `B` 2017 or 2025, `N` a new look (another clear pass), `O` outlines on or off (the panels' own while they are open), `J` dark or gray around the patch in the panels, `/` search, `K` export, `Shift` `←` `→`
 pivot, `X` notebook view, `F` full screen, `Esc` back from the panels.
 
 ## How it is built

@@ -343,7 +343,7 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
     return s.clear.length ? "clear" : "cloudy";
   }
 
-  function layerOf(year: number, p: Rated, visible: boolean, beforeId: string | undefined, tag: string) {
+  function layerOf(year: number, p: Rated, visible: boolean, beforeId: string | undefined, tag: string, extra: Record<string, unknown> = {}) {
     return new MosaicLayer({
       id: `s2${tag}-${year}-${p.key}`,
       sources: p.scenes,
@@ -364,6 +364,8 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
               signal,
               refinementStrategy: "best-available",
               maxRequests: 16,
+              // a mask and its extension, from the first tile (a tile layer given them later keeps its old drawing)
+              ...extra,
             } as never),
     } as never);
   }
@@ -388,11 +390,12 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
     for (const y of ys) choose(y).catch(() => {});
   }
 
-  /** The year's pass alone, shown (none until it is chosen). `tag` keeps another map's layer ids apart. */
-  function layerFor(year: number, tag: string) {
+  /** The year's pass alone, shown (none until it is chosen). `tag` keeps another map's layer ids apart; `extra` goes on
+   * each scene's layer (a mask). */
+  function layerFor(year: number, tag: string, extra: Record<string, unknown> = {}) {
     poolGet();
     const s = years.get(year), p = s && shownOf(s);
-    return p ? [layerOf(year, p, true, undefined, tag)] : [];
+    return p ? [layerOf(year, p, true, undefined, tag, extra)] : [];
   }
 
   return { discover, layers, layerFor, want, dateAt, status, next };
