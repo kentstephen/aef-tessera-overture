@@ -1,0 +1,23 @@
+# Claude
+.claude/memory/
+
+# Secrets
+.env
+.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# marimo
+__marimo__/
+
+# the widget: its dependencies, and the decoder pool worker deck.gl-geotiff emits (the map passes its own pool)
+seasons-widget/node_modules/
+seasons-widget/dist/assets/
+
+# Tooling / OS
+.DS_Store
+.vscode/
+.idea/

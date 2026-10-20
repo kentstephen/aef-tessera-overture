@@ -1,0 +1,37 @@
+{
+  "name": "seasons-widget",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
+  },
+  "dependencies": {
+    "@chunkd/source-http": "^11.4.1",
+    "@deck.gl/core": "^9.4.0",
+    "@deck.gl/extensions": "^9.4.0",
+    "@deck.gl/geo-layers": "^9.4.0",
+    "@deck.gl/layers": "^9.4.0",
+    "@deck.gl/maplibre": "^9.4.0",
+    "@deck.gl/mesh-layers": "^9.4.0",
+    "@developmentseed/deck.gl-geotiff": "^0.8.1",
+    "@developmentseed/deck.gl-raster": "^0.8.1",
+    "@developmentseed/deck.gl-zarr": "^0.8.1",
+    "@developmentseed/geotiff": "^0.8.1",
+    "@geoarrow/deck.gl-layers": "^0.4.0-beta.6",
+    "@luma.gl/core": "^9.4.2",
+    "@luma.gl/engine": "^9.4.2",
+    "@luma.gl/shadertools": "^9.4.2",
+    "apache-arrow": "^21.2.0",
+    "h3-js": "^4.5.0",
+    "maplibre-gl": "^6.14.0",
+    "pmtiles": "^4.5.0",
+    "zarrita": "^0.7.5"
+  }
+}
