@@ -418,7 +418,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     const layers: unknown[] = [];
     // the imagery under everything of ours: while it shows, our raster and the footprints step aside, the imagery alone
     // paired, the imagery is the left map's alone
-    if (s2 && !st.pair) layers.push(...s2.layers(st.s2Year, s2Shown(), "foot"));
+    // over everything of the basemap's (no beforeId: drawn last), so no Carto label, road or line lands on the imagery
+    if (s2 && !st.pair) layers.push(...s2.layers(st.s2Year, s2Shown()));
     if (map2 && overlay2) {
       l2 = st.pair && s2 ? s2.layers(st.s2Year, true, undefined, "l") : [];
       setL2();

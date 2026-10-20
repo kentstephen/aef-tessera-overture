@@ -113905,7 +113905,7 @@ function kot({ model: e, el: t }) {
 	function Ze() {
 		if (!Re || !Oe) return;
 		let e = [];
-		if (ke && !r.pair && e.push(...ke.layers(r.s2Year, Ve(), "foot")), je && Me && (We = r.pair && ke ? ke.layers(r.s2Year, !0, void 0, "l") : [], qe(), je.isStyleLoaded() || je.once("idle", qe)), !r.area) {
+		if (ke && !r.pair && e.push(...ke.layers(r.s2Year, Ve())), je && Me && (We = r.pair && ke ? ke.layers(r.s2Year, !0, void 0, "l") : [], qe(), je.isStyleLoaded() || je.once("idle", qe)), !r.area) {
 			ie.setProps({ layers: e });
 			return;
 		}
