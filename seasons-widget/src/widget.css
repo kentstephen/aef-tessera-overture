@@ -116,7 +116,7 @@
 
 /* the patches' note on the Sentinel-2 card: an orchid line for the outline */
 .sm .s2card .pnote{margin-top:8px;font-size:12px;line-height:1.4;color:var(--muted)}
-.sm .s2card .pnote i{display:inline-block;width:14px;height:0;border-top:2px solid #f0a5ff;vertical-align:middle;margin-right:6px}
+.sm .s2card .pnote i{display:inline-block;width:14px;height:0;border-top:2px solid var(--line-col,#f0a5ff);vertical-align:middle;margin-right:6px}
 /* the panels: the clicked patch's years side by side over the whole window, the divider between them; a click anywhere
    goes back */
 .sm .tri{position:absolute;inset:0;z-index:20;display:none;background:#0e0e0e;cursor:pointer}

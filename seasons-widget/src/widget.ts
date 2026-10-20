@@ -28,6 +28,16 @@ type Model = {
 // the patches' outlines: light orchid, solid. A hue Sentinel-2's ground rarely takes, and light: with protanopia it
 // reads as a pale lavender, apart from the greens, browns and grays of the imagery
 const ORCHID: [number, number, number, number] = [240, 165, 255, 255];
+// the outline's colors, C steps through them: each reads with protanopia; cyan is a hue sand, clay and soil never take,
+// the blue and the violet are darker than bright desert
+const LINE_COLS: { name: string; rgb: [number, number, number, number] }[] = [
+  { name: "orchid", rgb: ORCHID },
+  { name: "cyan", rgb: [0, 229, 255, 255] },
+  { name: "electric blue", rgb: [47, 107, 255, 255] },
+  { name: "deep violet", rgb: [122, 60, 255, 255] },
+];
+let lineCol = 0;
+const lineRgb = () => LINE_COLS[lineCol].rgb;
 // from this zoom the view reads by itself once the map settles; below it nothing is read
 const AUTO_Z = MIN_ZOOM;
 // the panels come no closer than this (aef-tessera-earthwork's spotlight flies to a patch no closer either): Sentinel-2's
@@ -300,7 +310,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     const z = map.getZoom();
     s2Card.innerHTML =
       `<div class="s2hd"><b>${st.s2Year}</b><span>Sentinel-2<br>${day}</span><span class="zw">z<br><i class="z">${z.toFixed(1)}</i></span></div>` +
-      `<div class="keys"><span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${ends}</span><span><kbd>N</kbd> new look</span><span><kbd>O</kbd> outlines</span></div>` +
+      `<div class="keys"><span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${ends}</span><span><kbd>N</kbd> new look</span><span><kbd>O</kbd> outlines</span><span><kbd>C</kbd> color</span></div>` +
       `<div class="pnote">${z < AUTO_Z ? `Zoom in to ${AUTO_Z} to outline the dug ground` : `<i></i>Dug ground, 2018 to 2025. Click a patch for its years`}</div>`;
   }
   function stepS2(d: number) {
@@ -336,10 +346,10 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
         new LineLayer({
           id: "patches",
           data: { length: segN, attributes: { getSourcePosition: { value: segSrc, size: 2 }, getTargetPosition: { value: segTgt, size: 2 } } } as never,
-          getColor: ORCHID,
+          getColor: lineRgb(),
           getWidth: 1.5,
           widthUnits: "pixels",
-          updateTriggers: { getSourcePosition: segV, getTargetPosition: segV },
+          updateTriggers: { getSourcePosition: segV, getTargetPosition: segV, getColor: lineCol },
         }),
       );
     overlay.setProps({ layers: layers as never });
@@ -404,7 +414,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     if (!st.open || !s2) return;
     panels.forEach((pn, i) => {
       if (!pn.year || !pn.map || !pn.overlay) return;
-      const line = new PathLayer({ id: "patch", data: openPaths, getPath: (r: number[][]) => r as never, getColor: ORCHID, getWidth: 2.5, widthUnits: "pixels", jointRounded: true, capRounded: true });
+      const line = new PathLayer({ id: "patch", data: openPaths, getPath: (r: number[][]) => r as never, getColor: lineRgb(), getWidth: 2.5, widthUnits: "pixels", jointRounded: true, capRounded: true, updateTriggers: { getColor: lineCol } });
       // the mask first, then the imagery dimmed outside it (each scene's layer given the mask from its first tile)
       // the imagery around the patch dimmed by spot.k (D steps it; 0 the imagery as it is)
       const mask = openMask && new SpotMaskLayer({ id: "spot-mask", image: openMask.image, bounds: openMask.bounds, operation: "mask", extensions: [DISCARD_CLEAR], _imageCoordinateSystem: COORDINATE_SYSTEM.LNGLAT } as never);
@@ -828,7 +838,14 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
         sizes();
       }
     }
-    else if (k === "d" || k === "D") {
+    else if (k === "c" || k === "C") {
+      // the outline's color, on the map and in the panels
+      lineCol = (lineCol + 1) % LINE_COLS.length;
+      root.style.setProperty("--line-col", `rgb(${lineRgb().slice(0, 3).join(",")})`);
+      draw();
+      if (st.open) drawPanels();
+      note(`Outline: ${LINE_COLS[lineCol].name} (C)`);
+    } else if (k === "d" || k === "D") {
       // how dim around the patch in the panels: half, a quarter, none, full
       spot.k = SPOT_STEPS[(SPOT_STEPS.indexOf(spot.k) + 1) % SPOT_STEPS.length];
       for (const pn of panels) pn.map?.triggerRepaint();
