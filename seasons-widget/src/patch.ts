@@ -317,3 +317,50 @@ export function patchesIn(bbox: [number, number, number, number], chunkAt: (r: n
       };
     });
 }
+
+/**
+ * A patch's outer extent: its pixels closed by `close` pixels (grown by it and shrunk back, square and diamond steps in
+ * turn, as the year map's tidyBits closes its calls), so inlets and channels up to twice that wide are filled, then its
+ * outer edge, holes filled, as edges [lon, lat, lon, lat].
+ */
+export function outerOutline(runs: number[], close = 3) {
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (let i = 0; i < runs.length; i += 3) (y0 = Math.min(y0, runs[i])), (y1 = Math.max(y1, runs[i] + 1)), (x0 = Math.min(x0, runs[i + 1])), (x1 = Math.max(x1, runs[i + 2]));
+  if (!(x1 > x0)) return [];
+  // the patch's box with room to grow, as a grid
+  const ox = x0 - close, oy = y0 - close, w = x1 - x0 + 2 * close, h = y1 - y0 + 2 * close;
+  let a = new Uint8Array(w * h), b = new Uint8Array(w * h);
+  for (let i = 0; i < runs.length; i += 3) a.fill(1, (runs[i] - oy) * w + runs[i + 1] - ox, (runs[i] - oy) * w + runs[i + 2] - ox);
+  const step = (src: Uint8Array, dst: Uint8Array, grow: boolean, square: boolean) => {
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++) {
+        let any = 0, all = 1;
+        for (let dy = -1; dy <= 1; dy++)
+          for (let dx = -1; dx <= 1; dx++) {
+            if (!square && dx && dy) continue;
+            const xx = x + dx, yy = y + dy;
+            const v = xx < 0 || yy < 0 || xx >= w || yy >= h ? 0 : src[yy * w + xx];
+            any |= v;
+            all &= v;
+          }
+        dst[y * w + x] = grow ? any : all;
+      }
+  };
+  for (const grow of [true, false])
+    for (let k = 0; k < close; k++) {
+      step(a, b, grow, k % 2 === 0);
+      [a, b] = [b, a];
+    }
+  const runsOf = new Map<number, Run[]>();
+  for (let y = 0; y < h; y++) {
+    const rs: Run[] = [];
+    for (let x = 0; x < w; x++) {
+      if (!a[y * w + x]) continue;
+      const r = rs[rs.length - 1];
+      if (r && r[1] === ox + x) r[1]++;
+      else rs.push([ox + x, ox + x + 1]);
+    }
+    if (rs.length) runsOf.set(oy + y, rs);
+  }
+  return traceOutline(runsOf).edges;
+}

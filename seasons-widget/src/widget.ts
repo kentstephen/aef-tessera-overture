@@ -12,7 +12,7 @@ import { MIN_ZOOM, RES, X0, Y0 } from "./aef";
 import { createCodesLayer, pixelOf } from "./codes-layer";
 import decoderBin from "./decoder_month.bin?url";
 import { createS2, type Rated, S2_YEARS } from "./es-s2";
-import { filledRuns, FIRST_YEAR, outlineOfRuns, type Patch, patchesIn } from "./patch";
+import { filledRuns, FIRST_YEAR, outerOutline, type Patch, patchesIn } from "./patch";
 import decoderMeta from "./decoder_month.json";
 import type { WorldModel } from "./earthwork-cpu";
 import world from "./earthwork_world.json";
@@ -243,19 +243,26 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     clearTimeout(patchT);
     patchT = window.setTimeout(findPatches, 400);
   }
+  // each patch's outer outline kept by its first run and size, so a patch unchanged as chunks come in is not closed again
+  let outlines = new Map<string, number[][]>();
   function findPatches() {
     if (!codes || !st.area) return;
     patches = patchesIn(st.area, codes.chunk);
+    const kept = new Map<string, number[][]>();
     const edges: number[] = [];
     rowsOf = new Map();
     patches.forEach((p, i) => {
-      for (const e of outlineOfRuns(p.runs)) edges.push(e[0], e[1], e[2], e[3]);
+      const key = `${p.runs[0]}:${p.runs[1]}:${p.n}`;
+      const out = outlines.get(key) ?? outerOutline(p.runs);
+      kept.set(key, out);
+      for (const e of out) edges.push(e[0], e[1], e[2], e[3]);
       for (let k = 0; k < p.runs.length; k += 3) {
         const r = rowsOf.get(p.runs[k]);
         if (r) r.push(p.runs[k + 1], p.runs[k + 2], i);
         else rowsOf.set(p.runs[k], [p.runs[k + 1], p.runs[k + 2], i]);
       }
     });
+    outlines = kept;
     segN = edges.length / 4;
     segSrc = new Float64Array(2 * segN);
     segTgt = new Float64Array(2 * segN);
@@ -417,7 +424,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   }
   function openPatch(p: Patch) {
     st.open = p;
-    openPaths = outlineOfRuns(p.runs).map(([a, b, c, d]) => [[a, b], [c, d]]);
+    openPaths = outerOutline(p.runs).map(([a, b, c, d]) => [[a, b], [c, d]]);
     openMask = maskOf(p);
     // its size, to see where a cutoff for small patches would sit: hectares from its 10 m pixels at its latitude
     const ha = (p.n * (RES * 111320) ** 2 * Math.cos((((p.box[1] + p.box[3]) / 2) * Math.PI) / 180)) / 1e4;
