@@ -15,6 +15,7 @@ import decoderBin from "./decoder_month.bin?url";
 import { colorData, type FootJoin, joinColors, joinPixels, ringOf as footRing } from "./foot";
 // Earth Genome's yearly mosaics (eg-s2.ts) swapped for single scenes from Earth Search
 import { createS2, S2_YEARS } from "./es-s2";
+import { haloLayer } from "./halo";
 import decoderMeta from "./decoder_month.json";
 import type { WorldModel } from "./earthwork-cpu";
 import world from "./earthwork_world.json";
@@ -219,7 +220,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   // on the imagery: each footprint's outline, its year's color where it has one, solid light blue where not
   let line: ReturnType<typeof colorData> | null = null;
   let fillN = 0;
-  // the basemap layer our raster and the footprints go under: its first road, so the streets stay over both
+  // the basemap layer our raster, the footprints and their fade go under: its first road, so the streets stay over both
   let groundId = "foot";
   function loadFoot() {
     const b = model.get("foot") as DataView | ArrayBuffer | Uint8Array | null;
@@ -450,6 +451,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
         },
       }),
     );
+    // the ground dimmed toward each building on an even edge, over the raster and under the roads: outside each
+    // footprint only, so the buildings stand out in the raster
+    if (footBatch) layers.push(haloLayer(footBatch, { visible: !s2Shown(), beforeId: groundId }));
     overlay.setProps({ layers: layers as never });
     // deck.gl slots the layer under the footprints only while MapLibre calls its style loaded, which it does not while
     // any source's tiles are still coming: set again once the map is idle, so it lands under them, not over everything
