@@ -90679,7 +90679,8 @@ function NVe({ model: e, el: t }) {
 		readId: 0,
 		s2Year: U9[U9.length - 1],
 		open: null,
-		lines: !0
+		lines: !0,
+		panelLines: !1
 	}, i = (e, t, n) => {
 		let r = document.createElement(e);
 		return t && (r.className = t), n != null && (r.innerHTML = n), r;
@@ -90885,7 +90886,7 @@ function NVe({ model: e, el: t }) {
 				jointRounded: !0,
 				capRounded: !0
 			});
-			e.overlay.setProps({ layers: [...A.layerFor(e.year, `t${t}`), ...r.lines ? [n] : []] });
+			e.overlay.setProps({ layers: [...A.layerFor(e.year, `t${t}`), ...r.panelLines ? [n] : []] });
 			let i = A.dateAt(e.year), a = A.status(e.year), o = i ? `${$9[i.slice(5, 7) - 1]} ${+i.slice(8, 10)}` + (a === "cloudy" ? ", cloudy" : "") : a === "cloudy" ? "no scene" : "finding…";
 			e.label.innerHTML = `<b>${e.year}</b><span>${e.role}<br>Sentinel-2 · ${o}</span>`;
 		});
@@ -91138,8 +91139,10 @@ function NVe({ model: e, el: t }) {
 		if (e.metaKey || e.ctrlKey || e.altKey || e.target === p) return;
 		let t = e.key;
 		if (t === "k" || t === "K") Ke();
-		else if (t === "o" || t === "O") r.lines = !r.lines, fe(), r.open && _e(), b(r.lines ? "Outlines on" : "Outlines off");
-		else if (t === "Escape") r.open ? ye() : r.fit && (r.fit = !1, T());
+		else if (t === "o" || t === "O") {
+			let e = r.open ? r.panelLines = !r.panelLines : r.lines = !r.lines;
+			r.open ? _e() : fe(), b(e ? "Outlines on" : "Outlines off");
+		} else if (t === "Escape") r.open ? ye() : r.fit && (r.fit = !1, T());
 		else if (t === "f" || t === "F") D();
 		else if (t === "x" || t === "X") r.fit = !r.fit, T();
 		else if (r.open) return;

@@ -17,7 +17,7 @@ embeddings alone (AlphaEarth Foundations and TESSERA), scored by the aggregate e
   each: the year before any of it was first dug, the year most of its pixels were first dug, and 2025 (two panels when
   the year most of it was dug is 2025). The frame fits the patch with room around it and comes no closer than zoom 15,
   so the 10 m pixels stay small. Each panel shows that year's pass chosen for the map's view, so a place already looked
-  at comes back at once; each panel's imagery shows as it arrives. The patch's size is at the bottom. A click anywhere,
+  at comes back at once; each panel's imagery shows as it arrives. The panels show the imagery alone; `O` outlines the patch on them. The patch's size is at the bottom. A click anywhere,
   or `Esc`, goes back.
 - **Export.** `K` writes a 4x PNG to `exports/` (the panels side by side while they are open, else the map), each
   image's year and day drawn at its top left, and a copy sized for a LinkedIn post in `exports/for_linkedin/` (long
@@ -81,7 +81,7 @@ The map fills the window. Search a place (`/`) and zoom in: from zoom 12 the vie
 settles (below it nothing is read). Reading scores the view in the
 browser.
 
-Keys: `[` `]` the imagery's year, `B` 2017 or 2025, `N` another clear pass, `O` outlines on or off, `/` search, `K` export, `Shift` `←` `→`
+Keys: `[` `]` the imagery's year, `B` 2017 or 2025, `N` another clear pass, `O` outlines on or off (the panels' own while they are open), `/` search, `K` export, `Shift` `←` `→`
 pivot, `X` notebook view, `F` full screen, `Esc` back from the panels.
 
 ## How it is built

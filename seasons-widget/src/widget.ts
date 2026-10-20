@@ -67,7 +67,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     document.head.appendChild(s);
   }
 
-  const st = { fit: true, area: null as [number, number, number, number] | null, readId: 0, s2Year: S2_YEARS[S2_YEARS.length - 1], open: null as Patch | null, lines: true };
+  const st = { fit: true, area: null as [number, number, number, number] | null, readId: 0, s2Year: S2_YEARS[S2_YEARS.length - 1], open: null as Patch | null, lines: true, panelLines: false };
   const E = (t: string, c?: string, h?: string) => {
     const e = document.createElement(t);
     if (c) e.className = c;
@@ -318,7 +318,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     panels.forEach((pn, i) => {
       if (!pn.year || !pn.map || !pn.overlay) return;
       const line = new PathLayer({ id: "patch", data: openPaths, getPath: (r: number[][]) => r as never, getColor: ORCHID, getWidth: 2.5, widthUnits: "pixels", jointRounded: true, capRounded: true });
-      pn.overlay.setProps({ layers: [...s2!.layerFor(pn.year, `t${i}`), ...(st.lines ? [line] : [])] as never });
+      pn.overlay.setProps({ layers: [...s2!.layerFor(pn.year, `t${i}`), ...(st.panelLines ? [line] : [])] as never });
       const d = s2!.dateAt(pn.year), stt = s2!.status(pn.year);
       const day = d ? `${MONTHS[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}` + (stt === "cloudy" ? ", cloudy" : "") : stt === "cloudy" ? "no scene" : "finding…";
       pn.label.innerHTML = `<b>${pn.year}</b><span>${pn.role}<br>Sentinel-2 · ${day}</span>`;
@@ -714,11 +714,12 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     const k = e.key;
     if (k === "k" || k === "K") snap();
     else if (k === "o" || k === "O") {
-      // the patches' outlines on or off, on the map and in the panels
-      st.lines = !st.lines;
-      draw();
+      // the outline on or off: the patch's in the panels while they are open (off to start: the imagery shows the change
+      // by itself), else every patch's on the map
+      const on = st.open ? (st.panelLines = !st.panelLines) : (st.lines = !st.lines);
       if (st.open) drawPanels();
-      note(st.lines ? "Outlines on" : "Outlines off");
+      else draw();
+      note(on ? "Outlines on" : "Outlines off");
     }
     else if (k === "Escape") {
       if (st.open) closePatch();
