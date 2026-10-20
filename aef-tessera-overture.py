@@ -13,8 +13,8 @@ One map, read and drawn in the browser (seasons-widget/, built into seasons-widg
 build`): a year of Sentinel-2 from Element 84's Earth Search (one clear pass for the view, the hemisphere's winter
 skipped), and over it, in orchid, the outline of every patch of ground the aggregate earthwork model (AlphaEarth and
 TESSERA joined, aef-tessera-earthwork's weights and scoring) found dug in any pair of years 2017 to 2025, joined as
-aef-tessera-earthwork's year map joins them. A click on a patch fills the window with it in the year before it was
-first dug, the year most of it was dug, and 2025; a click anywhere goes back.
+aef-tessera-earthwork's year map joins them. A click on a patch fills the window with it in the first and the last
+year any of it was dug, and 2025; a click anywhere goes back.
 
 The view reads by itself from zoom 12 once the map settles: every chunk is scored in a worker and kept on disk, so a
 place read before comes back at once.

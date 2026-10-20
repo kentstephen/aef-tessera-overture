@@ -193,9 +193,10 @@ export type Patch = {
   box: [number, number, number, number];
   /** pixels first dug each year, FIRST_YEAR on */
   years: number[];
-  /** the earliest year any of it was dug, and the year most of it was first dug */
+  /** the earliest year any of it was dug, the year most of it was first dug, and the latest year any of it was dug */
   first: number;
   main: number;
+  last: number;
   /** its pixels as runs [row, start, end, ...] of the whole grid */
   runs: number[];
 };
@@ -211,6 +212,8 @@ export function patchesIn(bbox: [number, number, number, number], chunkAt: (r: n
   const r0 = Math.floor((Y0 - N) / RES / chunk), r1 = Math.floor((Y0 - S) / RES / chunk);
   // the runs found, row by row from the north, each row from the west: row, start, end, its pixels' first years in fy
   const ry: number[] = [], rs: number[] = [], re: number[] = [], rf: number[] = [];
+  // each run's latest year dug (the highest bit of any of its pixels)
+  const rl: number[] = [];
   let fy = new Uint8Array(1 << 20), nf = 0;
   const parent: number[] = [];
   const find = (i: number): number => {
@@ -238,11 +241,14 @@ export function patchesIn(bbox: [number, number, number, number], chunkAt: (r: n
           if (nf === fy.length) { const g = new Uint8Array(fy.length * 2); g.set(fy); fy = g; }
           // its first year: the lowest bit
           fy[nf++] = 31 - Math.clz32(b & -b);
+          const hb = 31 - Math.clz32(b);
           const gx = gx0 + ix;
-          if (open >= 0 && re[open] === gx) re[open] = gx + 1;
-          else {
+          if (open >= 0 && re[open] === gx) {
+            re[open] = gx + 1;
+            if (hb > rl[open]) rl[open] = hb;
+          } else {
             open = ry.length;
-            ry.push(gy); rs.push(gx); re.push(gx + 1); rf.push(nf - 1); parent.push(open);
+            ry.push(gy); rs.push(gx); re.push(gx + 1); rf.push(nf - 1); rl.push(hb); parent.push(open);
             // the run before it in this row, across a gap of PATCH_GAP pixels or less
             if (open > cur0 && gx - re[open - 1] <= PATCH_GAP) join(open, open - 1);
           }
@@ -265,14 +271,15 @@ export function patchesIn(bbox: [number, number, number, number], chunkAt: (r: n
       rowRuns.delete(gy - PATCH_GAP - 2);
     }
   }
-  type P = { n: number; x0: number; x1: number; y0: number; y1: number; years: number[]; runs: number[] };
+  type P = { n: number; x0: number; x1: number; y0: number; y1: number; years: number[]; last: number; runs: number[] };
   const by = new Map<number, P>();
   for (let i = 0; i < ry.length; i++) {
     const root = find(i);
     let q = by.get(root);
-    if (!q) by.set(root, (q = { n: 0, x0: rs[i], x1: re[i], y0: ry[i], y1: ry[i] + 1, years: new Array(NY).fill(0), runs: [] }));
+    if (!q) by.set(root, (q = { n: 0, x0: rs[i], x1: re[i], y0: ry[i], y1: ry[i] + 1, years: new Array(NY).fill(0), last: 0, runs: [] }));
     const len = re[i] - rs[i];
     q.n += len;
+    q.last = Math.max(q.last, rl[i]);
     q.x0 = Math.min(q.x0, rs[i]);
     q.x1 = Math.max(q.x1, re[i]);
     q.y0 = Math.min(q.y0, ry[i]);
@@ -291,6 +298,7 @@ export function patchesIn(bbox: [number, number, number, number], chunkAt: (r: n
         years: q.years,
         first: FIRST_YEAR + q.years.findIndex((v) => v > 0),
         main: FIRST_YEAR + q.years.indexOf(m),
+        last: FIRST_YEAR + q.last,
         runs: q.runs,
       };
     });

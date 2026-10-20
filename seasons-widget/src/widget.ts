@@ -147,7 +147,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   sBox.append(q, E("kbd", "", "/"), hits);
   const s2Card = E("div", "s2card glass showing");
   top.append(sBox, s2Card);
-  // the panels: the clicked patch in two or three years side by side over the whole window; a click anywhere goes back
+  // the panels: the clicked patch in one to three years side by side over the whole window; a click anywhere goes back
   const tri = E("div", "tri");
   const panels = [0, 1, 2].map(() => {
     const p = E("div", "pan"), m = E("div", "pm"), l = E("div", "pl");
@@ -337,11 +337,11 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   }
 
   // ---- the panels
-  /** Each year's place in the panels: the year before the patch was first dug, the year most of it was, and 2025. */
+  /** Each year's place in the panels: the first year any of the patch was dug, the last year any of it was, and 2025. */
   function yearsOf(p: Patch) {
     const last = S2_YEARS[S2_YEARS.length - 1];
-    const ys: [number, string][] = [[Math.max(S2_YEARS[0], p.first - 1), "before it was dug"], [p.main, "most of it dug"], [last, "latest"]];
-    // the year most of it was dug may be the latest: one panel for both
+    const ys: [number, string][] = [[p.first, "first dug"], [p.last, "last dug"], [last, "latest"]];
+    // a year in two places (first and last dug the same year, or last dug in 2025): one panel for both
     const out: [number, string][] = [];
     for (const [y, r] of ys) {
       const o = out.find((x) => x[0] === y);
