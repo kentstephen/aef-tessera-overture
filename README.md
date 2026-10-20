@@ -24,8 +24,9 @@ GeoParquet; Sentinel-2 scenes from Element 84's Earth Search, beside the map or 
   view stays near where it was chosen, and the last few years shown stay loaded, so blinking between years swaps two
   finished images. `N` steps to the year's next clear pass; the card shows the day. Paired, the footprint under the
   pointer on either half is outlined in orchid on the imagery. A click pins it there while the years are stepped;
-  where no footprint is, a click pins the patch of dug ground instead (the pixels joined side by side last dug the same
-  year; a year opened, dug that year). With one pinned, any click lets it go.
+  where no footprint is, a click pins the patch of dug ground instead, joined as aef-tessera-earthwork's year map joins
+  one: every pixel dug in any year (a year opened, dug that year) joined by side or corner or across a one pixel gap,
+  outlined on its outer edge with its holes filled. With one pinned, any click lets it go.
 - **Export.** `K` writes a 4x PNG of the map to `exports/` (paired, both halves side by side), with the legend drawn
   at its top left (paired, the right half's) and the imagery's year and day at the left half's, and a copy sized for
   a LinkedIn post in `exports/for_linkedin/` (long side 2048, under 5 MB).

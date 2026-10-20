@@ -9,12 +9,13 @@ import * as maplibregl from "maplibre-gl";
 import maplibreWorker from "maplibre-gl/dist/maplibre-gl-worker.mjs?raw";
 import { Protocol } from "pmtiles";
 
-import { MIN_ZOOM, RES, X0, Y0, YEAR_ORIGIN } from "./aef";
+import { MIN_ZOOM, YEAR_ORIGIN } from "./aef";
 import { createCodesLayer, HALF_COL, type Look, pixelCenter, pixelOf, SEASON_COL, UNCLEAR, Y0_RAMP, YEAR_COL } from "./codes-layer";
 import decoderBin from "./decoder_month.bin?url";
 import { colorData, type FootJoin, joinColors, joinPixels, ringOf as footRing } from "./foot";
 // Earth Genome's yearly mosaics (eg-s2.ts) swapped for single scenes from Earth Search
 import { createS2, S2_YEARS } from "./es-s2";
+import { patchAt } from "./patch";
 import decoderMeta from "./decoder_month.json";
 import type { WorldModel } from "./earthwork-cpu";
 import world from "./earthwork_world.json";
@@ -412,53 +413,24 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     return info && info.index >= 0 ? info.index : -1;
   };
   const footHi = (row: number): Hi => ({ key: `a:${row}`, paths: [ringOf(row)] });
-  /** the most pixels a patch is traced for (about 5 km²): past it, no outline */
-  const PATCH_MAX = 50000;
   /**
-   * The patch of dug ground at a point: the pixels joined to it side by side that were last dug the same year (a year
-   * opened: that were dug that year), inside the area read. Its outline is every pixel side that borders a pixel not
-   * in it.
+   * The patch of dug ground at a point, as aef-tessera-earthwork's year map joins one (patch.ts): every pixel dug, in
+   * any year (a year opened: dug that year), joined to it by side or corner or across a one pixel gap, inside the area
+   * read; its outer outline, holes filled.
    */
-  function patchAt(lng: number, lat: number): Hi | null {
+  function patchHi(lng: number, lat: number): Hi | null {
     if (!codes || !st.area) return null;
-    const [x0, y0] = pixelOf(lng, lat);
     const yOpen = st.look.year != null ? st.look.year - YEAR_ORIGIN : -1, bit = yOpen > 0 ? 1 << (yOpen - 1) : 0;
-    const c0 = codes.at(x0, y0);
-    if (!c0 || !c0.ours || (yOpen > 0 && !(c0.bits & bit))) return null;
-    const year = c0.ours;
     const [W, S, E, N] = st.area;
     const [ax0, ay0] = pixelOf(W, N), [ax1, ay1] = pixelOf(E, S);
-    const K = 4194304, key = (x: number, y: number) => y * K + x;
-    const inPatch = (x: number, y: number) => {
+    const dug = (x: number, y: number) => {
       if (x < ax0 || x > ax1 || y < ay0 || y > ay1) return false;
       const c = codes!.at(x, y);
-      return !!c && (yOpen > 0 ? (c.bits & bit) !== 0 : c.ours === year);
+      return !!c && (yOpen > 0 ? (c.bits & bit) !== 0 : c.ours > 0);
     };
-    const seen = new Set<number>([key(x0, y0)]);
-    const stack = [x0, y0];
-    let first = key(x0, y0);
-    while (stack.length) {
-      const y = stack.pop()!, x = stack.pop()!;
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-        const nx = x + dx, ny = y + dy, k = key(nx, ny);
-        if (seen.has(k) || !inPatch(nx, ny)) continue;
-        seen.add(k);
-        if (k < first) first = k;
-        if (seen.size > PATCH_MAX) return null;
-        stack.push(nx, ny);
-      }
-    }
-    // a pixel's corners in degrees; each side that borders ground outside the patch is one stretch of its outline
-    const lon = (x: number) => X0 + x * RES, la = (y: number) => Y0 - y * RES;
-    const paths: number[][][] = [];
-    for (const k of seen) {
-      const x = k % K, y = (k - x) / K;
-      if (!seen.has(key(x, y - 1))) paths.push([[lon(x), la(y)], [lon(x + 1), la(y)]]);
-      if (!seen.has(key(x, y + 1))) paths.push([[lon(x), la(y + 1)], [lon(x + 1), la(y + 1)]]);
-      if (!seen.has(key(x - 1, y))) paths.push([[lon(x), la(y)], [lon(x), la(y + 1)]]);
-      if (!seen.has(key(x + 1, y))) paths.push([[lon(x + 1), la(y)], [lon(x + 1), la(y + 1)]]);
-    }
-    return { key: `p:${yOpen}:${first}`, paths };
+    const [x0, y0] = pixelOf(lng, lat);
+    const p = patchAt(x0, y0, dug);
+    return p && { key: `p:${yOpen}:${p.first}`, paths: p.edges.map(([a, b, c, d]) => [[a, b], [c, d]]) };
   }
   /** What is under a point: a footprint, else a patch of dug ground, else nothing. */
   function hiAt(pt: { x: number; y: number }): Hi | null {
@@ -466,7 +438,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     const row = footAt(pt);
     if (row >= 0) return footHi(row);
     const ll = map.unproject([pt.x, pt.y]);
-    return patchAt(ll.lng, ll.lat);
+    return patchHi(ll.lng, ll.lat);
   }
   /** A click pins what is under it, so the years can be stepped with it held; with one pinned, any click lets go. */
   function pin(pt: { x: number; y: number }) {

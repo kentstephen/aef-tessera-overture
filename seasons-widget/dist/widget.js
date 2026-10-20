@@ -112838,7 +112838,114 @@ function yot(e, t) {
 		next: y
 	};
 }
-var bot = {
+//#endregion
+//#region src/patch.ts
+function bot(e) {
+	let t = /* @__PURE__ */ new Map();
+	for (let [n, r] of e) {
+		r.sort((e, t) => e - t);
+		let e = [];
+		for (let t of r) {
+			let n = e[e.length - 1];
+			n && n[1] === t ? n[1] = t + 1 : e.push([t, t + 1]);
+		}
+		t.set(n, e);
+	}
+	return t;
+}
+function xot(e) {
+	let t = /* @__PURE__ */ new Map(), n = [0];
+	for (let [r, i] of e) {
+		let e = [];
+		for (let t = 1; t < i.length; t++) e.push({
+			s: i[t - 1][1],
+			e: i[t][0],
+			id: n.push(n.length) - 1
+		});
+		t.set(r, e);
+	}
+	let r = (e) => n[e] === e ? e : n[e] = r(n[e]), i = (e, t) => void (n[r(e)] = r(t));
+	for (let [n, r] of t) for (let a of [n - 1, n + 1]) {
+		let n = e.get(a), o = t.get(a) ?? [], s = 0;
+		for (let e of r) {
+			for ((!n || e.s < n[0][0] || e.e > n[n.length - 1][1]) && i(e.id, 0); s < o.length && o[s].e <= e.s;) s++;
+			for (let t = s; t < o.length && o[t].s < e.e; t++) i(e.id, o[t].id);
+		}
+	}
+	let a = /* @__PURE__ */ new Map();
+	for (let [n, i] of e) {
+		let e = t.get(n), o = [[i[0][0], i[0][1]]];
+		for (let t = 1; t < i.length; t++) r(e[t - 1].id) === r(0) ? o.push([i[t][0], i[t][1]]) : o[o.length - 1][1] = i[t][1];
+		a.set(n, o);
+	}
+	let o = (e, t, n) => {
+		let r = 0;
+		for (let [i, a] of e) {
+			let e = i;
+			for (; t && r < t.length && t[r][1] <= e;) r++;
+			for (let i = r; t && i < t.length && t[i][0] < a; i++) t[i][0] > e && n(e, t[i][0]), e = Math.max(e, t[i][1]);
+			e < a && n(e, a);
+		}
+	}, s = /* @__PURE__ */ new Map(), c = (e, t, n) => {
+		let r = e.get(t);
+		r ? r.push(n) : e.set(t, [n]);
+	}, l = (e) => E8 + e * T8, u = (e) => D8 - e * T8, d = [];
+	for (let [e, t] of a) {
+		o(t, a.get(e - 1), (t, n) => d.push([
+			l(t),
+			u(e),
+			l(n),
+			u(e)
+		])), o(t, a.get(e + 1), (t, n) => d.push([
+			l(t),
+			u(e + 1),
+			l(n),
+			u(e + 1)
+		]));
+		for (let [n, r] of t) c(s, n * 2, e), c(s, r * 2 + 1, e);
+	}
+	return ((e, t) => {
+		for (let [n, r] of e) {
+			r.sort((e, t) => e - t);
+			let e = r[0], i = r[0];
+			for (let a = 1; a <= r.length; a++) a < r.length && r[a] === i + 1 ? i = r[a] : (t(n >> 1, e, i + 1), a < r.length && (e = i = r[a]));
+		}
+	})(s, (e, t, n) => d.push([
+		l(e),
+		u(t),
+		l(e),
+		u(n)
+	])), {
+		edges: d,
+		filled: a
+	};
+}
+function Sot(e, t, n, r = 5e4) {
+	if (!n(e, t)) return null;
+	let i = (e, t) => t * 4194304 + e, a = /* @__PURE__ */ new Set([i(e, t)]), o = [e], s = [t];
+	for (let e = 0; e < o.length; e++) {
+		let t = o[e], c = s[e];
+		for (let e = -2; e <= 2; e++) for (let l = -2; l <= 2; l++) {
+			if (!l && !e) continue;
+			let u = t + l, d = c + e, f = i(u, d);
+			if (!a.has(f) && n(u, d)) {
+				if (a.size >= r) return null;
+				a.add(f), o.push(u), s.push(d);
+			}
+		}
+	}
+	let c = /* @__PURE__ */ new Map(), l = Infinity;
+	for (let e = 0; e < o.length; e++) {
+		let t = c.get(s[e]);
+		t ? t.push(o[e]) : c.set(s[e], [o[e]]), l = Math.min(l, i(o[e], s[e]));
+	}
+	return {
+		edges: xot(bot(c)).edges,
+		n: o.length,
+		first: l
+	};
+}
+var Cot = {
 	inputs: "[unit AlphaEarth (64, dequantized sign(v) (v / 127.5)^2), unit TESSERA (128, int8 as stored)] / sqrt(2)",
 	target: "sqrt of reflectance, red green blue",
 	net: {
@@ -112865,7 +112972,7 @@ var bot = {
 			}
 		]
 	}
-}, xot = {
+}, wot = {
 	aef: {
 		w: [
 			.13020645081996918,
@@ -113651,12 +113758,12 @@ var bot = {
 		aef: .6035261750221252,
 		tessera: .8016068339347839
 	}
-}, Sot = ".sm{--glass:#1a1d21eb;--card:#1a1d21d9;--glass-hi:#23272c;--line:#ffffff1f;--text:#e6e9ec;--muted:#9ba5af;--faint:#ffffff2e;--cool:#56b4e9;--sel:#ffffff14;--on:#15181b;--col:264px;font-variant-numeric:tabular-nums;width:100%;height:780px;color:var(--text);-webkit-font-smoothing:antialiased;background:#0e0e0e;font:14px/1.45 Instrument Sans,ui-sans-serif,system-ui,sans-serif;position:relative;overflow:hidden}.sm *{box-sizing:border-box}.sm .glass{background:var(--card);-webkit-backdrop-filter:blur(18px)saturate(1.15);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 22px #00000059}.sm kbd{color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:1px 4px;font:10.5px/1 ui-monospace,SFMono-Regular,Menlo,monospace}.sm .load i{background:var(--cool);width:0;height:100%;transition:width .3s ease-out;display:block}.sm .loadtag{z-index:6;white-space:nowrap;pointer-events:none;padding:5px 10px;font-size:12px;display:none;position:absolute;top:12px;left:50%;transform:translate(-50%)}.sm .loadtag span{color:var(--muted);margin-left:6px}.sm .loadtag.on{display:block}.sm .card{width:var(--col);z-index:5;max-width:calc(50vw - 24px);padding:9px 11px;font-size:12.5px;position:absolute;top:12px;right:12px}.sm .card.folded{width:auto;padding:7px 8px 7px 11px}.sm .card.folded .body{display:none}.sm .hd{cursor:pointer;-webkit-user-select:none;user-select:none;justify-content:space-between;align-items:center;gap:8px;display:flex}.sm .ht{flex:1;align-items:baseline;gap:6px;display:flex}.sm .ht b{font-size:13px;font-weight:600}.sm .ht .crumb{color:var(--muted);cursor:pointer}.sm .ht .crumb:hover{color:var(--text)}.sm .ht .sep{color:var(--muted)}.sm .cb{color:var(--muted);cursor:pointer;background:0 0;border:0;border-radius:7px;flex:none;justify-content:center;align-items:center;width:26px;height:26px;margin:-4px -4px -4px 0;padding:0;display:inline-flex}.sm .cb:hover{background:var(--sel);color:var(--text)}.sm .cb svg{transition:transform .15s}.sm .folded .cb svg{transform:rotate(-90deg)}.sm .lab{color:var(--muted);min-width:46px;font-size:12px}.sm .seg{border:1px solid var(--line);border-radius:9px;gap:2px;width:max-content;padding:2px;display:flex}.sm .seg button{color:var(--muted);cursor:pointer;font:inherit;background:0 0;border:0;border-radius:7px;padding:2px 6px;font-size:12.5px}.sm .seg button:hover{color:var(--text)}.sm .seg button.on{background:var(--text);color:var(--on)}.sm .s2card{border-radius:12px;width:212px;padding:12px 12px 12px 14px}.sm .s2hd{align-items:center;gap:9px;display:flex}.sm .s2hd b{letter-spacing:-.03em;font-variant-numeric:tabular-nums;font-size:34px;font-weight:600;line-height:1}.sm .s2card:not(.showing) .s2hd b{color:var(--muted)}.sm .s2hd span{color:var(--muted);white-space:nowrap;font-size:12px;line-height:1.25}.sm .s2hd .zw{text-align:right;margin-left:auto}.sm .s2hd .z{font-variant-numeric:tabular-nums;font-style:normal}.sm .s2card .keys{flex-wrap:wrap;gap:3px 9px;margin:9px 0 0;font-size:12px;line-height:1.5;display:flex}.sm .s2card .keys>span{white-space:nowrap}.sm .top{z-index:6;width:var(--col);flex-direction:column;align-items:flex-start;gap:8px;max-width:calc(50% - 24px);display:flex;position:absolute;top:12px;left:12px}.sm .search{z-index:2;background:var(--glass);-webkit-backdrop-filter:blur(12px);align-items:center;gap:8px;width:212px;height:34px;padding:0 10px;transition:width .15s;display:flex;position:relative}.sm .search input:focus-visible{outline:none}.sm .search svg{opacity:.6;flex:none}.sm .search:focus-within{width:var(--col);border-color:#ffffff4d}.sm .search input{min-width:0;color:var(--text);font:inherit;background:0 0;border:0;outline:none;flex:1}.sm .search input::-webkit-search-cancel-button{display:none}.sm .search input::placeholder{color:var(--muted)}.sm .hits{background:var(--glass-hi);border:1px solid var(--line);border-radius:10px;padding:4px;display:none;position:absolute;top:40px;left:-1px;right:-1px;box-shadow:0 6px 22px #00000059}.sm .hit{cursor:pointer;white-space:nowrap;text-overflow:ellipsis;border-radius:8px;padding:7px 10px;overflow:hidden}.sm .hit small{color:var(--muted);font-size:12px;display:block}.sm .hit.sel{background:var(--sel)}.sm .hit.wait{cursor:default;color:var(--muted)}.sm .tip{pointer-events:none;background:var(--glass-hi);border:1px solid var(--line);z-index:7;border-radius:8px;max-width:260px;padding:6px 9px;font-size:12.5px;line-height:1.4;display:none;position:absolute;box-shadow:0 4px 14px #00000059}.sm .toast{color:var(--muted);z-index:7;opacity:0;pointer-events:none;padding:6px 11px;font-size:13px;transition:opacity .2s;position:absolute;bottom:40px;left:50%;transform:translate(-50%)}.sm .toast.on{opacity:1}.sm .maplibregl-ctrl-attrib{color:var(--muted);background:var(--card)!important}.sm .maplibregl-ctrl-attrib a{color:var(--muted)}.sm.fit{z-index:9999;height:100vh;position:fixed;inset:0}.sm:fullscreen{width:100vw;height:100vh}.sm .map{position:absolute;inset:0}.sm .map2{border-right:2px solid #ffffff59;display:none;position:absolute;inset:0 50% 0 0}.sm.pair .map{left:50%}.sm.pair .map2{display:block}.sm.pair .loadtag{left:calc(50% + 12px);transform:none}.sm.pair .toast{left:75%}.sm :focus,.sm :focus-visible,.sm .maplibregl-canvas:focus{outline:none!important}.sm .load{z-index:6;background:#ffffff14;height:3px;display:none;position:absolute;top:0;left:0;right:0}.sm .load.on{display:block}.sm .body{flex-direction:column;gap:8px;margin-top:8px;display:flex}.sm .row{align-items:center;gap:8px;display:flex}.sm .chips{gap:3px;display:grid}.sm .chip{font:inherit;cursor:pointer;text-align:center;border:0;border-radius:5px;padding:5px 0 4px;font-size:11.5px;font-weight:600}.sm .chip small{opacity:.85;font-size:10px;font-weight:400;display:block}.sm .chip:disabled{opacity:.25;cursor:default}.sm button.chip:not(:disabled):hover{outline:2px solid #fff!important}.sm .notes{flex-direction:column;gap:8px;display:flex}.sm .card.short .notes{display:none}.sm .less{color:var(--muted);cursor:pointer;background:0 0;border:0;border-radius:5px;justify-content:center;align-self:center;align-items:center;width:100%;height:14px;margin:-4px 0 -6px;padding:0;display:flex}.sm .less:hover{background:var(--sel);color:var(--text)}.sm .less svg{transition:transform .15s;transform:rotate(180deg)}.sm .card.short .less svg{transform:none}.sm .hint{color:#b8bec5;font-size:11.5px;line-height:1.4}.sm .zoom{color:var(--muted);font-size:11.5px}.sm .zoom .warn{color:var(--cool);margin-left:4px}.sm .tip .dim{color:var(--muted)}.sm .tip .bar{border-radius:3px;height:8px;margin:4px 0 3px;display:flex;overflow:hidden}.sm .tip .mix{color:#b8bec5;flex-wrap:wrap;gap:2px 10px;font-size:11.5px;display:flex}.sm .tip .mix i{border-radius:2px;width:8px;height:8px;margin-right:4px;display:inline-block}.sm .years{align-items:center;gap:2px;display:flex}.sm .years .allyears{color:#e6e9ec;font:inherit;cursor:pointer;background:0 0;border:1px solid #ffffff38;border-radius:5px;margin-right:2px;padding:2px 6px;font-size:11px}.sm .years .allyears:hover{background:#ffffff1a}.sm .years .yr{min-width:0;font:inherit;cursor:pointer;opacity:.55;border:0;border-radius:4px;flex:1;padding:3px 0;font-size:10.5px;font-weight:600}.sm .years .yr.on{opacity:1;outline-offset:1px;outline:2px solid #fff!important}.sm .years .yr:not(:disabled):hover{opacity:1}.sm .years .yr:disabled{opacity:.15;cursor:default}.sm .years kbd{margin-left:4px}.sm .zoom .keys{flex-wrap:wrap;gap:3px 9px;margin-top:6px;display:flex}.sm .zoom .keys>span{white-space:nowrap}.sm .legend{color:var(--muted);align-items:center;gap:8px;margin-top:8px;font-size:11.5px;display:none}.sm .lline{gap:2px;display:flex}.sm .lline i{width:18px;height:12px}.sm.clean .card{align-items:center;gap:12px;width:auto;padding:7px 12px;display:flex}.sm.clean .card .legend{margin-top:0;display:flex}.sm.clean .card .body,.sm.clean .card .cb{display:none}.sm.clean .hd{cursor:default;pointer-events:none}", Cot = [
+}, Tot = ".sm{--glass:#1a1d21eb;--card:#1a1d21d9;--glass-hi:#23272c;--line:#ffffff1f;--text:#e6e9ec;--muted:#9ba5af;--faint:#ffffff2e;--cool:#56b4e9;--sel:#ffffff14;--on:#15181b;--col:264px;font-variant-numeric:tabular-nums;width:100%;height:780px;color:var(--text);-webkit-font-smoothing:antialiased;background:#0e0e0e;font:14px/1.45 Instrument Sans,ui-sans-serif,system-ui,sans-serif;position:relative;overflow:hidden}.sm *{box-sizing:border-box}.sm .glass{background:var(--card);-webkit-backdrop-filter:blur(18px)saturate(1.15);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 22px #00000059}.sm kbd{color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:1px 4px;font:10.5px/1 ui-monospace,SFMono-Regular,Menlo,monospace}.sm .load i{background:var(--cool);width:0;height:100%;transition:width .3s ease-out;display:block}.sm .loadtag{z-index:6;white-space:nowrap;pointer-events:none;padding:5px 10px;font-size:12px;display:none;position:absolute;top:12px;left:50%;transform:translate(-50%)}.sm .loadtag span{color:var(--muted);margin-left:6px}.sm .loadtag.on{display:block}.sm .card{width:var(--col);z-index:5;max-width:calc(50vw - 24px);padding:9px 11px;font-size:12.5px;position:absolute;top:12px;right:12px}.sm .card.folded{width:auto;padding:7px 8px 7px 11px}.sm .card.folded .body{display:none}.sm .hd{cursor:pointer;-webkit-user-select:none;user-select:none;justify-content:space-between;align-items:center;gap:8px;display:flex}.sm .ht{flex:1;align-items:baseline;gap:6px;display:flex}.sm .ht b{font-size:13px;font-weight:600}.sm .ht .crumb{color:var(--muted);cursor:pointer}.sm .ht .crumb:hover{color:var(--text)}.sm .ht .sep{color:var(--muted)}.sm .cb{color:var(--muted);cursor:pointer;background:0 0;border:0;border-radius:7px;flex:none;justify-content:center;align-items:center;width:26px;height:26px;margin:-4px -4px -4px 0;padding:0;display:inline-flex}.sm .cb:hover{background:var(--sel);color:var(--text)}.sm .cb svg{transition:transform .15s}.sm .folded .cb svg{transform:rotate(-90deg)}.sm .lab{color:var(--muted);min-width:46px;font-size:12px}.sm .seg{border:1px solid var(--line);border-radius:9px;gap:2px;width:max-content;padding:2px;display:flex}.sm .seg button{color:var(--muted);cursor:pointer;font:inherit;background:0 0;border:0;border-radius:7px;padding:2px 6px;font-size:12.5px}.sm .seg button:hover{color:var(--text)}.sm .seg button.on{background:var(--text);color:var(--on)}.sm .s2card{border-radius:12px;width:212px;padding:12px 12px 12px 14px}.sm .s2hd{align-items:center;gap:9px;display:flex}.sm .s2hd b{letter-spacing:-.03em;font-variant-numeric:tabular-nums;font-size:34px;font-weight:600;line-height:1}.sm .s2card:not(.showing) .s2hd b{color:var(--muted)}.sm .s2hd span{color:var(--muted);white-space:nowrap;font-size:12px;line-height:1.25}.sm .s2hd .zw{text-align:right;margin-left:auto}.sm .s2hd .z{font-variant-numeric:tabular-nums;font-style:normal}.sm .s2card .keys{flex-wrap:wrap;gap:3px 9px;margin:9px 0 0;font-size:12px;line-height:1.5;display:flex}.sm .s2card .keys>span{white-space:nowrap}.sm .top{z-index:6;width:var(--col);flex-direction:column;align-items:flex-start;gap:8px;max-width:calc(50% - 24px);display:flex;position:absolute;top:12px;left:12px}.sm .search{z-index:2;background:var(--glass);-webkit-backdrop-filter:blur(12px);align-items:center;gap:8px;width:212px;height:34px;padding:0 10px;transition:width .15s;display:flex;position:relative}.sm .search input:focus-visible{outline:none}.sm .search svg{opacity:.6;flex:none}.sm .search:focus-within{width:var(--col);border-color:#ffffff4d}.sm .search input{min-width:0;color:var(--text);font:inherit;background:0 0;border:0;outline:none;flex:1}.sm .search input::-webkit-search-cancel-button{display:none}.sm .search input::placeholder{color:var(--muted)}.sm .hits{background:var(--glass-hi);border:1px solid var(--line);border-radius:10px;padding:4px;display:none;position:absolute;top:40px;left:-1px;right:-1px;box-shadow:0 6px 22px #00000059}.sm .hit{cursor:pointer;white-space:nowrap;text-overflow:ellipsis;border-radius:8px;padding:7px 10px;overflow:hidden}.sm .hit small{color:var(--muted);font-size:12px;display:block}.sm .hit.sel{background:var(--sel)}.sm .hit.wait{cursor:default;color:var(--muted)}.sm .tip{pointer-events:none;background:var(--glass-hi);border:1px solid var(--line);z-index:7;border-radius:8px;max-width:260px;padding:6px 9px;font-size:12.5px;line-height:1.4;display:none;position:absolute;box-shadow:0 4px 14px #00000059}.sm .toast{color:var(--muted);z-index:7;opacity:0;pointer-events:none;padding:6px 11px;font-size:13px;transition:opacity .2s;position:absolute;bottom:40px;left:50%;transform:translate(-50%)}.sm .toast.on{opacity:1}.sm .maplibregl-ctrl-attrib{color:var(--muted);background:var(--card)!important}.sm .maplibregl-ctrl-attrib a{color:var(--muted)}.sm.fit{z-index:9999;height:100vh;position:fixed;inset:0}.sm:fullscreen{width:100vw;height:100vh}.sm .map{position:absolute;inset:0}.sm .map2{border-right:2px solid #ffffff59;display:none;position:absolute;inset:0 50% 0 0}.sm.pair .map{left:50%}.sm.pair .map2{display:block}.sm.pair .loadtag{left:calc(50% + 12px);transform:none}.sm.pair .toast{left:75%}.sm :focus,.sm :focus-visible,.sm .maplibregl-canvas:focus{outline:none!important}.sm .load{z-index:6;background:#ffffff14;height:3px;display:none;position:absolute;top:0;left:0;right:0}.sm .load.on{display:block}.sm .body{flex-direction:column;gap:8px;margin-top:8px;display:flex}.sm .row{align-items:center;gap:8px;display:flex}.sm .chips{gap:3px;display:grid}.sm .chip{font:inherit;cursor:pointer;text-align:center;border:0;border-radius:5px;padding:5px 0 4px;font-size:11.5px;font-weight:600}.sm .chip small{opacity:.85;font-size:10px;font-weight:400;display:block}.sm .chip:disabled{opacity:.25;cursor:default}.sm button.chip:not(:disabled):hover{outline:2px solid #fff!important}.sm .notes{flex-direction:column;gap:8px;display:flex}.sm .card.short .notes{display:none}.sm .less{color:var(--muted);cursor:pointer;background:0 0;border:0;border-radius:5px;justify-content:center;align-self:center;align-items:center;width:100%;height:14px;margin:-4px 0 -6px;padding:0;display:flex}.sm .less:hover{background:var(--sel);color:var(--text)}.sm .less svg{transition:transform .15s;transform:rotate(180deg)}.sm .card.short .less svg{transform:none}.sm .hint{color:#b8bec5;font-size:11.5px;line-height:1.4}.sm .zoom{color:var(--muted);font-size:11.5px}.sm .zoom .warn{color:var(--cool);margin-left:4px}.sm .tip .dim{color:var(--muted)}.sm .tip .bar{border-radius:3px;height:8px;margin:4px 0 3px;display:flex;overflow:hidden}.sm .tip .mix{color:#b8bec5;flex-wrap:wrap;gap:2px 10px;font-size:11.5px;display:flex}.sm .tip .mix i{border-radius:2px;width:8px;height:8px;margin-right:4px;display:inline-block}.sm .years{align-items:center;gap:2px;display:flex}.sm .years .allyears{color:#e6e9ec;font:inherit;cursor:pointer;background:0 0;border:1px solid #ffffff38;border-radius:5px;margin-right:2px;padding:2px 6px;font-size:11px}.sm .years .allyears:hover{background:#ffffff1a}.sm .years .yr{min-width:0;font:inherit;cursor:pointer;opacity:.55;border:0;border-radius:4px;flex:1;padding:3px 0;font-size:10.5px;font-weight:600}.sm .years .yr.on{opacity:1;outline-offset:1px;outline:2px solid #fff!important}.sm .years .yr:not(:disabled):hover{opacity:1}.sm .years .yr:disabled{opacity:.15;cursor:default}.sm .years kbd{margin-left:4px}.sm .zoom .keys{flex-wrap:wrap;gap:3px 9px;margin-top:6px;display:flex}.sm .zoom .keys>span{white-space:nowrap}.sm .legend{color:var(--muted);align-items:center;gap:8px;margin-top:8px;font-size:11.5px;display:none}.sm .lline{gap:2px;display:flex}.sm .lline i{width:18px;height:12px}.sm.clean .card{align-items:center;gap:12px;width:auto;padding:7px 12px;display:flex}.sm.clean .card .legend{margin-top:0;display:flex}.sm.clean .card .body,.sm.clean .card .cb{display:none}.sm.clean .hd{cursor:default;pointer-events:none}", Eot = [
 	["Q1", "Jan-Mar"],
 	["Q2", "Apr-Jun"],
 	["Q3", "Jul-Sep"],
 	["Q4", "Oct-Dec"]
-], wot = "#4fd6ff", Tot = [
+], Dot = "#4fd6ff", Oot = [
 	240,
 	165,
 	255,
@@ -113670,15 +113777,15 @@ var bot = {
 	79,
 	214,
 	255
-], Eot = "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"><path d=\"M6 9l6 6 6-6\"/></svg>", Q9 = 12, $9 = "sm-fit-on", Dot = !1;
+], kot = "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"><path d=\"M6 9l6 6 6-6\"/></svg>", Q9 = 12, $9 = "sm-fit-on", Aot = !1;
 W0e(URL.createObjectURL(new Blob([G0e], { type: "text/javascript" })));
-function Oot({ model: e, el: t }) {
+function jot({ model: e, el: t }) {
 	let n = JSON.parse(String(e.get("config") || "{}"));
 	for (let e of /* @__PURE__ */ new Set([document.head, t.getRootNode()])) {
 		let t = e instanceof ShadowRoot ? e : document.head;
 		if (t.querySelector?.("#sm-styles")) continue;
 		let n = document.createElement("style");
-		n.id = "sm-styles", n.textContent = p + "\n" + Sot, t.appendChild(n);
+		n.id = "sm-styles", n.textContent = p + "\n" + Tot, t.appendChild(n);
 	}
 	if (!document.getElementById("sm-fonts")) {
 		let e = document.createElement("link");
@@ -113698,7 +113805,7 @@ function Oot({ model: e, el: t }) {
 			"chrome-controls-bottom-right"
 		].map((e) => `html.${$9} [data-testid='${e}']`).join(",") + `{display:none!important}html.${$9}{overflow:hidden}html.${$9} *:focus,html.${$9} *:focus-visible,html.${$9} *:focus-within{outline:none!important;box-shadow:none!important}`, document.head.appendChild(e);
 	}
-	Dot ||= (kze("pmtiles", new p2e().tile), !0);
+	Aot ||= (kze("pmtiles", new p2e().tile), !0);
 	let r = {
 		look: {
 			src: "ours",
@@ -113718,13 +113825,13 @@ function Oot({ model: e, el: t }) {
 		return t && (r.className = t), n != null && (r.innerHTML = n), r;
 	}, a = i("div", "sm clean"), o = i("div", "map"), s = i("div", "map2"), c = i("div", "load", "<i></i>"), l = i("div", "loadtag glass");
 	a.append(s, o, c, l), t.appendChild(a);
-	let u = i("div", "card glass"), d = i("div", "hd"), f = i("div", "ht"), m = i("button", "cb", Eot);
+	let u = i("div", "card glass"), d = i("div", "hd"), f = i("div", "ht"), m = i("button", "cb", kot);
 	m.title = "fold the card (H)", d.append(f, m);
 	let h = i("div", "body"), g = i("div", "row"), _ = i("div", "seg"), v = i("button", "", "Ours"), y = i("button", "", "WSF");
 	v.title = "the aggregate earthwork model (AlphaEarth and TESSERA): when the ground was dug or graded", y.title = "the WSF Tracker: when the ground first read as built-up", _.append(v, y), g.append(i("span", "lab", "Color by"), _, i("kbd", "", "C"));
 	let b = i("div", "chips"), x = i("div", "hint"), S = i("div", "zoom"), C = i("div", "notes");
 	C.append(x, S);
-	let w = i("button", "less", Eot), T = (e) => {
+	let w = i("button", "less", kot), T = (e) => {
 		u.classList.toggle("short", e), w.title = e ? "show the notes" : "hide the notes, the years alone";
 	};
 	w.onclick = () => T(!u.classList.contains("short")), T(!1), h.append(b, C, w);
@@ -113794,7 +113901,7 @@ function Oot({ model: e, el: t }) {
 		], Se, Ce), n = new Uint8Array(t.length), i = new Uint8Array(t.length);
 		for (let e = 0; e < ue.rows; e++) {
 			let r = 4 * e, a = t[r + 3] > 0;
-			i.set(a ? Tot : X9, r), n[r] = a ? t[r] : Z9[0], n[r + 1] = a ? t[r + 1] : Z9[1], n[r + 2] = a ? t[r + 2] : Z9[2], n[r + 3] = 255;
+			i.set(a ? Oot : X9, r), n[r] = a ? t[r] : Z9[0], n[r + 1] = a ? t[r + 1] : Z9[1], n[r + 2] = a ? t[r + 2] : Z9[2], n[r + 3] = 255;
 		}
 		let a = !1;
 		(!de || !De(pe, n)) && (pe = n, de = Mtt(n, ue.rows), he++, a = !0), (!fe || !De(me, i)) && (me = i, fe = Mtt(i, ue.rows), ge++, a = !0), a && et();
@@ -113848,7 +113955,7 @@ function Oot({ model: e, el: t }) {
 	}
 	let Re = !1, ze = fetch(Dtt).then((e) => e.arrayBuffer()).then((e) => ({
 		w: new Float32Array(e),
-		layers: bot.net.layers
+		layers: Cot.net.layers
 	}));
 	function Be() {
 		Te(), et();
@@ -113878,7 +113985,7 @@ function Oot({ model: e, el: t }) {
 			id: "hi",
 			data: e.paths,
 			getPath: (e) => e,
-			getColor: Tot,
+			getColor: Oot,
 			getWidth: 2.5,
 			widthUnits: "pixels",
 			jointRounded: !0,
@@ -113903,36 +114010,14 @@ function Oot({ model: e, el: t }) {
 	});
 	function Ze(e, t) {
 		if (!Oe || !r.area) return null;
-		let [n, i] = F7(e, t), a = r.look.year == null ? -1 : r.look.year - w8, o = a > 0 ? 1 << a - 1 : 0, s = Oe.at(n, i);
-		if (!s || !s.ours || a > 0 && !(s.bits & o)) return null;
-		let c = s.ours, [l, u, d, f] = r.area, [p, m] = F7(l, f), [h, g] = F7(d, u), _ = 4194304, v = (e, t) => t * _ + e, y = (e, t) => {
-			if (e < p || e > h || t < m || t > g) return !1;
-			let n = Oe.at(e, t);
-			return !!n && (a > 0 ? (n.bits & o) !== 0 : n.ours === c);
-		}, b = /* @__PURE__ */ new Set([v(n, i)]), x = [n, i], S = v(n, i);
-		for (; x.length;) {
-			let e = x.pop(), t = x.pop();
-			for (let [n, r] of [
-				[1, 0],
-				[-1, 0],
-				[0, 1],
-				[0, -1]
-			]) {
-				let i = t + n, a = e + r, o = v(i, a);
-				if (!b.has(o) && y(i, a)) {
-					if (b.add(o), o < S && (S = o), b.size > 5e4) return null;
-					x.push(i, a);
-				}
-			}
-		}
-		let C = (e) => E8 + e * T8, w = (e) => D8 - e * T8, T = [];
-		for (let e of b) {
-			let t = e % _, n = (e - t) / _;
-			b.has(v(t, n - 1)) || T.push([[C(t), w(n)], [C(t + 1), w(n)]]), b.has(v(t, n + 1)) || T.push([[C(t), w(n + 1)], [C(t + 1), w(n + 1)]]), b.has(v(t - 1, n)) || T.push([[C(t), w(n)], [C(t), w(n + 1)]]), b.has(v(t + 1, n)) || T.push([[C(t + 1), w(n)], [C(t + 1), w(n + 1)]]);
-		}
-		return {
-			key: `p:${a}:${S}`,
-			paths: T
+		let n = r.look.year == null ? -1 : r.look.year - w8, i = n > 0 ? 1 << n - 1 : 0, [a, o, s, c] = r.area, [l, u] = F7(a, c), [d, f] = F7(s, o), p = (e, t) => {
+			if (e < l || e > d || t < u || t > f) return !1;
+			let r = Oe.at(e, t);
+			return !!r && (n > 0 ? (r.bits & i) !== 0 : r.ours > 0);
+		}, [m, h] = F7(e, t), g = Sot(m, h, p);
+		return g && {
+			key: `p:${n}:${g.first}`,
+			paths: g.edges.map(([e, t, n, r]) => [[e, t], [n, r]])
 		};
 	}
 	function Qe(e) {
@@ -114023,7 +114108,7 @@ function Oot({ model: e, el: t }) {
 					year: o === e.year ? null : o
 				}), t.appendChild(s);
 			}), b.before(t);
-			let a = e.src === "ours" ? Cot.map(([e, t], n) => [
+			let a = e.src === "ours" ? Eot.map(([e, t], n) => [
 				e,
 				t,
 				j7[n]
@@ -114456,7 +114541,7 @@ function Oot({ model: e, el: t }) {
 			"source-layer": "building",
 			layout: { visibility: "none" },
 			paint: {
-				"line-color": wot,
+				"line-color": Dot,
 				"line-width": [
 					"interpolate",
 					["linear"],
@@ -114472,7 +114557,7 @@ function Oot({ model: e, el: t }) {
 			}
 		}, i), ke = yot(F, () => {
 			Ue(), et();
-		}), Ue(), Oe = await Ttt(xot, await ze, () => Be()), ve(), Oe.setLook(r.look), Re = !0, rt();
+		}), Ue(), Oe = await Ttt(wot, await ze, () => Be()), ve(), Oe.setLook(r.look), Re = !0, rt();
 	}), tt(), ae(), () => {
 		window.removeEventListener("keydown", Rt), window.removeEventListener("keyup", zt), window.removeEventListener("blur", Bt), document.removeEventListener("fullscreenchange", ce), document.documentElement.classList.remove($9);
 		try {
@@ -114480,6 +114565,6 @@ function Oot({ model: e, el: t }) {
 		} catch {}
 	};
 }
-var kot = { render: Oot };
+var Mot = { render: jot };
 //#endregion
-export { kot as default };
+export { Mot as default };
