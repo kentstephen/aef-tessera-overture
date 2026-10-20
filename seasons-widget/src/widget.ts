@@ -15,7 +15,6 @@ import decoderBin from "./decoder_month.bin?url";
 import { colorData, type FootJoin, joinColors, joinPixels, ringOf as footRing } from "./foot";
 // Earth Genome's yearly mosaics (eg-s2.ts) swapped for single scenes from Earth Search
 import { createS2, S2_YEARS } from "./es-s2";
-import { haloLayer } from "./halo";
 import decoderMeta from "./decoder_month.json";
 import type { WorldModel } from "./earthwork-cpu";
 import world from "./earthwork_world.json";
@@ -38,6 +37,8 @@ const FOOT = "#4fd6ff";
 // a footprint's outline: silver, a neutral with no hue to mix up with any imola year (seen normally or with
 // protanopia), light enough to hold an edge on the dark basemap and on the filled years alike
 const FOOT_LINE: [number, number, number, number] = [200, 205, 212, 210];
+// a footprint's dark edge under its outline: the basemap's background, a little see-through
+const EDGE: [number, number, number, number] = [14, 14, 14, 235];
 // the footprint hovered, drawn over the pair's imagery
 const GOLD: [number, number, number, number] = [255, 196, 36, 255];
 // a footprint with no year, on the Sentinel-2 imagery: solid, so it reads on bright ground
@@ -409,32 +410,28 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       return;
     }
     // the digging raster over the buildings: it shows wherever the model found ground dug, buildings or not. A
-    // building's year is the pixels under it read together (the tooltip); the raster is the digging itself
+    // building's year is the pixels under it read together; the raster is the digging itself. In order: the buildings'
+    // fills, the raster over them, each building's dark edge and silver outline on top
+    const footProps = footBatch && {
+      data: footBatch,
+      getPolygon: footBatch.getChild("geometry")!.data[0] as never,
+      // the imagery alone while it shows: no footprints over it
+      visible: !s2Shown(),
+      // triangulated here, not in a worker fetched from a CDN
+      earcutWorkerUrl: null,
+    };
     if (footBatch)
       layers.push(
-        // the buildings: filled in their year's color (a year opened: their quarter's) where the join gives one, a
-        // silver outline each; under the raster and the roads, so the dug pixels lie over the building's color
+        // the buildings filled in their year's color (a year opened: their quarter's) where the join gives one, under
+        // the raster and the roads, so the dug pixels lie over the building's color; the layer the pointer picks
         new GeoArrowPolygonLayer({
+          ...footProps,
           id: "foot-poly",
-          data: footBatch,
-          getPolygon: footBatch.getChild("geometry")!.data[0] as never,
-          // the imagery alone while it shows: no footprints over it
-          visible: !s2Shown(),
           filled: true,
-          stroked: true,
+          stroked: false,
           getFillColor: (fill ?? [0, 0, 0, 0]) as never,
-          // on the imagery the outlines carry the years: solid, a pixel and a half; on the map, silver
-          getLineColor: (s2Shown() && line ? line : FOOT_LINE) as never,
-          // in meters, held between half a pixel and two: zoomed out the outlines thin instead of adding up to a glare
-          getLineWidth: s2Shown() ? 1.5 : 2,
-          lineWidthUnits: s2Shown() ? "pixels" : "meters",
-          lineWidthMinPixels: s2Shown() ? 1 : 0.5,
-          lineWidthMaxPixels: 2,
-          // triangulated here, not in a worker fetched from a CDN
-          earcutWorkerUrl: null,
           pickable: true,
-          updateTriggers: { getFillColor: fillN, getLineColor: [fillN, s2Shown()] },
-          // read by the MapLibre overlay: under the roads, drawn before the raster so the raster lies over it
+          updateTriggers: { getFillColor: fillN },
           beforeId: groundId,
         } as never),
       );
@@ -451,9 +448,39 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
         },
       }),
     );
-    // the ground dimmed toward each building on an even edge, over the raster and under the roads: outside each
-    // footprint only, so the buildings stand out in the raster
-    if (footBatch) layers.push(haloLayer(footBatch, { visible: !s2Shown(), beforeId: groundId }));
+    if (footBatch)
+      layers.push(
+        // a dark edge under each outline, so a building stands out in the raster without dimming the ground around it
+        new GeoArrowPolygonLayer({
+          ...footProps,
+          id: "foot-edge",
+          filled: false,
+          stroked: true,
+          getLineColor: EDGE,
+          getLineWidth: 10,
+          lineWidthUnits: "meters",
+          lineWidthMinPixels: 1.5,
+          lineWidthMaxPixels: 3.5,
+          beforeId: "foot",
+        } as never),
+        // a silver outline each, over everything of ours and the roads, under the labels
+        new GeoArrowPolygonLayer({
+          ...footProps,
+          id: "foot-line",
+          filled: false,
+          stroked: true,
+          // on the imagery the outlines carry the years: solid, a pixel and a half; on the map, silver
+          getLineColor: (s2Shown() && line ? line : FOOT_LINE) as never,
+          // in meters, held between half a pixel and two: zoomed out the outlines thin instead of adding up to a glare
+          getLineWidth: s2Shown() ? 1.5 : 2,
+          lineWidthUnits: s2Shown() ? "pixels" : "meters",
+          lineWidthMinPixels: s2Shown() ? 1 : 0.5,
+          lineWidthMaxPixels: 2,
+          updateTriggers: { getLineColor: [fillN, s2Shown()] },
+          // read by the MapLibre overlay
+          beforeId: "foot",
+        } as never),
+      );
     overlay.setProps({ layers: layers as never });
     // deck.gl slots the layer under the footprints only while MapLibre calls its style loaded, which it does not while
     // any source's tiles are still coming: set again once the map is idle, so it lands under them, not over everything
