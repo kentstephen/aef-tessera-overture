@@ -113666,18 +113666,13 @@ var bot = {
 	205,
 	212,
 	210
-], Eot = [
-	255,
-	196,
-	36,
-	255
 ], Z9 = [
 	79,
 	214,
 	255
-], Dot = "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"><path d=\"M6 9l6 6 6-6\"/></svg>", Q9 = 12, $9 = "sm-fit-on", Oot = !1;
+], Eot = "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"><path d=\"M6 9l6 6 6-6\"/></svg>", Q9 = 12, $9 = "sm-fit-on", Dot = !1;
 W0e(URL.createObjectURL(new Blob([G0e], { type: "text/javascript" })));
-function kot({ model: e, el: t }) {
+function Oot({ model: e, el: t }) {
 	let n = JSON.parse(String(e.get("config") || "{}"));
 	for (let e of /* @__PURE__ */ new Set([document.head, t.getRootNode()])) {
 		let t = e instanceof ShadowRoot ? e : document.head;
@@ -113703,7 +113698,7 @@ function kot({ model: e, el: t }) {
 			"chrome-controls-bottom-right"
 		].map((e) => `html.${$9} [data-testid='${e}']`).join(",") + `{display:none!important}html.${$9}{overflow:hidden}html.${$9} *:focus,html.${$9} *:focus-visible,html.${$9} *:focus-within{outline:none!important;box-shadow:none!important}`, document.head.appendChild(e);
 	}
-	Oot ||= (kze("pmtiles", new p2e().tile), !0);
+	Dot ||= (kze("pmtiles", new p2e().tile), !0);
 	let r = {
 		look: {
 			src: "ours",
@@ -113723,13 +113718,13 @@ function kot({ model: e, el: t }) {
 		return t && (r.className = t), n != null && (r.innerHTML = n), r;
 	}, a = i("div", "sm clean"), o = i("div", "map"), s = i("div", "map2"), c = i("div", "load", "<i></i>"), l = i("div", "loadtag glass");
 	a.append(s, o, c, l), t.appendChild(a);
-	let u = i("div", "card glass"), d = i("div", "hd"), f = i("div", "ht"), m = i("button", "cb", Dot);
+	let u = i("div", "card glass"), d = i("div", "hd"), f = i("div", "ht"), m = i("button", "cb", Eot);
 	m.title = "fold the card (H)", d.append(f, m);
 	let h = i("div", "body"), g = i("div", "row"), _ = i("div", "seg"), v = i("button", "", "Ours"), y = i("button", "", "WSF");
 	v.title = "the aggregate earthwork model (AlphaEarth and TESSERA): when the ground was dug or graded", y.title = "the WSF Tracker: when the ground first read as built-up", _.append(v, y), g.append(i("span", "lab", "Color by"), _, i("kbd", "", "C"));
 	let b = i("div", "chips"), x = i("div", "hint"), S = i("div", "zoom"), C = i("div", "notes");
 	C.append(x, S);
-	let w = i("button", "less", Dot), T = (e) => {
+	let w = i("button", "less", Eot), T = (e) => {
 		u.classList.toggle("short", e), w.title = e ? "show the notes" : "hide the notes, the years alone";
 	};
 	w.onclick = () => T(!u.classList.contains("short")), T(!1), h.append(b, C, w);
@@ -113779,7 +113774,7 @@ function kot({ model: e, el: t }) {
 	let le = null, ue = null, de = null, fe = null, pe = null, me = null, he = 0, ge = 0, _e = "foot";
 	function ve() {
 		let t = e.get("foot");
-		t && t.byteLength && Oe && (le = Kl(t instanceof DataView ? new Uint8Array(t.buffer, t.byteOffset, t.byteLength) : t instanceof Uint8Array ? t : new Uint8Array(t)).batches[0] ?? null, Ge = Ke = -1, qe(), ue = le ? Att(le) : null, de = fe = pe = me = null, Ee());
+		t && t.byteLength && Oe && (le = Kl(t instanceof DataView ? new Uint8Array(t.buffer, t.byteOffset, t.byteLength) : t instanceof Uint8Array ? t : new Uint8Array(t)).batches[0] ?? null, Ge?.key.startsWith("a:") && (Ge = null), Ke?.key.startsWith("a:") && (Ke = null), qe(), ue = le ? Att(le) : null, de = fe = pe = me = null, Ee());
 	}
 	e.on("change:foot", ve), e.on("change:foot_status", () => te(String(e.get("foot_status") || "")));
 	let ye = (e) => ktt(le, e), be = (e) => [
@@ -113791,7 +113786,7 @@ function kot({ model: e, el: t }) {
 		clearTimeout(we), we = window.setTimeout(Ee, 300);
 	}
 	function Ee() {
-		if (!Oe || !ue) return Ze();
+		if (!Oe || !ue) return et();
 		let e = Oe.at, t = jtt(ue, e, r.look.year, (e) => xe[e - 2018] ?? [
 			0,
 			0,
@@ -113802,7 +113797,7 @@ function kot({ model: e, el: t }) {
 			i.set(a ? Tot : X9, r), n[r] = a ? t[r] : Z9[0], n[r + 1] = a ? t[r + 1] : Z9[1], n[r + 2] = a ? t[r + 2] : Z9[2], n[r + 3] = 255;
 		}
 		let a = !1;
-		(!de || !De(pe, n)) && (pe = n, de = Mtt(n, ue.rows), he++, a = !0), (!fe || !De(me, i)) && (me = i, fe = Mtt(i, ue.rows), ge++, a = !0), a && Ze();
+		(!de || !De(pe, n)) && (pe = n, de = Mtt(n, ue.rows), he++, a = !0), (!fe || !De(me, i)) && (me = i, fe = Mtt(i, ue.rows), ge++, a = !0), a && et();
 	}
 	let De = (e, t) => {
 		if (!e || e.length !== t.length) return !1;
@@ -113810,7 +113805,7 @@ function kot({ model: e, el: t }) {
 		return !0;
 	}, Oe = null, ke = null;
 	function Ae(e) {
-		e && r.pair || (r.holding = e, He() && ke?.discover(r.s2Year), Ue(), Ze());
+		e && r.pair || (r.holding = e, He() && ke?.discover(r.s2Year), Ue(), et());
 	}
 	let je = null, Me = null, Ne = !1, Pe = (e) => ({
 		center: e.getCenter(),
@@ -113834,26 +113829,26 @@ function kot({ model: e, el: t }) {
 			layers: []
 		}), e.addControl(Me), e.on("load", () => {
 			for (let t of e.getStyle().layers) t.type !== "background" && e.setLayoutProperty(t.id, "visibility", "none");
-			Ze();
+			et();
 		});
 		let t = (e, t) => e.on("move", () => {
 			!Ne && r.pair && (Ne = !0, t.jumpTo(Pe(e)), Ne = !1);
 		});
-		t(F, e), t(e, F), e.on("mousemove", (e) => Je(Ye(e.point))), e.on("click", (e) => Xe(e.point)), s.addEventListener("mouseleave", () => Je(-1)), new ResizeObserver(() => e.resize()).observe(s);
+		t(F, e), t(e, F), e.on("mousemove", (e) => Je(Qe(e.point))), e.on("click", (e) => $e(e.point)), s.addEventListener("mouseleave", () => Je(null)), new ResizeObserver(() => e.resize()).observe(s);
 	}
 	function Ie(e) {
-		e !== r.pair && (e && (r.holding = !1), r.pair = e, a.classList.toggle("pair", e), e && (Fe(), je.jumpTo(Pe(F))), He() && ke?.discover(r.s2Year), Ue(), Ze());
+		e !== r.pair && (e && (r.holding = !1), r.pair = e, a.classList.toggle("pair", e), e && (Fe(), je.jumpTo(Pe(F))), He() && ke?.discover(r.s2Year), Ue(), et());
 	}
 	function Le(e) {
 		let t = Math.max(0, Math.min(J9.length - 1, J9.indexOf(r.s2Year) + e));
-		J9[t] !== r.s2Year && (r.s2Year = J9[t], ke?.discover(r.s2Year), Ue(), Ze());
+		J9[t] !== r.s2Year && (r.s2Year = J9[t], ke?.discover(r.s2Year), Ue(), et());
 	}
 	let Re = !1, ze = fetch(Dtt).then((e) => e.arrayBuffer()).then((e) => ({
 		w: new Float32Array(e),
 		layers: bot.net.layers
 	}));
 	function Be() {
-		Te(), Ze();
+		Te(), et();
 	}
 	let Ve = () => r.holding, He = () => r.holding || r.pair, I = [
 		"Jan",
@@ -113873,22 +113868,23 @@ function kot({ model: e, el: t }) {
 		let e = He(), t = F.getCenter(), n = ke?.dateAt(r.s2Year, t.lng, t.lat) ?? "", i = ke?.status(r.s2Year) ?? "finding", a = e ? n ? `${I[n.slice(5, 7) - 1]} ${+n.slice(8, 10)}` + (i === "cloudy" ? ", cloudy" : "") : i === "cloudy" ? "no scene" : "finding…" : "true color", o = `${String(J9[0]).slice(2)}/${String(J9[J9.length - 1]).slice(2)}`;
 		P.innerHTML = `<div class="s2hd"><b>${r.s2Year}</b><span>Sentinel-2<br>${a}</span><span class="zw">z<br><i class="z">${F.getZoom().toFixed(1)}</i></span></div><div class="keys">${e ? `<span>${r.holding ? "Scroll or " : ""}<kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${o}</span><span><kbd>N</kbd> next</span>` : "<span><kbd>Space</kbd> or <kbd>P</kbd> to see it</span>"}</div>`, P.classList.toggle("showing", e);
 	}
-	let We = [], Ge = -1, Ke = -1;
+	let We = [], Ge = null, Ke = null;
 	function qe() {
 		if (!Me) return;
-		let e = Ke >= 0 ? Ke : Ge, t = r.pair && e >= 0 && le ? ye(e) : null, n = t ? [new HD({
+		let e = Ke ?? Ge, t = r.pair && e ? [new HD({
 			id: "hi",
-			data: [t],
+			data: e.paths,
 			getPath: (e) => e,
-			getColor: Eot,
+			getColor: Tot,
 			getWidth: 2.5,
 			widthUnits: "pixels",
-			jointRounded: !0
+			jointRounded: !0,
+			capRounded: !0
 		})] : [];
-		Me.setProps({ layers: [...We, ...n] });
+		Me.setProps({ layers: [...We, ...t] });
 	}
 	function Je(e) {
-		e !== Ge && (Ge = e, r.pair && Ke < 0 && qe());
+		(e?.key ?? "") !== (Ge?.key ?? "") && (Ge = e, r.pair && !Ke && qe());
 	}
 	let Ye = (e) => {
 		let t = r.picking && le ? ie.pickObject({
@@ -113898,11 +113894,58 @@ function kot({ model: e, el: t }) {
 			layerIds: ["foot-poly"]
 		}) : null;
 		return t && t.index >= 0 ? t.index : -1;
-	};
-	function Xe(e) {
-		Ke = Ke >= 0 ? -1 : Ye(e), r.pair && qe();
+	}, Xe = (e) => ({
+		key: `a:${e}`,
+		paths: [ye(e)]
+	});
+	function Ze(e, t) {
+		if (!Oe || !r.area) return null;
+		let [n, i] = F7(e, t);
+		if (Ge?.has?.(n, i)) return Ge;
+		let a = r.look.year == null ? -1 : r.look.year - w8, o = a > 0 ? 1 << a - 1 : 0, s = Oe.at(n, i);
+		if (!s || !s.ours || a > 0 && !(s.bits & o)) return null;
+		let c = s.ours, [l, u, d, f] = r.area, [p, m] = F7(l, f), [h, g] = F7(d, u), _ = 4194304, v = (e, t) => t * _ + e, y = (e, t) => {
+			if (e < p || e > h || t < m || t > g) return !1;
+			let n = Oe.at(e, t);
+			return !!n && (a > 0 ? (n.bits & o) !== 0 : n.ours === c);
+		}, b = /* @__PURE__ */ new Set([v(n, i)]), x = [n, i], S = v(n, i);
+		for (; x.length;) {
+			let e = x.pop(), t = x.pop();
+			for (let [n, r] of [
+				[1, 0],
+				[-1, 0],
+				[0, 1],
+				[0, -1]
+			]) {
+				let i = t + n, a = e + r, o = v(i, a);
+				if (!b.has(o) && y(i, a)) {
+					if (b.add(o), o < S && (S = o), b.size > 5e4) return null;
+					x.push(i, a);
+				}
+			}
+		}
+		let C = (e) => E8 + e * T8, w = (e) => D8 - e * T8, T = [];
+		for (let e of b) {
+			let t = e % _, n = (e - t) / _;
+			b.has(v(t, n - 1)) || T.push([[C(t), w(n)], [C(t + 1), w(n)]]), b.has(v(t, n + 1)) || T.push([[C(t), w(n + 1)], [C(t + 1), w(n + 1)]]), b.has(v(t - 1, n)) || T.push([[C(t), w(n)], [C(t), w(n + 1)]]), b.has(v(t + 1, n)) || T.push([[C(t + 1), w(n)], [C(t + 1), w(n + 1)]]);
+		}
+		return {
+			key: `p:${a}:${S}`,
+			paths: T,
+			has: (e, t) => b.has(v(e, t))
+		};
 	}
-	function Ze() {
+	function Qe(e) {
+		if (!r.picking) return null;
+		let t = Ye(e);
+		if (t >= 0) return Xe(t);
+		let n = F.unproject([e.x, e.y]);
+		return Ze(n.lng, n.lat);
+	}
+	function $e(e) {
+		Ke = Ke ? null : Qe(e), r.pair && qe();
+	}
+	function et() {
 		if (!Re || !Oe) return;
 		let e = [];
 		if (ke && !r.pair && e.push(...ke.layers(r.s2Year, Ve())), je && Me && (We = r.pair && ke ? ke.layers(r.s2Year, !0, void 0, "l") : [], qe(), je.isStyleLoaded() || je.once("idle", qe)), !r.area) {
@@ -113935,7 +113978,7 @@ function kot({ model: e, el: t }) {
 			visible: !Ve(),
 			beforeId: _e,
 			onTile: () => {
-				it(), Te();
+				st(), Te();
 			}
 		})), le && e.push(new xz({
 			id: "foot-line",
@@ -113954,9 +113997,9 @@ function kot({ model: e, el: t }) {
 				Ve()
 			] },
 			beforeId: "foot"
-		})), ie.setProps({ layers: e }), F.isStyleLoaded() || F.once("idle", () => ie.setProps({ layers: e })), it();
+		})), ie.setProps({ layers: e }), F.isStyleLoaded() || F.once("idle", () => ie.setProps({ layers: e })), st();
 	}
-	function Qe() {
+	function tt() {
 		let e = r.look;
 		if (v.classList.toggle("on", e.src === "ours"), y.classList.toggle("on", e.src === "wsf"), b.replaceChildren(), h.querySelector(".years")?.remove(), e.year == null) f.innerHTML = "<b>Dug by year</b>", b.style.gridTemplateColumns = "repeat(4, 1fr)", k7.forEach((e, t) => {
 			let n = A7 + t, r = i("button", "chip", String(n));
@@ -113964,18 +114007,18 @@ function kot({ model: e, el: t }) {
 		}), x.textContent = e.src === "ours" ? "Buildings filled by the year their ground was dug or graded. Elsewhere the color is dug ground with no building on it: where to look." : "The ground colored by the year it first read as built-up. Click a year to open it by half-year.";
 		else {
 			f.innerHTML = `<span class="crumb">All years</span><span class="sep">&rsaquo;</span><b>${e.year}</b>`, f.querySelector(".crumb").onclick = (e) => {
-				e.stopPropagation(), tt({
+				e.stopPropagation(), it({
 					...r.look,
 					year: null
 				});
 			};
 			let t = i("div", "years"), n = i("button", "allyears", "All");
-			n.title = "back to every year (Esc)", n.onclick = () => tt({
+			n.title = "back to every year (Esc)", n.onclick = () => it({
 				...r.look,
 				year: null
 			}), t.appendChild(n), k7.forEach((n, a) => {
 				let o = A7 + a, s = i("button", "yr" + (o === e.year ? " on" : ""), String(o).slice(2));
-				s.style.background = n, s.style.color = a < 4 ? "#fff" : "#111", s.title = o === e.year ? "back to every year" : `open ${o}`, s.onclick = () => tt({
+				s.style.background = n, s.style.color = a < 4 ? "#fff" : "#111", s.title = o === e.year ? "back to every year" : `open ${o}`, s.onclick = () => it({
 					...r.look,
 					year: o === e.year ? null : o
 				}), t.appendChild(s);
@@ -113998,15 +114041,15 @@ function kot({ model: e, el: t }) {
 				o.style.background = r, o.style.color = a === 0 && e.src === "ours" ? "#fff" : "#111", o.style.cursor = "default", b.appendChild(o);
 			}), x.innerHTML = e.src === "ours" ? `${e.year}'s buildings and dug ground by the quarter it changed, from the decoder. <span style="color:${M7}">Gray</span>: no quarter made out. <kbd>[</kbd> <kbd>]</kbd> step the year, <kbd>Esc</kbd> all years.` : `${e.year}'s built-up ground by WSF's half-year. <kbd>[</kbd> <kbd>]</kbd> step the year, <kbd>Esc</kbd> all years.`;
 		}
-		$e();
+		nt();
 	}
-	function $e() {
+	function nt() {
 		let e = F.getZoom(), t = P.querySelector(".z");
 		t && (t.textContent = e.toFixed(1)), S.innerHTML = `Zoom ${e.toFixed(1)} · reads by itself from zoom ${Q9}` + (e < Q9 ? " <span class=\"warn\">zoom in to read</span>" : "") + "<div class=\"keys\"><span><kbd>Space</kbd> Sentinel-2</span><span><kbd>P</kbd> pair</span><span><kbd>L</kbd> labels</span><span><kbd>Q</kbd> picking</span><span><kbd>H</kbd> fold</span><span><kbd>K</kbd> PNG</span><span><kbd>Shift</kbd><kbd>&larr;</kbd><kbd>&rarr;</kbd> pivot</span></div>";
 	}
-	function et() {
+	function rt() {
 		if (F.getZoom() < 12) {
-			$e();
+			nt();
 			return;
 		}
 		let t = F.getBounds();
@@ -114020,38 +114063,38 @@ function kot({ model: e, el: t }) {
 			t: Date.now()
 		})), e.save_changes(), Be();
 	}
-	function tt(e) {
+	function it(e) {
 		e.src === "ours" && e.year != null && e.year < 2018 && (e = {
 			...e,
 			year: null
-		}), r.look = e, Qe(), Oe?.setLook(e), it();
+		}), r.look = e, tt(), Oe?.setLook(e), st();
 	}
-	v.onclick = () => tt({
+	v.onclick = () => it({
 		...r.look,
 		src: "ours"
-	}), y.onclick = () => tt({
+	}), y.onclick = () => it({
 		...r.look,
 		src: "wsf"
 	});
-	let nt = (e) => {
+	let at = (e) => {
 		r.folded = e, u.classList.toggle("folded", e), m.title = e ? "open the card (H)" : "fold the card (H)";
 	};
-	d.onclick = () => nt(!r.folded);
-	let rt = 0;
-	function it() {
-		clearTimeout(rt), rt = window.setTimeout(at, 150);
+	d.onclick = () => at(!r.folded);
+	let ot = 0;
+	function st() {
+		clearTimeout(ot), ot = window.setTimeout(ct, 150);
 	}
-	function at() {
-		if ($e(), !Oe || F.getZoom() < 12) {
+	function ct() {
+		if (nt(), !Oe || F.getZoom() < 12) {
 			c.classList.remove("on"), l.classList.remove("on");
 			return;
 		}
 		let e = Oe.work(), t = e.reading > 0, n = !t && e.decoding > 0, i = t || n;
 		if (c.classList.toggle("on", i), l.classList.toggle("on", i), !i) return;
 		let [a, o] = t ? [e.readDone, e.readDone + e.reading] : [e.decodeDone, e.decodeDone + e.decoding];
-		c.firstChild.style.width = (100 * a / Math.max(1, o)).toFixed(1) + "%", l.innerHTML = t ? `Scoring chunks: ${a} of ${o}, every year 2017 to 2025` + (o > 30 ? " <span>zoom in to load faster</span>" : "") : `Decoding ${r.look.year}'s quarters: ${a} of ${o} chunks`, it();
+		c.firstChild.style.width = (100 * a / Math.max(1, o)).toFixed(1) + "%", l.innerHTML = t ? `Scoring chunks: ${a} of ${o}, every year 2017 to 2025` + (o > 30 ? " <span>zoom in to load faster</span>" : "") : `Decoding ${r.look.year}'s quarters: ${a} of ${o} chunks`, st();
 	}
-	let ot = (e, t, n) => {
+	let lt = (e, t, n) => {
 		let r = !1;
 		for (let i = 0, a = n.length - 1; i < n.length; a = i++) {
 			let [o, s] = n[i], [c, l] = n[a];
@@ -114059,14 +114102,14 @@ function kot({ model: e, el: t }) {
 		}
 		return r;
 	};
-	function st(e, t) {
+	function ut(e, t) {
 		if (!Oe) return "";
 		let n = Infinity, i = Infinity, a = -Infinity, o = -Infinity;
 		for (let t of e) for (let [e, r] of t) n = Math.min(n, e), a = Math.max(a, e), i = Math.min(i, r), o = Math.max(o, r);
 		let [s, c] = F7(n, o), [l, u] = F7(a, i), d = [];
 		for (let t = c; t <= u; t++) for (let n = s; n <= l; n++) {
 			let [r, i] = Ett(n, t);
-			if (!e.some((e) => ot(r, i, e))) continue;
+			if (!e.some((e) => lt(r, i, e))) continue;
 			let a = Oe.at(n, t);
 			a && d.push(a);
 		}
@@ -114096,21 +114139,21 @@ function kot({ model: e, el: t }) {
 		}
 		return `<b>Overture</b><br>Dug or graded: ${h}`;
 	}
-	let ct = {
+	let dt = {
 		x: 0,
 		y: 0
 	};
-	function lt(e) {
+	function ft(e) {
 		if (!e) {
 			O.style.display = "none";
 			return;
 		}
 		O.innerHTML = e, O.style.display = "block";
-		let t = a.getBoundingClientRect(), n = O.offsetWidth, r = O.offsetHeight, i = ct.x + o.offsetLeft, s = ct.y + o.offsetTop, c = i + 14, l = s + 14;
+		let t = a.getBoundingClientRect(), n = O.offsetWidth, r = O.offsetHeight, i = dt.x + o.offsetLeft, s = dt.y + o.offsetTop, c = i + 14, l = s + 14;
 		c + n > t.width - 8 && (c = i - n - 14), l + r > t.height - 8 && (l = s - r - 14), O.style.left = c + "px", O.style.top = l + "px";
 	}
 	F.on("mousemove", (e) => {
-		if (ct = e.point, !r.picking || !Oe || !F.getLayer("foot")) return Je(-1);
+		if (dt = e.point, !r.picking || !Oe || !F.getLayer("foot")) return Je(null);
 		if (le) {
 			let t = ie.pickObject({
 				x: e.point.x,
@@ -114120,14 +114163,14 @@ function kot({ model: e, el: t }) {
 			});
 			if (t && t.index >= 0) {
 				let e = `a:${t.index}`;
-				Je(t.index), lt(st([ye(t.index)], e));
+				Je(Xe(t.index)), ft(ut([ye(t.index)], e));
 				return;
 			}
 		}
-		Je(-1);
+		Je(Ze(e.lngLat.lng, e.lngLat.lat));
 		let [t, n] = F7(e.lngLat.lng, e.lngLat.lat), i = Oe.at(t, n), a = r.look.year == null ? -1 : r.look.year - w8;
 		if (!i || !i.ours || a > 0 && !(i.bits & 1 << a - 1)) {
-			lt("");
+			ft("");
 			return;
 		}
 		`${t}${n}`;
@@ -114136,11 +114179,11 @@ function kot({ model: e, el: t }) {
 			let e = a > 0 ? a : i.ours;
 			i.season(e), o = String(w8 + e);
 		}
-		lt(`<b>No footprint</b><br>Dug or graded: ${o}`);
-	}), F.on("click", (e) => Xe(e.point)), o.addEventListener("mouseleave", () => {
-		lt(""), Je(-1);
+		ft(`<b>No footprint</b><br>Dug or graded: ${o}`);
+	}), F.on("click", (e) => $e(e.point)), o.addEventListener("mouseleave", () => {
+		ft(""), Je(null);
 	});
-	let ut = [], dt = -1, ft = 0, pt = 0, mt = null, ht = null, gt = 0, _t = (e) => {
+	let pt = [], mt = -1, ht = 0, gt = 0, _t = null, vt = null, yt = 0, bt = (e) => {
 		let t = e.properties;
 		return [
 			t.name,
@@ -114149,43 +114192,43 @@ function kot({ model: e, el: t }) {
 			t.state,
 			t.country
 		].filter(Boolean).join(", ");
-	}, vt = (e) => {
+	}, xt = (e) => {
 		let t = e.properties;
 		return [t.osm_value, t.type].filter((e) => e && e !== "yes").join(", ");
-	}, yt = () => {
-		N.style.display = "none", N.replaceChildren(), dt = -1;
-	}, bt = () => {
-		if (N.replaceChildren(), !ut.length) return yt();
-		ut.forEach((e, t) => {
-			let n = i("div", "hit" + (t === dt ? " sel" : ""));
-			n.textContent = _t(e);
+	}, St = () => {
+		N.style.display = "none", N.replaceChildren(), mt = -1;
+	}, Ct = () => {
+		if (N.replaceChildren(), !pt.length) return St();
+		pt.forEach((e, t) => {
+			let n = i("div", "hit" + (t === mt ? " sel" : ""));
+			n.textContent = bt(e);
 			let r = i("small");
-			r.textContent = vt(e), n.appendChild(r), n.onmousedown = (t) => {
-				t.preventDefault(), Tt(e);
+			r.textContent = xt(e), n.appendChild(r), n.onmousedown = (t) => {
+				t.preventDefault(), Ot(e);
 			}, n.onmouseenter = () => {
-				dt = t, bt();
+				mt = t, Ct();
 			}, N.appendChild(n);
 		}), N.style.display = "block";
-	}, xt = (e) => {
-		N.replaceChildren(), dt = -1;
+	}, wt = (e) => {
+		N.replaceChildren(), mt = -1;
 		let t = i("div", "hit wait");
 		t.textContent = e, N.appendChild(t), N.style.display = "block";
-	}, St = async (e, t) => {
+	}, Tt = async (e, t) => {
 		let n = new URLSearchParams({
 			q: e,
 			limit: "6",
 			lang: "en"
 		}), r = F.getCenter();
-		n.set("lon", r.lng.toFixed(4)), n.set("lat", r.lat.toFixed(4)), ht?.abort();
-		let i = ht = new AbortController(), a = setTimeout(() => i.abort(), t);
+		n.set("lon", r.lng.toFixed(4)), n.set("lat", r.lat.toFixed(4)), vt?.abort();
+		let i = vt = new AbortController(), a = setTimeout(() => i.abort(), t);
 		try {
 			return ((await (await fetch("https://photon.komoot.io/api/?" + n.toString(), { signal: i.signal })).json()).features || []).filter((e) => e.geometry && e.geometry.coordinates);
 		} finally {
 			clearTimeout(a);
 		}
-	}, Ct = async (e) => {
-		let t = gt + 1100 - Date.now();
-		t > 0 && await new Promise((e) => setTimeout(e, t)), gt = Date.now();
+	}, Et = async (e) => {
+		let t = yt + 1100 - Date.now();
+		t > 0 && await new Promise((e) => setTimeout(e, t)), yt = Date.now();
 		let n = new URLSearchParams({
 			q: e,
 			format: "jsonv2",
@@ -114218,39 +114261,39 @@ function kot({ model: e, el: t }) {
 				}
 			};
 		});
-	}, wt = async (e = !1) => {
+	}, Dt = async (e = !1) => {
 		let t = M.value.trim();
-		if (t.length < 2) return ut = [], mt = null, yt();
-		let n = ++pt, r = e && mt === t;
-		r && (ht?.abort(), mt = null), xt("searching…");
+		if (t.length < 2) return pt = [], _t = null, St();
+		let n = ++gt, r = e && _t === t;
+		r && (vt?.abort(), _t = null), wt("searching…");
 		let i = [], a = "";
 		if (!r) {
-			mt = t;
+			_t = t;
 			try {
-				i = await St(t, e ? 2500 : 6e3);
+				i = await Tt(t, e ? 2500 : 6e3);
 			} catch (e) {
 				a = e.name === "AbortError" ? "slow" : "down";
 			}
-			if (n !== pt) return;
-			mt = null;
+			if (n !== gt) return;
+			_t = null;
 		}
 		if (!i.length && e) {
-			xt("searching Nominatim…");
+			wt("searching Nominatim…");
 			try {
-				i = await Ct(t);
+				i = await Et(t);
 			} catch {
 				a = "down";
 			}
-			if (n !== pt) return;
+			if (n !== gt) return;
 		}
-		ut = i, dt = i.length ? 0 : -1, i.length ? bt() : xt(e ? a ? "search is not answering, try again in a moment" : "no match" : a === "slow" ? "Photon is slow: press Enter to search Nominatim" : a ? "Photon is not answering: press Enter to search Nominatim" : "no match: press Enter to search Nominatim");
-	}, Tt = (e) => {
+		pt = i, mt = i.length ? 0 : -1, i.length ? Ct() : wt(e ? a ? "search is not answering, try again in a moment" : "no match" : a === "slow" ? "Photon is slow: press Enter to search Nominatim" : a ? "Photon is not answering: press Enter to search Nominatim" : "no match: press Enter to search Nominatim");
+	}, Ot = (e) => {
 		let [t, n] = e.geometry.coordinates, r = e.properties.extent, i = 13.5;
 		if (r && r.length === 4) {
 			let e = Math.max(Math.abs(r[2] - r[0]), Math.abs(r[1] - r[3]) * 2, .01);
 			i = Math.log2(360 * ((o.clientWidth || 1200) / 512) / e) - .3;
 		}
-		i = Math.max(Q9, Math.min(16, i)), M.value = _t(e), ut = [], yt(), M.blur(), F.flyTo({
+		i = Math.max(Q9, Math.min(16, i)), M.value = bt(e), pt = [], St(), M.blur(), F.flyTo({
 			center: [t, n],
 			zoom: i,
 			duration: 2200,
@@ -114258,15 +114301,15 @@ function kot({ model: e, el: t }) {
 		});
 	};
 	M.addEventListener("input", () => {
-		clearTimeout(ft), ft = window.setTimeout(wt, 250);
-	}), M.addEventListener("focus", () => ut.length && bt()), M.addEventListener("blur", () => setTimeout(yt, 120)), M.addEventListener("keydown", (e) => {
-		e.stopPropagation(), e.key === "ArrowDown" && ut.length ? (dt = (dt + 1) % ut.length, bt(), e.preventDefault()) : e.key === "ArrowUp" && ut.length ? (dt = (dt - 1 + ut.length) % ut.length, bt(), e.preventDefault()) : e.key === "Enter" ? (e.preventDefault(), ut.length ? Tt(ut[Math.max(0, dt)]) : (clearTimeout(ft), wt(!0).then(() => ut.length && Tt(ut[0])))) : e.key === "Escape" && (yt(), M.blur());
+		clearTimeout(ht), ht = window.setTimeout(Dt, 250);
+	}), M.addEventListener("focus", () => pt.length && Ct()), M.addEventListener("blur", () => setTimeout(St, 120)), M.addEventListener("keydown", (e) => {
+		e.stopPropagation(), e.key === "ArrowDown" && pt.length ? (mt = (mt + 1) % pt.length, Ct(), e.preventDefault()) : e.key === "ArrowUp" && pt.length ? (mt = (mt - 1 + pt.length) % pt.length, Ct(), e.preventDefault()) : e.key === "Enter" ? (e.preventDefault(), pt.length ? Ot(pt[Math.max(0, mt)]) : (clearTimeout(ht), Dt(!0).then(() => pt.length && Ot(pt[0])))) : e.key === "Escape" && (St(), M.blur());
 	});
-	let Et = !1, Dt = (e, t) => {
+	let kt = !1, At = (e, t) => {
 		let n = t._deck?.device?.canvasContext, r = e.getCanvas();
 		n?.setDrawingBufferSize(r.width, r.height);
 	};
-	async function Ot(e) {
+	async function jt(e) {
 		return await new Promise((t) => {
 			e.once("idle", () => t()), e.triggerRepaint();
 		}), new Promise((t) => {
@@ -114276,7 +114319,7 @@ function kot({ model: e, el: t }) {
 			}), e.triggerRepaint();
 		});
 	}
-	async function kt(e) {
+	async function Mt(e) {
 		for (let t = 2048;; t -= 128) {
 			let n = Math.min(1, t / Math.max(e.width, e.height)), r = Math.round(e.width * n), i = Math.round(e.height * n), a = e;
 			for (; a.width / 2 >= r;) {
@@ -114297,49 +114340,49 @@ function kot({ model: e, el: t }) {
 			};
 		}
 	}
-	let At = "'Instrument Sans', system-ui, sans-serif";
-	function jt(e, t, n, r) {
+	let Nt = "'Instrument Sans', system-ui, sans-serif";
+	function Pt(e, t, n, r) {
 		e.save(), e.shadowColor = "rgba(0,0,0,.75)", e.shadowBlur = 6 * r, e.textBaseline = "middle";
 		let i = n + 10 * r;
-		e.font = `600 ${15 * r}px ${At}`, e.fillStyle = "#e6e9ec", e.fillText("Dug by year", t, i);
+		e.font = `600 ${15 * r}px ${Nt}`, e.fillStyle = "#e6e9ec", e.fillText("Dug by year", t, i);
 		let a = t + e.measureText("Dug by year").width + 14 * r;
-		e.font = `500 ${13 * r}px ${At}`, e.fillStyle = "#c9cfd5";
+		e.font = `500 ${13 * r}px ${Nt}`, e.fillStyle = "#c9cfd5";
 		let o = String(A7), s = String(A7 + k7.length - 1);
 		e.fillText(o, a, i), a += e.measureText(o).width + 8 * r, k7.forEach((t) => {
 			e.fillStyle = t, e.fillRect(a, i - 7 * r, 20 * r, 14 * r), a += 22 * r;
 		}), e.fillStyle = "#c9cfd5", e.fillText(s, a + 6 * r, i), e.restore();
 	}
-	function Mt(e, t, n, i) {
+	function Ft(e, t, n, i) {
 		let a = F.getCenter(), o = ke?.dateAt(r.s2Year, a.lng, a.lat) ?? "";
-		e.save(), e.shadowColor = "rgba(0,0,0,.75)", e.shadowBlur = 6 * i, e.textBaseline = "top", e.font = `600 ${34 * i}px ${At}`, e.fillStyle = "#e6e9ec", e.fillText(String(r.s2Year), t, n), e.font = `500 ${13 * i}px ${At}`, e.fillStyle = "#c9cfd5", e.fillText("Sentinel-2" + (o ? ` · ${I[o.slice(5, 7) - 1]} ${+o.slice(8, 10)}` : ""), t, n + 40 * i), e.restore();
+		e.save(), e.shadowColor = "rgba(0,0,0,.75)", e.shadowBlur = 6 * i, e.textBaseline = "top", e.font = `600 ${34 * i}px ${Nt}`, e.fillStyle = "#e6e9ec", e.fillText(String(r.s2Year), t, n), e.font = `500 ${13 * i}px ${Nt}`, e.fillStyle = "#c9cfd5", e.fillText("Sentinel-2" + (o ? ` · ${I[o.slice(5, 7) - 1]} ${+o.slice(8, 10)}` : ""), t, n + 40 * i), e.restore();
 	}
-	async function Nt() {
-		if (Et) return;
-		Et = !0, te("Exporting a 4x PNG...");
+	async function It() {
+		if (kt) return;
+		kt = !0, te("Exporting a 4x PNG...");
 		let t = r.pair && je && Me ? [[je, Me], [F, ie]] : [[F, ie]];
 		try {
-			for (let [e, n] of t) e.setPixelRatio(4), Dt(e, n);
-			let n = await Promise.all(t.map(([e]) => Ot(e))), i = n[n.length - 1].width / F.getContainer().clientWidth, a = n.length > 1 ? Math.round(2 * i) : 0, o = document.createElement("canvas");
+			for (let [e, n] of t) e.setPixelRatio(4), At(e, n);
+			let n = await Promise.all(t.map(([e]) => jt(e))), i = n[n.length - 1].width / F.getContainer().clientWidth, a = n.length > 1 ? Math.round(2 * i) : 0, o = document.createElement("canvas");
 			o.width = n.reduce((e, t) => e + t.width, 0) + a, o.height = Math.max(...n.map((e) => e.height));
 			let s = o.getContext("2d"), c = 0;
 			n.forEach((e, t) => {
 				s.drawImage(e, c, 0), c += e.width, t < n.length - 1 && (s.fillStyle = "rgba(255,255,255,.35)", s.fillRect(c, 0, a, o.height), c += a);
 			});
 			let l = 14 * i;
-			jt(s, (n.length > 1 ? n[0].width + a : 0) + l, l, i), n.length > 1 && Mt(s, l, l, i);
+			Pt(s, (n.length > 1 ? n[0].width + a : 0) + l, l, i), n.length > 1 && Ft(s, l, l, i);
 			let u = await new Promise((e) => o.toBlob(e, "image/png"));
 			if (!u) throw Error("the canvas gave no PNG");
-			let d = await kt(o), f = F.getCenter(), p = `z${F.getZoom().toFixed(1)}_${f.lat.toFixed(4)}_${f.lng.toFixed(4)}` + (r.pair ? `_pair-s2-${r.s2Year}` : Ve() ? `_s2-${r.s2Year}` : "") + `_${+i.toFixed(1)}x`;
+			let d = await Mt(o), f = F.getCenter(), p = `z${F.getZoom().toFixed(1)}_${f.lat.toFixed(4)}_${f.lng.toFixed(4)}` + (r.pair ? `_pair-s2-${r.s2Year}` : Ve() ? `_s2-${r.s2Year}` : "") + `_${+i.toFixed(1)}x`;
 			e.set("snap_name", p), e.set("snap_small", new DataView(await d.png.arrayBuffer())), e.set("snap_small_size", d.size), e.set("snap", new DataView(await u.arrayBuffer())), e.save_changes();
 		} catch (e) {
 			te(`Export failed: ${e.message}`);
 		} finally {
-			for (let [e, n] of t) e.setPixelRatio(null), Dt(e, n);
-			Et = !1;
+			for (let [e, n] of t) e.setPixelRatio(null), At(e, n);
+			kt = !1;
 		}
 	}
 	e.on("change:snap_status", () => te(String(e.get("snap_status") || "")));
-	let Pt = 0, Ft = (e) => {
+	let Lt = 0, Rt = (e) => {
 		if (e.metaKey || e.ctrlKey || e.altKey || e.target === M) return;
 		let t = e.key;
 		if (e.code === "Space") e.repeat || Ae(!0);
@@ -114352,19 +114395,19 @@ function kot({ model: e, el: t }) {
 			r.labels = !r.labels;
 			for (let e of F.getStyle().layers) e.type === "symbol" && F.setLayoutProperty(e.id, "visibility", r.labels ? "visible" : "none");
 			te(r.labels ? "Labels on" : "Labels off");
-		} else if (t === "q" || t === "Q") r.picking = !r.picking, r.picking || lt(""), te(r.picking ? "Picking on" : "Picking off");
-		else if (t === "h" || t === "H") nt(!r.folded);
-		else if ((t === "n" || t === "N") && He() && ke) ke.next(r.s2Year), Ue(), Ze();
+		} else if (t === "q" || t === "Q") r.picking = !r.picking, r.picking || ft(""), te(r.picking ? "Picking on" : "Picking off");
+		else if (t === "h" || t === "H") at(!r.folded);
+		else if ((t === "n" || t === "N") && He() && ke) ke.next(r.s2Year), Ue(), et();
 		else if (t === "x" || t === "X") r.fit = !r.fit, ae();
 		else if (t === "f" || t === "F") se();
-		else if (t === "k" || t === "K") Nt();
+		else if (t === "k" || t === "K") It();
 		else if (t === "/") M.focus();
-		else if (t === "Escape") r.look.year == null ? r.fit && (r.fit = !1, ae()) : tt({
+		else if (t === "Escape") r.look.year == null ? r.fit && (r.fit = !1, ae()) : it({
 			...r.look,
 			year: null
 		});
-		else if (e.shiftKey && (t === "ArrowLeft" || t === "ArrowRight")) Pt = (F.isMoving() ? Pt : F.getBearing()) + (t === "ArrowRight" ? 15 : -15), F.easeTo({
-			bearing: Pt,
+		else if (e.shiftKey && (t === "ArrowLeft" || t === "ArrowRight")) Lt = (F.isMoving() ? Lt : F.getBearing()) + (t === "ArrowRight" ? 15 : -15), F.easeTo({
+			bearing: Lt,
 			duration: 250
 		});
 		else if (t === "ArrowLeft") F.panBy([-120, 0]);
@@ -114376,31 +114419,31 @@ function kot({ model: e, el: t }) {
 		else return;
 		e.preventDefault();
 	};
-	window.addEventListener("keydown", Ft);
-	let It = (e) => {
+	window.addEventListener("keydown", Rt);
+	let zt = (e) => {
 		e.code === "Space" && r.holding && Ae(!1);
 	};
-	window.addEventListener("keyup", It);
-	let Lt = () => r.holding && Ae(!1);
-	window.addEventListener("blur", Lt);
-	let Rt = 0, zt = 0;
+	window.addEventListener("keyup", zt);
+	let Bt = () => r.holding && Ae(!1);
+	window.addEventListener("blur", Bt);
+	let Vt = 0, Ht = 0;
 	a.addEventListener("wheel", (e) => {
 		if (!r.holding) return;
-		e.preventDefault(), e.stopPropagation(), Rt += e.deltaY;
+		e.preventDefault(), e.stopPropagation(), Vt += e.deltaY;
 		let t = performance.now();
-		Math.abs(Rt) >= 40 && t - zt > 140 && (Le(Rt > 0 ? 1 : -1), Rt = 0, zt = t);
+		Math.abs(Vt) >= 40 && t - Ht > 140 && (Le(Vt > 0 ? 1 : -1), Vt = 0, Ht = t);
 	}, {
 		capture: !0,
 		passive: !1
-	}), F.on("moveend", it), F.on("moveend", () => {
-		He() && (ke?.discover(r.s2Year), Ue(), Ze());
+	}), F.on("moveend", st), F.on("moveend", () => {
+		He() && (ke?.discover(r.s2Year), Ue(), et());
 	});
-	let Bt = 0;
+	let Ut = 0;
 	return F.on("moveend", () => {
-		if (clearTimeout(Bt), F.getZoom() < Q9 || !Re) return;
+		if (clearTimeout(Ut), F.getZoom() < Q9 || !Re) return;
 		let e = F.getBounds(), t = r.area;
-		t && e.getWest() >= t[0] && e.getEast() <= t[2] && e.getSouth() >= t[1] && e.getNorth() <= t[3] || (Bt = window.setTimeout(et, 500));
-	}), F.on("zoom", $e), F.on("load", async () => {
+		t && e.getWest() >= t[0] && e.getEast() <= t[2] && e.getSouth() >= t[1] && e.getNorth() <= t[3] || (Ut = window.setTimeout(rt, 500));
+	}), F.on("zoom", nt), F.on("load", async () => {
 		for (let e of F.getStyle().layers) /building/.test(e.id) && F.setLayoutProperty(e.id, "visibility", "none");
 		let e = F.getStyle().layers, t = e.reduce((e, t, n) => t.type === "symbol" ? e : n, -1), i = e.slice(t + 1).find((e) => e.type === "symbol")?.id;
 		_e = e.find((e) => e.type === "line" && /aeroway|tunnel|road|bridge|rail|transport/.test(e.id))?.id ?? "foot", F.addSource("overture", {
@@ -114428,15 +114471,15 @@ function kot({ model: e, el: t }) {
 				"line-opacity": .85
 			}
 		}, i), ke = yot(F, () => {
-			Ue(), Ze();
-		}), Ue(), Oe = await Ttt(xot, await ze, () => Be()), ve(), Oe.setLook(r.look), Re = !0, et();
-	}), Qe(), ae(), () => {
-		window.removeEventListener("keydown", Ft), window.removeEventListener("keyup", It), window.removeEventListener("blur", Lt), document.removeEventListener("fullscreenchange", ce), document.documentElement.classList.remove($9);
+			Ue(), et();
+		}), Ue(), Oe = await Ttt(xot, await ze, () => Be()), ve(), Oe.setLook(r.look), Re = !0, rt();
+	}), tt(), ae(), () => {
+		window.removeEventListener("keydown", Rt), window.removeEventListener("keyup", zt), window.removeEventListener("blur", Bt), document.removeEventListener("fullscreenchange", ce), document.documentElement.classList.remove($9);
 		try {
 			je?.remove(), F.remove();
 		} catch {}
 	};
 }
-var Aot = { render: kot };
+var kot = { render: Oot };
 //#endregion
-export { Aot as default };
+export { kot as default };

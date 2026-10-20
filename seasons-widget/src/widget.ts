@@ -9,7 +9,7 @@ import * as maplibregl from "maplibre-gl";
 import maplibreWorker from "maplibre-gl/dist/maplibre-gl-worker.mjs?raw";
 import { Protocol } from "pmtiles";
 
-import { MIN_ZOOM, YEAR_ORIGIN } from "./aef";
+import { MIN_ZOOM, RES, X0, Y0, YEAR_ORIGIN } from "./aef";
 import { createCodesLayer, HALF_COL, type Look, pixelCenter, pixelOf, SEASON_COL, UNCLEAR, Y0_RAMP, YEAR_COL } from "./codes-layer";
 import decoderBin from "./decoder_month.bin?url";
 import { colorData, type FootJoin, joinColors, joinPixels, ringOf as footRing } from "./foot";
@@ -41,8 +41,6 @@ const DUG_LINE: [number, number, number, number] = [240, 165, 255, 255];
 // a footprint's outline: silver, a neutral with no hue to mix up with any imola year (seen normally or with
 // protanopia), light enough to hold an edge on the dark basemap and on the filled years alike
 const FOOT_LINE: [number, number, number, number] = [200, 205, 212, 210];
-// the footprint hovered, drawn over the pair's imagery
-const GOLD: [number, number, number, number] = [255, 196, 36, 255];
 // a footprint with no year, on the Sentinel-2 imagery: solid, so it reads on bright ground
 const S2_LINE = [79, 214, 255];
 // the fold chevron, as aef-earthwork-web's cards
@@ -233,7 +231,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     const bytes = b instanceof DataView ? new Uint8Array(b.buffer, b.byteOffset, b.byteLength) : b instanceof Uint8Array ? b : new Uint8Array(b);
     footBatch = arrow.tableFromIPC(bytes).batches[0] ?? null;
     // the rows are new: a footprint hovered or pinned by its old row is let go
-    hoverRow = pinRow = -1;
+    if (hoverHi?.key.startsWith("a:")) hoverHi = null;
+    if (pinHi?.key.startsWith("a:")) pinHi = null;
     setL2();
     join = footBatch ? joinPixels(footBatch) : null;
     line = mapLine = lineRgba = mapLineRgba = null;
@@ -328,9 +327,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     follow(map, m2);
     follow(m2, map);
     // the halves share one camera and size: the pointer on the left picks the footprint at the same point on the right
-    m2.on("mousemove", (e) => setHi(footAt(e.point)));
+    m2.on("mousemove", (e) => setHi(hiAt(e.point)));
     m2.on("click", (e) => pin(e.point));
-    mapEl2.addEventListener("mouseleave", () => setHi(-1));
+    mapEl2.addEventListener("mouseleave", () => setHi(null));
     new ResizeObserver(() => m2.resize()).observe(mapEl2);
   }
   function setPair(on: boolean) {
@@ -384,34 +383,92 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       }</div>`;
     s2Card.classList.toggle("showing", showImg);
   }
-  // the pair's left map: its imagery, and over it in gold the footprint pinned by a click, else the one hovered, on
-  // either half
+  // the pair's left map: its imagery, and over it in orchid what is pinned by a click, else what is hovered, on either
+  // half: a footprint, or where no footprint is, the patch of dug ground under the pointer
   let l2: unknown[] = [];
-  let hoverRow = -1, pinRow = -1;
+  /** A thing outlined on the imagery: its key, its outline as paths, and (a patch) whether a pixel is in it. */
+  type Hi = { key: string; paths: number[][][]; has?: (px: number, py: number) => boolean };
+  let hoverHi: Hi | null = null, pinHi: Hi | null = null;
   function setL2() {
     if (!overlay2) return;
-    const row = pinRow >= 0 ? pinRow : hoverRow;
-    const ring = st.pair && row >= 0 && footBatch ? ringOf(row) : null;
-    const hi = ring
-      ? [
-          new PathLayer({ id: "hi", data: [ring], getPath: (r: number[][]) => r as never, getColor: GOLD, getWidth: 2.5, widthUnits: "pixels", jointRounded: true }),
-        ]
+    const h = pinHi ?? hoverHi;
+    const hi = st.pair && h
+      ? [new PathLayer({ id: "hi", data: h.paths, getPath: (r: number[][]) => r as never, getColor: DUG_LINE, getWidth: 2.5, widthUnits: "pixels", jointRounded: true, capRounded: true })]
       : [];
     overlay2.setProps({ layers: [...l2, ...hi] as never });
   }
-  function setHi(row: number) {
-    if (row === hoverRow) return;
-    hoverRow = row;
-    if (st.pair && pinRow < 0) setL2();
+  function setHi(h: Hi | null) {
+    if ((h?.key ?? "") === (hoverHi?.key ?? "")) return;
+    hoverHi = h;
+    if (st.pair && !pinHi) setL2();
   }
   /** The footprint's row at a point (the halves share one camera and size, so a point on either is the same place). */
   const footAt = (pt: { x: number; y: number }) => {
     const info = st.picking && footBatch ? overlay.pickObject({ x: pt.x, y: pt.y, radius: 2, layerIds: ["foot-poly"] }) : null;
     return info && info.index >= 0 ? info.index : -1;
   };
-  /** A click pins the footprint under it, so the years can be stepped with it held; with one pinned, any click lets go. */
+  const footHi = (row: number): Hi => ({ key: `a:${row}`, paths: [ringOf(row)] });
+  /** the most pixels a patch is traced for (about 5 km²): past it, no outline */
+  const PATCH_MAX = 50000;
+  /**
+   * The patch of dug ground at a point: the pixels joined to it side by side that were last dug the same year (a year
+   * opened: that were dug that year), inside the area read. Its outline is every pixel side that borders a pixel not
+   * in it.
+   */
+  function patchAt(lng: number, lat: number): Hi | null {
+    if (!codes || !st.area) return null;
+    const [x0, y0] = pixelOf(lng, lat);
+    // still in the patch outlined: no need to trace it again
+    if (hoverHi?.has?.(x0, y0)) return hoverHi;
+    const yOpen = st.look.year != null ? st.look.year - YEAR_ORIGIN : -1, bit = yOpen > 0 ? 1 << (yOpen - 1) : 0;
+    const c0 = codes.at(x0, y0);
+    if (!c0 || !c0.ours || (yOpen > 0 && !(c0.bits & bit))) return null;
+    const year = c0.ours;
+    const [W, S, E, N] = st.area;
+    const [ax0, ay0] = pixelOf(W, N), [ax1, ay1] = pixelOf(E, S);
+    const K = 4194304, key = (x: number, y: number) => y * K + x;
+    const inPatch = (x: number, y: number) => {
+      if (x < ax0 || x > ax1 || y < ay0 || y > ay1) return false;
+      const c = codes!.at(x, y);
+      return !!c && (yOpen > 0 ? (c.bits & bit) !== 0 : c.ours === year);
+    };
+    const seen = new Set<number>([key(x0, y0)]);
+    const stack = [x0, y0];
+    let first = key(x0, y0);
+    while (stack.length) {
+      const y = stack.pop()!, x = stack.pop()!;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy, k = key(nx, ny);
+        if (seen.has(k) || !inPatch(nx, ny)) continue;
+        seen.add(k);
+        if (k < first) first = k;
+        if (seen.size > PATCH_MAX) return null;
+        stack.push(nx, ny);
+      }
+    }
+    // a pixel's corners in degrees; each side that borders ground outside the patch is one stretch of its outline
+    const lon = (x: number) => X0 + x * RES, la = (y: number) => Y0 - y * RES;
+    const paths: number[][][] = [];
+    for (const k of seen) {
+      const x = k % K, y = (k - x) / K;
+      if (!seen.has(key(x, y - 1))) paths.push([[lon(x), la(y)], [lon(x + 1), la(y)]]);
+      if (!seen.has(key(x, y + 1))) paths.push([[lon(x), la(y + 1)], [lon(x + 1), la(y + 1)]]);
+      if (!seen.has(key(x - 1, y))) paths.push([[lon(x), la(y)], [lon(x), la(y + 1)]]);
+      if (!seen.has(key(x + 1, y))) paths.push([[lon(x + 1), la(y)], [lon(x + 1), la(y + 1)]]);
+    }
+    return { key: `p:${yOpen}:${first}`, paths, has: (x, y) => seen.has(key(x, y)) };
+  }
+  /** What is under a point: a footprint, else a patch of dug ground, else nothing. */
+  function hiAt(pt: { x: number; y: number }): Hi | null {
+    if (!st.picking) return null;
+    const row = footAt(pt);
+    if (row >= 0) return footHi(row);
+    const ll = map.unproject([pt.x, pt.y]);
+    return patchAt(ll.lng, ll.lat);
+  }
+  /** A click pins what is under it, so the years can be stepped with it held; with one pinned, any click lets go. */
   function pin(pt: { x: number; y: number }) {
-    pinRow = pinRow >= 0 ? -1 : footAt(pt);
+    pinHi = pinHi ? null : hiAt(pt);
     if (st.pair) setL2();
   }
   function render() {
@@ -724,18 +781,18 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   }
   map.on("mousemove", (e) => {
     lastPoint = e.point;
-    if (!st.picking || !codes || !map.getLayer("foot")) return setHi(-1);
+    if (!st.picking || !codes || !map.getLayer("foot")) return setHi(null);
     if (footBatch) {
       const info = overlay.pickObject({ x: e.point.x, y: e.point.y, radius: 2, layerIds: ["foot-poly"] });
       if (info && info.index >= 0) {
         const key = `a:${info.index}`;
-        setHi(info.index);
+        setHi(footHi(info.index));
         hoverKey = key;
         showTip(footHtml([ringOf(info.index)], key));
         return;
       }
     }
-    setHi(-1);
+    setHi(patchAt(e.lngLat.lng, e.lngLat.lat));
     // the building tiles are only the layers' anchor now: their features are not asked
     const f = null as { geometry: { type: string; coordinates: unknown }; id?: unknown } | null;
     if (f) {
@@ -781,7 +838,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   mapEl.addEventListener("mouseleave", () => {
     hoverKey = "";
     showTip("");
-    setHi(-1);
+    setHi(null);
   });
 
   // ---- search, as aef-earthwork-web searches: Photon as you type; when it is slow or finds nothing, Enter asks
