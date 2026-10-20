@@ -114530,6 +114530,7 @@ function jot({ model: e, el: t }) {
 		t && e.getWest() >= t[0] && e.getEast() <= t[2] && e.getSouth() >= t[1] && e.getNorth() <= t[3] || (Ut = window.setTimeout(rt, 500));
 	}), F.on("zoom", nt), F.on("load", async () => {
 		for (let e of F.getStyle().layers) /building/.test(e.id) && F.setLayoutProperty(e.id, "visibility", "none");
+		for (let e of F.getStyle().layers) /(^|_)(service|path)(_|$)/.test(e.id) && F.setLayoutProperty(e.id, "visibility", "none");
 		let e = F.getStyle().layers, t = e.reduce((e, t, n) => t.type === "symbol" ? e : n, -1), i = e.slice(t + 1).find((e) => e.type === "symbol")?.id;
 		_e = e.find((e) => e.type === "line" && /aeroway|tunnel|road|bridge|rail|transport/.test(e.id))?.id ?? "foot", F.addSource("overture", {
 			type: "vector",
