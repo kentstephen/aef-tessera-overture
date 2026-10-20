@@ -135,18 +135,21 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     lline.appendChild(i);
   });
   legend.append(E("span", "", String(Y0_RAMP)), lline, E("span", "", String(Y0_RAMP + YEAR_COL.length - 1)));
-  card.append(hd, legend, body);
-  root.appendChild(card);
-
-  // ---- search (Photon, over OpenStreetMap)
-  const sBox = E("div", "search glass"), q = E("input") as HTMLInputElement, hits = E("div", "hits");
-  q.placeholder = "Search a place  ( / )";
+  // ---- search (Photon, over OpenStreetMap): a magnifier at the card's left end, opened by a click or /
+  const sBox = E("div", "search"), q = E("input") as HTMLInputElement, hits = E("div", "hits");
+  q.placeholder = "Search a place";
   q.spellcheck = false;
-  sBox.append(q, hits);
-  root.appendChild(sBox);
+  sBox.append(E("span", "mag", '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>'), q, hits);
+  sBox.onmousedown = (e) => {
+    if (e.target === q) return;
+    e.preventDefault();
+    q.focus();
+  };
+  card.append(sBox, hd, legend, body);
+  root.appendChild(card);
   const tip = E("div", "tip");
   const toast = E("div", "toast glass");
-  // the Sentinel-2 card: under the search while the imagery shows
+  // the Sentinel-2 card: top left while the imagery shows
   const s2Card = E("div", "s2card glass");
   root.append(tip, toast, s2Card);
   let toastT = 0;
