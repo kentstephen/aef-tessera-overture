@@ -3,7 +3,7 @@ import "./mesh-sampler";
 
 import { MapLibreOverlay as MapboxOverlay } from "@deck.gl/maplibre";
 import { PathLayer } from "@deck.gl/layers";
-import { GeoArrowPolygonLayer } from "@geoarrow/deck.gl-layers";
+import { GeoArrowPathLayer, GeoArrowPolygonLayer } from "@geoarrow/deck.gl-layers";
 import * as arrow from "apache-arrow";
 import * as maplibregl from "maplibre-gl";
 import maplibreWorker from "maplibre-gl/dist/maplibre-gl-worker.mjs?raw";
@@ -223,7 +223,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   let line: ReturnType<typeof colorData> | null = null;
   // on the map: amber where digging is under it, silver where not
   let mapLine: ReturnType<typeof colorData> | null = null;
-  let fillN = 0;
+  // the arrays behind them, to tell a change; and a count for each, read by its layer's update trigger
+  let fillRgba: Uint8Array | null = null, lineRgba: Uint8Array | null = null, mapLineRgba: Uint8Array | null = null;
+  let fillN = 0, lineN = 0, mapLineN = 0;
   // the basemap layer our raster, the footprints and their fade go under: its first road, so the streets stay over both
   let groundId = "foot";
   function loadFoot() {
@@ -235,7 +237,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     hoverRow = pinRow = -1;
     setL2();
     join = footBatch ? joinPixels(footBatch) : null;
-    fill = line = mapLine = null;
+    fill = line = mapLine = fillRgba = lineRgba = mapLineRgba = null;
     recolor();
   }
   model.on("change:foot", loadFoot);
@@ -264,12 +266,34 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       ln[o + 2] = has ? rgba[o + 2] : S2_LINE[2];
       ln[o + 3] = 255;
     }
-    fill = colorData(rgba, join.rows);
-    line = colorData(ln, join.rows);
-    mapLine = colorData(ml, join.rows);
-    fillN++;
-    render();
+    // a color array swapped (and its layer's colors laid out again) only when it changed: tiles come in a few times a
+    // second, and most leave every building as it was
+    let changed = false;
+    if (!fill || !same(fillRgba, rgba)) {
+      fillRgba = rgba;
+      fill = colorData(rgba, join.rows);
+      fillN++;
+      changed = true;
+    }
+    if (!line || !same(lineRgba, ln)) {
+      lineRgba = ln;
+      line = colorData(ln, join.rows);
+      lineN++;
+      changed = true;
+    }
+    if (!mapLine || !same(mapLineRgba, ml)) {
+      mapLineRgba = ml;
+      mapLine = colorData(ml, join.rows);
+      mapLineN++;
+      changed = true;
+    }
+    if (changed) render();
   }
+  const same = (a: Uint8Array | null, b: Uint8Array) => {
+    if (!a || a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+    return true;
+  };
 
   // ---- the data layer
   let codes: Awaited<ReturnType<typeof createCodesLayer>> | null = null;
@@ -455,20 +479,23 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       layers.push(
         // an outline each (amber where digging is under the building, silver where not), over everything of ours and
         // the roads, under the labels
-        new GeoArrowPolygonLayer({
-          ...footProps,
+        // the outlines as paths over the same column (a polygon's rings are laid out as a multilinestring's lines), so
+        // they are never triangulated, as a polygon layer would even unfilled
+        new GeoArrowPathLayer({
           id: "foot-line",
-          filled: false,
-          stroked: true,
+          data: footBatch,
+          getPath: footBatch.getChild("geometry")!.data[0] as never,
+          visible: !s2Shown(),
           // on the imagery the outlines carry the years: solid, a pixel and a half; on the map, amber where digging is
           // under the building, silver where not
-          getLineColor: (s2Shown() ? (line ?? FOOT_LINE) : (mapLine ?? FOOT_LINE)) as never,
+          getColor: (s2Shown() ? (line ?? FOOT_LINE) : (mapLine ?? FOOT_LINE)) as never,
           // in meters, held between half a pixel and two: zoomed out the outlines thin instead of adding up to a glare
-          getLineWidth: s2Shown() ? 1.5 : 2,
-          lineWidthUnits: s2Shown() ? "pixels" : "meters",
-          lineWidthMinPixels: s2Shown() ? 1 : 0.5,
-          lineWidthMaxPixels: 2,
-          updateTriggers: { getLineColor: [fillN, s2Shown()] },
+          getWidth: s2Shown() ? 1.5 : 2,
+          widthUnits: s2Shown() ? "pixels" : "meters",
+          widthMinPixels: s2Shown() ? 1 : 0.5,
+          widthMaxPixels: 2,
+          _pathType: "loop",
+          updateTriggers: { getColor: [lineN, mapLineN, s2Shown()] },
           // read by the MapLibre overlay
           beforeId: "foot",
         } as never),

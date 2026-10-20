@@ -60309,7 +60309,7 @@ var { data: eLe, getPath: tLe, ...nLe } = HD.defaultProps, yz = {
 }, bz = {
 	...nLe,
 	...yz
-}, rLe = class extends sE {
+}, xz = class extends sE {
 	static defaultProps = bz;
 	static layerName = "GeoArrowPathLayer";
 	getPickingInfo(e) {
@@ -60386,14 +60386,14 @@ var { data: eLe, getPath: tLe, ...nLe } = HD.defaultProps, yz = {
 		});
 		return new HD(this.getSubLayerProps(f));
 	}
-}, { data: iLe, getPosition: aLe, ...oLe } = lD.defaultProps, sLe = { _validate: !0 };
+}, { data: rLe, getPosition: iLe, ...aLe } = lD.defaultProps, oLe = { _validate: !0 };
 ({
-	...oLe,
-	...sLe
+	...aLe,
+	...oLe
 });
 //#endregion
 //#region node_modules/threads/dist/serializers.js
-var xz = /* @__PURE__ */ s(((e) => {
+var Sz = /* @__PURE__ */ s(((e) => {
 	Object.defineProperty(e, "__esModule", { value: !0 }), e.DefaultSerializer = e.extendSerializer = void 0;
 	function t(e, t) {
 		let n = e.deserialize.bind(e), r = e.serialize.bind(e);
@@ -60431,9 +60431,9 @@ var xz = /* @__PURE__ */ s(((e) => {
 			return e instanceof Error ? n.serialize(e) : e;
 		}
 	};
-})), Sz = /* @__PURE__ */ s(((e) => {
+})), Cz = /* @__PURE__ */ s(((e) => {
 	Object.defineProperty(e, "__esModule", { value: !0 }), e.serialize = e.deserialize = e.registerSerializer = void 0;
-	var t = xz(), n = t.DefaultSerializer;
+	var t = Sz(), n = t.DefaultSerializer;
 	function r(e) {
 		n = t.extendSerializer(n, e);
 	}
@@ -60446,7 +60446,7 @@ var xz = /* @__PURE__ */ s(((e) => {
 		return n.serialize(e);
 	}
 	e.serialize = a;
-})), cLe = /* @__PURE__ */ s(((e) => {
+})), sLe = /* @__PURE__ */ s(((e) => {
 	Object.defineProperty(e, "__esModule", { value: !0 }), e.getBundleURL = e.getBaseURL = void 0;
 	var t;
 	function n() {
@@ -60466,9 +60466,9 @@ var xz = /* @__PURE__ */ s(((e) => {
 		return ("" + e).replace(/^((?:https?|file|ftp|chrome-extension|moz-extension):\/\/.+)?\/[^/]+(?:\?.*)?$/, "$1") + "/";
 	}
 	e.getBaseURL = i;
-})), Cz = /* @__PURE__ */ s(((e) => {
+})), wz = /* @__PURE__ */ s(((e) => {
 	Object.defineProperty(e, "__esModule", { value: !0 }), e.isWorkerRuntime = e.getWorkerImplementation = e.defaultPoolSize = void 0;
-	var t = cLe();
+	var t = sLe();
 	e.defaultPoolSize = typeof navigator < "u" && navigator.hardwareConcurrency ? navigator.hardwareConcurrency : 4;
 	var n = (e) => /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(e);
 	function r(e) {
@@ -60511,7 +60511,7 @@ var xz = /* @__PURE__ */ s(((e) => {
 		return !(typeof self > "u" || !self.postMessage || e);
 	}
 	e.isWorkerRuntime = s;
-})), lLe = /* @__PURE__ */ s(((e, t) => {
+})), cLe = /* @__PURE__ */ s(((e, t) => {
 	var n = 1e3, r = n * 60, i = r * 60, a = i * 24, o = a * 7, s = a * 365.25;
 	t.exports = function(e, t) {
 		t ||= {};
@@ -60574,9 +60574,9 @@ var xz = /* @__PURE__ */ s(((e) => {
 		var i = t >= n * 1.5;
 		return Math.round(e / n) + " " + r + (i ? "s" : "");
 	}
-})), uLe = /* @__PURE__ */ s(((e, t) => {
+})), lLe = /* @__PURE__ */ s(((e, t) => {
 	function n(e) {
-		n.debug = n, n.default = n, n.coerce = c, n.disable = o, n.enable = i, n.enabled = s, n.humanize = lLe(), n.destroy = l, Object.keys(e).forEach((t) => {
+		n.debug = n, n.default = n, n.coerce = c, n.disable = o, n.enable = i, n.enabled = s, n.humanize = cLe(), n.destroy = l, Object.keys(e).forEach((t) => {
 			n[t] = e[t];
 		}), n.names = [], n.skips = [], n.formatters = {};
 		function t(e) {
@@ -60647,7 +60647,7 @@ var xz = /* @__PURE__ */ s(((e) => {
 		return n.enable(n.load()), n;
 	}
 	t.exports = n;
-})), wz = /* @__PURE__ */ s(((e, t) => {
+})), Tz = /* @__PURE__ */ s(((e, t) => {
 	e.formatArgs = r, e.save = i, e.load = a, e.useColors = n, e.storage = o(), e.destroy = (() => {
 		let e = !1;
 		return () => {
@@ -60687,7 +60687,7 @@ var xz = /* @__PURE__ */ s(((e) => {
 			return localStorage;
 		} catch {}
 	}
-	t.exports = uLe()(e);
+	t.exports = lLe()(e);
 	var { formatters: s } = t.exports;
 	s.j = function(e) {
 		try {
@@ -60696,8 +60696,8 @@ var xz = /* @__PURE__ */ s(((e) => {
 			return "[UnexpectedJSONParseError]: " + e.message;
 		}
 	};
-})), Tz, Ez, Dz = o((() => {
-	Tz = function(e, t, n, r) {
+})), Ez, Dz, Oz = o((() => {
+	Ez = function(e, t, n, r) {
 		function i(e) {
 			return e instanceof n ? e : new n(function(t) {
 				t(e);
@@ -60723,7 +60723,7 @@ var xz = /* @__PURE__ */ s(((e) => {
 			}
 			c((r = r.apply(e, t || [])).next());
 		});
-	}, Ez = class {
+	}, Dz = class {
 		constructor(e) {
 			this._baseObserver = e, this._pendingPromises = /* @__PURE__ */ new Set();
 		}
@@ -60734,7 +60734,7 @@ var xz = /* @__PURE__ */ s(((e) => {
 			this._baseObserver.error(e);
 		}
 		schedule(e) {
-			let t = Promise.all(this._pendingPromises), n = [], r = (e) => n.push(e), i = Promise.resolve().then(() => Tz(this, void 0, void 0, function* () {
+			let t = Promise.all(this._pendingPromises), n = [], r = (e) => n.push(e), i = Promise.resolve().then(() => Ez(this, void 0, void 0, function* () {
 				yield t, yield e(r), this._pendingPromises.delete(i);
 				for (let e of n) this._baseObserver.next(e);
 			})).catch((e) => {
@@ -60743,95 +60743,95 @@ var xz = /* @__PURE__ */ s(((e) => {
 			this._pendingPromises.add(i);
 		}
 	};
-})), Oz, kz, Az, jz = o((() => {
-	Oz = () => typeof Symbol == "function", kz = (e) => Oz() && !!Symbol[e], Az = (e) => kz(e) ? Symbol[e] : "@@" + e, kz("asyncIterator") || (Symbol.asyncIterator = Symbol.asyncIterator || Symbol.for("Symbol.asyncIterator"));
+})), kz, Az, jz, Mz = o((() => {
+	kz = () => typeof Symbol == "function", Az = (e) => kz() && !!Symbol[e], jz = (e) => Az(e) ? Symbol[e] : "@@" + e, Az("asyncIterator") || (Symbol.asyncIterator = Symbol.asyncIterator || Symbol.for("Symbol.asyncIterator"));
 }));
 //#endregion
 //#region node_modules/observable-fns/dist.esm/observable.js
-function Mz(e, t) {
+function Nz(e, t) {
 	let n = e[t];
 	if (n != null) {
 		if (typeof n != "function") throw TypeError(n + " is not a function");
 		return n;
 	}
 }
-function Nz(e) {
-	let t = e.constructor;
-	return t !== void 0 && (t = t[Hz], t === null && (t = void 0)), t === void 0 ? Gz : t;
-}
-function dLe(e) {
-	return e instanceof Gz;
-}
 function Pz(e) {
-	Pz.log ? Pz.log(e) : setTimeout(() => {
+	let t = e.constructor;
+	return t !== void 0 && (t = t[Uz], t === null && (t = void 0)), t === void 0 ? Kz : t;
+}
+function uLe(e) {
+	return e instanceof Kz;
+}
+function Fz(e) {
+	Fz.log ? Fz.log(e) : setTimeout(() => {
 		throw e;
 	}, 0);
 }
-function Fz(e) {
+function Iz(e) {
 	Promise.resolve().then(() => {
 		try {
 			e();
 		} catch (e) {
-			Pz(e);
+			Fz(e);
 		}
 	});
 }
-function Iz(e) {
+function Lz(e) {
 	let t = e._cleanup;
 	if (t !== void 0 && (e._cleanup = void 0, t)) try {
 		if (typeof t == "function") t();
 		else {
-			let e = Mz(t, "unsubscribe");
+			let e = Nz(t, "unsubscribe");
 			e && e.call(t);
 		}
 	} catch (e) {
-		Pz(e);
+		Fz(e);
 	}
 }
-function Lz(e) {
+function Rz(e) {
 	e._observer = void 0, e._queue = void 0, e._state = "closed";
 }
-function fLe(e) {
+function dLe(e) {
 	let t = e._queue;
 	if (t) {
 		e._queue = void 0, e._state = "ready";
-		for (let n of t) if (Rz(e, n.type, n.value), e._state === "closed") break;
+		for (let n of t) if (zz(e, n.type, n.value), e._state === "closed") break;
 	}
 }
-function Rz(e, t, n) {
+function zz(e, t, n) {
 	e._state = "running";
 	let r = e._observer;
 	try {
-		let i = r ? Mz(r, t) : void 0;
+		let i = r ? Nz(r, t) : void 0;
 		switch (t) {
 			case "next":
 				i && i.call(r, n);
 				break;
 			case "error":
-				if (Lz(e), i) i.call(r, n);
+				if (Rz(e), i) i.call(r, n);
 				else throw n;
 				break;
-			case "complete": Lz(e), i && i.call(r);
+			case "complete": Rz(e), i && i.call(r);
 		}
 	} catch (e) {
-		Pz(e);
+		Fz(e);
 	}
-	e._state === "closed" ? Iz(e) : e._state === "running" && (e._state = "ready");
+	e._state === "closed" ? Lz(e) : e._state === "running" && (e._state = "ready");
 }
-function zz(e, t, n) {
+function Bz(e, t, n) {
 	e._state !== "closed" && (e._state === "buffering" ? (e._queue = e._queue || [], e._queue.push({
 		type: t,
 		value: n
-	})) : e._state === "ready" ? Rz(e, t, n) : (e._state = "buffering", e._queue = [{
+	})) : e._state === "ready" ? zz(e, t, n) : (e._state = "buffering", e._queue = [{
 		type: t,
 		value: n
-	}], Fz(() => fLe(e))));
+	}], Iz(() => dLe(e))));
 }
-var Bz, Vz, Hz, Uz, Wz, Gz, Kz = o((() => {
-	jz(), Bz = Az("iterator"), Vz = Az("observable"), Hz = Az("species"), Uz = class {
+var Vz, Hz, Uz, Wz, Gz, Kz, qz = o((() => {
+	Mz(), Vz = jz("iterator"), Hz = jz("observable"), Uz = jz("species"), Wz = class {
 		constructor(e, t) {
 			this._cleanup = void 0, this._observer = e, this._queue = void 0, this._state = "initializing";
-			let n = new Wz(this);
+			let n = new Gz(this);
 			try {
 				this._cleanup = t.call(void 0, n);
 			} catch (e) {
@@ -60843,9 +60843,9 @@ var Bz, Vz, Hz, Uz, Wz, Gz, Kz = o((() => {
 			return this._state === "closed";
 		}
 		unsubscribe() {
-			this._state !== "closed" && (Lz(this), Iz(this));
+			this._state !== "closed" && (Rz(this), Lz(this));
 		}
-	}, Wz = class {
+	}, Gz = class {
 		constructor(e) {
 			this._subscription = e;
 		}
@@ -60853,15 +60853,15 @@ var Bz, Vz, Hz, Uz, Wz, Gz, Kz = o((() => {
 			return this._subscription._state === "closed";
 		}
 		next(e) {
-			zz(this._subscription, "next", e);
+			Bz(this._subscription, "next", e);
 		}
 		error(e) {
-			zz(this._subscription, "error", e);
+			Bz(this._subscription, "error", e);
 		}
 		complete() {
-			zz(this._subscription, "complete");
+			Bz(this._subscription, "complete");
 		}
-	}, Gz = class e {
+	}, Kz = class e {
 		constructor(t) {
 			if (!(this instanceof e)) throw TypeError("Observable cannot be called as a function");
 			if (typeof t != "function") throw TypeError("Observable initializer must be a function");
@@ -60872,7 +60872,7 @@ var Bz, Vz, Hz, Uz, Wz, Gz, Kz = o((() => {
 				next: e,
 				error: t,
 				complete: n
-			}), new Uz(e, this._subscriber);
+			}), new Wz(e, this._subscriber);
 		}
 		pipe(e, ...t) {
 			let n = this;
@@ -60928,7 +60928,7 @@ var Bz, Vz, Hz, Uz, Wz, Gz, Kz = o((() => {
 		}
 		map(e) {
 			if (typeof e != "function") throw TypeError(e + " is not a function");
-			return new (Nz(this))((t) => this.subscribe({
+			return new (Pz(this))((t) => this.subscribe({
 				next(n) {
 					let r = n;
 					try {
@@ -60948,7 +60948,7 @@ var Bz, Vz, Hz, Uz, Wz, Gz, Kz = o((() => {
 		}
 		filter(e) {
 			if (typeof e != "function") throw TypeError(e + " is not a function");
-			return new (Nz(this))((t) => this.subscribe({
+			return new (Pz(this))((t) => this.subscribe({
 				next(n) {
 					try {
 						if (!e(n)) return;
@@ -60967,7 +60967,7 @@ var Bz, Vz, Hz, Uz, Wz, Gz, Kz = o((() => {
 		}
 		reduce(e, t) {
 			if (typeof e != "function") throw TypeError(e + " is not a function");
-			let n = Nz(this), r = arguments.length > 1, i = !1, a = t;
+			let n = Pz(this), r = arguments.length > 1, i = !1, a = t;
 			return new n((t) => this.subscribe({
 				next(n) {
 					let o = !i;
@@ -60988,7 +60988,7 @@ var Bz, Vz, Hz, Uz, Wz, Gz, Kz = o((() => {
 			}));
 		}
 		concat(...e) {
-			let t = Nz(this);
+			let t = Pz(this);
 			return new t((n) => {
 				let r, i = 0;
 				function a(o) {
@@ -61011,7 +61011,7 @@ var Bz, Vz, Hz, Uz, Wz, Gz, Kz = o((() => {
 		}
 		flatMap(e) {
 			if (typeof e != "function") throw TypeError(e + " is not a function");
-			let t = Nz(this);
+			let t = Pz(this);
 			return new t((n) => {
 				let r = [], i = this.subscribe({
 					next(i) {
@@ -61051,22 +61051,22 @@ var Bz, Vz, Hz, Uz, Wz, Gz, Kz = o((() => {
 				};
 			});
 		}
-		[(Symbol.observable, Vz)]() {
+		[(Symbol.observable, Hz)]() {
 			return this;
 		}
 		static from(t) {
 			let n = typeof this == "function" ? this : e;
 			if (t == null) throw TypeError(t + " is not an object");
-			let r = Mz(t, Vz);
+			let r = Nz(t, Hz);
 			if (r) {
 				let e = r.call(t);
 				if (Object(e) !== e) throw TypeError(e + " is not an object");
-				return dLe(e) && e.constructor === n ? e : new n((t) => e.subscribe(t));
+				return uLe(e) && e.constructor === n ? e : new n((t) => e.subscribe(t));
 			}
-			if (kz("iterator")) {
-				let e = Mz(t, Bz);
+			if (Az("iterator")) {
+				let e = Nz(t, Vz);
 				if (e) return new n((n) => {
-					Fz(() => {
+					Iz(() => {
 						if (!n.closed) {
 							for (let r of e.call(t)) if (n.next(r), n.closed) return;
 							n.complete();
@@ -61075,7 +61075,7 @@ var Bz, Vz, Hz, Uz, Wz, Gz, Kz = o((() => {
 				});
 			}
 			if (Array.isArray(t)) return new n((e) => {
-				Fz(() => {
+				Iz(() => {
 					if (!e.closed) {
 						for (let n of t) if (e.next(n), e.closed) return;
 						e.complete();
@@ -61086,7 +61086,7 @@ var Bz, Vz, Hz, Uz, Wz, Gz, Kz = o((() => {
 		}
 		static of(...t) {
 			return new (typeof this == "function" ? this : e)((e) => {
-				Fz(() => {
+				Iz(() => {
 					if (!e.closed) {
 						for (let n of t) if (e.next(n), e.closed) return;
 						e.complete();
@@ -61094,28 +61094,28 @@ var Bz, Vz, Hz, Uz, Wz, Gz, Kz = o((() => {
 				});
 			});
 		}
-		static get [Hz]() {
+		static get [Uz]() {
 			return this;
 		}
-	}, Oz() && Object.defineProperty(Gz, Symbol("extensions"), {
+	}, kz() && Object.defineProperty(Kz, Symbol("extensions"), {
 		value: {
-			symbol: Vz,
-			hostReportError: Pz
+			symbol: Hz,
+			hostReportError: Fz
 		},
 		configurable: !0
 	});
 }));
 //#endregion
 //#region node_modules/observable-fns/dist.esm/unsubscribe.js
-function qz(e) {
+function Jz(e) {
 	typeof e == "function" ? e() : e && typeof e.unsubscribe == "function" && e.unsubscribe();
 }
-var Jz = o((() => {}));
+var Yz = o((() => {}));
 //#endregion
 //#region node_modules/observable-fns/dist.esm/filter.js
-function pLe(e) {
-	return (t) => new Gz((n) => {
-		let r = new Ez(n), i = t.subscribe({
+function fLe(e) {
+	return (t) => new Kz((n) => {
+		let r = new Dz(n), i = t.subscribe({
 			complete() {
 				r.complete();
 			},
@@ -61123,16 +61123,16 @@ function pLe(e) {
 				r.error(e);
 			},
 			next(t) {
-				r.schedule((n) => Yz(this, void 0, void 0, function* () {
+				r.schedule((n) => Xz(this, void 0, void 0, function* () {
 					(yield e(t)) && n(t);
 				}));
 			}
 		});
-		return () => qz(i);
+		return () => Jz(i);
 	});
 }
-var Yz, mLe = o((() => {
-	Dz(), Kz(), Jz(), Yz = function(e, t, n, r) {
+var Xz, pLe = o((() => {
+	Oz(), qz(), Yz(), Xz = function(e, t, n, r) {
 		function i(e) {
 			return e instanceof n ? e : new n(function(t) {
 				t(e);
@@ -61162,20 +61162,20 @@ var Yz, mLe = o((() => {
 }));
 //#endregion
 //#region node_modules/observable-fns/dist.esm/_util.js
+function mLe(e) {
+	return e && Az("asyncIterator") && e[Symbol.asyncIterator];
+}
 function hLe(e) {
-	return e && kz("asyncIterator") && e[Symbol.asyncIterator];
+	return e && Az("iterator") && e[Symbol.iterator];
 }
-function gLe(e) {
-	return e && kz("iterator") && e[Symbol.iterator];
-}
-var _Le = o((() => {
-	jz();
+var gLe = o((() => {
+	Mz();
 }));
 //#endregion
 //#region node_modules/observable-fns/dist.esm/flatMap.js
-function vLe(e) {
-	return (t) => new Gz((n) => {
-		let r = new Ez(n), i = t.subscribe({
+function _Le(e) {
+	return (t) => new Kz((n) => {
+		let r = new Dz(n), i = t.subscribe({
 			complete() {
 				r.complete();
 			},
@@ -61183,11 +61183,11 @@ function vLe(e) {
 				r.error(e);
 			},
 			next(t) {
-				r.schedule((n) => Xz(this, void 0, void 0, function* () {
+				r.schedule((n) => Zz(this, void 0, void 0, function* () {
 					var r, i;
 					let a = yield e(t);
-					if (gLe(a) || hLe(a)) try {
-						for (var o = Zz(a), s; s = yield o.next(), !s.done;) {
+					if (hLe(a) || mLe(a)) try {
+						for (var o = Qz(a), s; s = yield o.next(), !s.done;) {
 							let e = s.value;
 							n(e);
 						}
@@ -61204,11 +61204,11 @@ function vLe(e) {
 				}));
 			}
 		});
-		return () => qz(i);
+		return () => Jz(i);
 	});
 }
-var Xz, Zz, yLe = o((() => {
-	Dz(), _Le(), Kz(), Jz(), Xz = function(e, t, n, r) {
+var Zz, Qz, vLe = o((() => {
+	Oz(), gLe(), qz(), Yz(), Zz = function(e, t, n, r) {
 		function i(e) {
 			return e instanceof n ? e : new n(function(t) {
 				t(e);
@@ -61234,7 +61234,7 @@ var Xz, Zz, yLe = o((() => {
 			}
 			c((r = r.apply(e, t || [])).next());
 		});
-	}, Zz = function(e) {
+	}, Qz = function(e) {
 		if (!Symbol.asyncIterator) throw TypeError("Symbol.asyncIterator is not defined.");
 		var t = e[Symbol.asyncIterator], n;
 		return t ? t.call(e) : (e = typeof __values == "function" ? __values(e) : e[Symbol.iterator](), n = {}, r("next"), r("throw"), r("return"), n[Symbol.asyncIterator] = function() {
@@ -61259,22 +61259,22 @@ var Xz, Zz, yLe = o((() => {
 }));
 //#endregion
 //#region node_modules/observable-fns/dist.esm/interval.js
-function bLe(e) {
-	return new Gz((t) => {
+function yLe(e) {
+	return new Kz((t) => {
 		let n = 0, r = setInterval(() => {
 			t.next(n++);
 		}, e);
 		return () => clearInterval(r);
 	});
 }
-var xLe = o((() => {
-	Kz();
+var bLe = o((() => {
+	qz();
 }));
 //#endregion
 //#region node_modules/observable-fns/dist.esm/map.js
-function SLe(e) {
-	return (t) => new Gz((n) => {
-		let r = new Ez(n), i = t.subscribe({
+function xLe(e) {
+	return (t) => new Kz((n) => {
+		let r = new Dz(n), i = t.subscribe({
 			complete() {
 				r.complete();
 			},
@@ -61282,16 +61282,16 @@ function SLe(e) {
 				r.error(e);
 			},
 			next(t) {
-				r.schedule((n) => Qz(this, void 0, void 0, function* () {
+				r.schedule((n) => $z(this, void 0, void 0, function* () {
 					n(yield e(t));
 				}));
 			}
 		});
-		return () => qz(i);
+		return () => Jz(i);
 	});
 }
-var Qz, CLe = o((() => {
-	Dz(), Kz(), Jz(), Qz = function(e, t, n, r) {
+var $z, SLe = o((() => {
+	Oz(), qz(), Yz(), $z = function(e, t, n, r) {
 		function i(e) {
 			return e instanceof n ? e : new n(function(t) {
 				t(e);
@@ -61321,8 +61321,8 @@ var Qz, CLe = o((() => {
 }));
 //#endregion
 //#region node_modules/observable-fns/dist.esm/merge.js
-function wLe(...e) {
-	return e.length === 0 ? Gz.from([]) : new Gz((t) => {
+function CLe(...e) {
+	return e.length === 0 ? Kz.from([]) : new Kz((t) => {
 		let n = 0, r = e.map((r) => r.subscribe({
 			error(e) {
 				t.error(e), i();
@@ -61334,15 +61334,15 @@ function wLe(...e) {
 				++n === e.length && (t.complete(), i());
 			}
 		})), i = () => {
-			r.forEach((e) => qz(e));
+			r.forEach((e) => Jz(e));
 		};
 		return i;
 	});
 }
-var TLe = o((() => {
-	Kz(), Jz();
-})), $z, eB = o((() => {
-	Kz(), $z = class extends Gz {
+var wLe = o((() => {
+	qz(), Yz();
+})), eB, tB = o((() => {
+	qz(), eB = class extends Kz {
 		constructor() {
 			super((e) => (this._observers.add(e), () => this._observers.delete(e))), this._observers = /* @__PURE__ */ new Set();
 		}
@@ -61359,24 +61359,24 @@ var TLe = o((() => {
 }));
 //#endregion
 //#region node_modules/observable-fns/dist.esm/multicast.js
-function ELe(e) {
-	let t = new $z(), n, r = 0;
-	return new Gz((i) => {
+function TLe(e) {
+	let t = new eB(), n, r = 0;
+	return new Kz((i) => {
 		n ||= e.subscribe(t);
 		let a = t.subscribe(i);
 		return r++, () => {
-			r--, a.unsubscribe(), r === 0 && (qz(n), n = void 0);
+			r--, a.unsubscribe(), r === 0 && (Jz(n), n = void 0);
 		};
 	});
 }
-var DLe = o((() => {
-	Kz(), eB(), Jz();
+var ELe = o((() => {
+	qz(), tB(), Yz();
 }));
 //#endregion
 //#region node_modules/observable-fns/dist.esm/scan.js
-function OLe(e, t) {
-	return (n) => new Gz((r) => {
-		let i, a = 0, o = new Ez(r), s = n.subscribe({
+function DLe(e, t) {
+	return (n) => new Kz((r) => {
+		let i, a = 0, o = new Dz(r), s = n.subscribe({
 			complete() {
 				o.complete();
 			},
@@ -61384,16 +61384,16 @@ function OLe(e, t) {
 				o.error(e);
 			},
 			next(n) {
-				o.schedule((r) => tB(this, void 0, void 0, function* () {
+				o.schedule((r) => nB(this, void 0, void 0, function* () {
 					i = yield e(a === 0 ? t === void 0 ? n : t : i, n, a++), r(i);
 				}));
 			}
 		});
-		return () => qz(s);
+		return () => Jz(s);
 	});
 }
-var tB, kLe = o((() => {
-	Dz(), Kz(), Jz(), tB = function(e, t, n, r) {
+var nB, OLe = o((() => {
+	Oz(), qz(), Yz(), nB = function(e, t, n, r) {
 		function i(e) {
 			return e instanceof n ? e : new n(function(t) {
 				t(e);
@@ -61420,20 +61420,20 @@ var tB, kLe = o((() => {
 			c((r = r.apply(e, t || [])).next());
 		});
 	};
-})), nB = /* @__PURE__ */ c({
-	Observable: () => Gz,
-	Subject: () => $z,
-	filter: () => pLe,
-	flatMap: () => vLe,
-	interval: () => bLe,
-	map: () => SLe,
-	merge: () => wLe,
-	multicast: () => ELe,
-	scan: () => OLe,
-	unsubscribe: () => qz
-}), rB = o((() => {
-	mLe(), yLe(), xLe(), CLe(), TLe(), DLe(), Kz(), kLe(), eB(), Jz();
-})), ALe = /* @__PURE__ */ s(((e) => {
+})), rB = /* @__PURE__ */ c({
+	Observable: () => Kz,
+	Subject: () => eB,
+	filter: () => fLe,
+	flatMap: () => _Le,
+	interval: () => yLe,
+	map: () => xLe,
+	merge: () => CLe,
+	multicast: () => TLe,
+	scan: () => DLe,
+	unsubscribe: () => Jz
+}), iB = o((() => {
+	pLe(), vLe(), bLe(), SLe(), wLe(), ELe(), qz(), OLe(), tB(), Yz();
+})), kLe = /* @__PURE__ */ s(((e) => {
 	Object.defineProperty(e, "__esModule", { value: !0 }), e.allSettled = void 0;
 	function t(e) {
 		return Promise.all(e.map((e) => {
@@ -61452,15 +61452,15 @@ var tB, kLe = o((() => {
 		}));
 	}
 	e.allSettled = t;
-})), jLe = /* @__PURE__ */ s(((e) => {
+})), ALe = /* @__PURE__ */ s(((e) => {
 	Object.defineProperty(e, "__esModule", { value: !0 }), e.PoolEventType = void 0, (function(e) {
 		e.initialized = "initialized", e.taskCanceled = "taskCanceled", e.taskCompleted = "taskCompleted", e.taskFailed = "taskFailed", e.taskQueued = "taskQueued", e.taskQueueDrained = "taskQueueDrained", e.taskStart = "taskStart", e.terminated = "terminated";
 	})(e.PoolEventType ||= {});
-})), iB = /* @__PURE__ */ s(((e) => {
-	Object.defineProperty(e, "__esModule", { value: !0 }), e.$worker = e.$transferable = e.$terminate = e.$events = e.$errors = void 0, e.$errors = Symbol("thread.errors"), e.$events = Symbol("thread.events"), e.$terminate = Symbol("thread.terminate"), e.$transferable = Symbol("thread.transferable"), e.$worker = Symbol("thread.worker");
 })), aB = /* @__PURE__ */ s(((e) => {
+	Object.defineProperty(e, "__esModule", { value: !0 }), e.$worker = e.$transferable = e.$terminate = e.$events = e.$errors = void 0, e.$errors = Symbol("thread.errors"), e.$events = Symbol("thread.events"), e.$terminate = Symbol("thread.terminate"), e.$transferable = Symbol("thread.transferable"), e.$worker = Symbol("thread.worker");
+})), oB = /* @__PURE__ */ s(((e) => {
 	Object.defineProperty(e, "__esModule", { value: !0 }), e.Thread = void 0;
-	var t = iB();
+	var t = aB();
 	function n(e) {
 		throw Error(e);
 	}
@@ -61475,7 +61475,7 @@ var tB, kLe = o((() => {
 			return e[t.$terminate]();
 		}
 	};
-})), MLe = /* @__PURE__ */ s(((e) => {
+})), jLe = /* @__PURE__ */ s(((e) => {
 	var t = e && e.__awaiter || function(e, t, n, r) {
 		function i(e) {
 			return e instanceof n ? e : new n(function(t) {
@@ -61506,14 +61506,14 @@ var tB, kLe = o((() => {
 		return e && e.__esModule ? e : { default: e };
 	};
 	Object.defineProperty(e, "__esModule", { value: !0 }), e.Pool = e.Thread = e.PoolEventType = void 0;
-	var r = n(wz()), i = (rB(), d(nB)), a = ALe(), o = Cz(), s = jLe();
+	var r = n(Tz()), i = (iB(), d(rB)), a = kLe(), o = wz(), s = ALe();
 	Object.defineProperty(e, "PoolEventType", {
 		enumerable: !0,
 		get: function() {
 			return s.PoolEventType;
 		}
 	});
-	var c = aB();
+	var c = oB();
 	Object.defineProperty(e, "Thread", {
 		enumerable: !0,
 		get: function() {
@@ -61684,7 +61684,7 @@ var tB, kLe = o((() => {
 		return new g(e, t);
 	}
 	_.EventType = s.PoolEventType, e.Pool = _;
-})), NLe = /* @__PURE__ */ s(((e) => {
+})), MLe = /* @__PURE__ */ s(((e) => {
 	Object.defineProperty(e, "__esModule", { value: !0 }), e.createPromiseWithResolver = void 0;
 	var t = () => void 0;
 	function n() {
@@ -61696,13 +61696,13 @@ var tB, kLe = o((() => {
 		}];
 	}
 	e.createPromiseWithResolver = n;
-})), PLe = /* @__PURE__ */ s(((e) => {
-	Object.defineProperty(e, "__esModule", { value: !0 }), e.WorkerEventType = void 0, iB(), (function(e) {
+})), NLe = /* @__PURE__ */ s(((e) => {
+	Object.defineProperty(e, "__esModule", { value: !0 }), e.WorkerEventType = void 0, aB(), (function(e) {
 		e.internalError = "internalError", e.message = "message", e.termination = "termination";
 	})(e.WorkerEventType ||= {});
-})), FLe = /* @__PURE__ */ s(((e) => {
+})), PLe = /* @__PURE__ */ s(((e) => {
 	Object.defineProperty(e, "__esModule", { value: !0 }), e.ObservablePromise = void 0;
-	var t = (rB(), d(nB)), n = () => void 0, r = (e) => e, i = (e) => Promise.resolve().then(e);
+	var t = (iB(), d(rB)), n = () => void 0, r = (e) => e, i = (e) => Promise.resolve().then(e);
 	function a(e) {
 		throw e;
 	}
@@ -61782,9 +61782,9 @@ var tB, kLe = o((() => {
 			}) : super.from(t);
 		}
 	};
-})), oB = /* @__PURE__ */ s(((e) => {
+})), sB = /* @__PURE__ */ s(((e) => {
 	Object.defineProperty(e, "__esModule", { value: !0 }), e.Transfer = e.isTransferDescriptor = void 0;
-	var t = iB();
+	var t = aB();
 	function n(e) {
 		return !(!e || typeof e != "object");
 	}
@@ -61804,18 +61804,18 @@ var tB, kLe = o((() => {
 		};
 	}
 	e.Transfer = i;
-})), sB = /* @__PURE__ */ s(((e) => {
+})), cB = /* @__PURE__ */ s(((e) => {
 	Object.defineProperty(e, "__esModule", { value: !0 }), e.WorkerMessageType = e.MasterMessageType = void 0, (function(e) {
 		e.cancel = "cancel", e.run = "run";
 	})(e.MasterMessageType ||= {}), (function(e) {
 		e.error = "error", e.init = "init", e.result = "result", e.running = "running", e.uncaughtError = "uncaughtError";
 	})(e.WorkerMessageType ||= {});
-})), ILe = /* @__PURE__ */ s(((e) => {
+})), FLe = /* @__PURE__ */ s(((e) => {
 	var t = e && e.__importDefault || function(e) {
 		return e && e.__esModule ? e : { default: e };
 	};
 	Object.defineProperty(e, "__esModule", { value: !0 }), e.createProxyModule = e.createProxyFunction = void 0;
-	var n = t(wz()), r = (rB(), d(nB)), i = Sz(), a = FLe(), o = oB(), s = sB(), c = n.default("threads:master:messages"), l = 1, u = (e) => Array.from(new Set(e)), f = (e) => e && e.type === s.WorkerMessageType.error, p = (e) => e && e.type === s.WorkerMessageType.result, m = (e) => e && e.type === s.WorkerMessageType.running;
+	var n = t(Tz()), r = (iB(), d(rB)), i = Cz(), a = PLe(), o = sB(), s = cB(), c = n.default("threads:master:messages"), l = 1, u = (e) => Array.from(new Set(e)), f = (e) => e && e.type === s.WorkerMessageType.error, p = (e) => e && e.type === s.WorkerMessageType.result, m = (e) => e && e.type === s.WorkerMessageType.running;
 	function h(e, t) {
 		return new r.Observable((n) => {
 			let r, a = ((o) => {
@@ -61876,7 +61876,7 @@ var tB, kLe = o((() => {
 		return n;
 	}
 	e.createProxyModule = v;
-})), LLe = /* @__PURE__ */ s(((e) => {
+})), ILe = /* @__PURE__ */ s(((e) => {
 	var t = e && e.__awaiter || function(e, t, n, r) {
 		function i(e) {
 			return e instanceof n ? e : new n(function(t) {
@@ -61907,7 +61907,7 @@ var tB, kLe = o((() => {
 		return e && e.__esModule ? e : { default: e };
 	};
 	Object.defineProperty(e, "__esModule", { value: !0 }), e.spawn = void 0;
-	var r = n(wz()), i = (rB(), d(nB)), a = Sz(), o = NLe(), s = iB(), c = PLe(), l = ILe(), u = r.default("threads:master:messages"), f = r.default("threads:master:spawn"), p = r.default("threads:master:thread-utils"), m = (e) => e && e.type === "init", h = (e) => e && e.type === "uncaughtError", g = typeof process < "u" && {}.THREADS_WORKER_INIT_TIMEOUT ? Number.parseInt({}.THREADS_WORKER_INIT_TIMEOUT, 10) : 1e4;
+	var r = n(Tz()), i = (iB(), d(rB)), a = Cz(), o = MLe(), s = aB(), c = NLe(), l = FLe(), u = r.default("threads:master:messages"), f = r.default("threads:master:spawn"), p = r.default("threads:master:thread-utils"), m = (e) => e && e.type === "init", h = (e) => e && e.type === "uncaughtError", g = typeof process < "u" && {}.THREADS_WORKER_INIT_TIMEOUT ? Number.parseInt({}.THREADS_WORKER_INIT_TIMEOUT, 10) : 1e4;
 	function _(e, n, r) {
 		return t(this, void 0, void 0, function* () {
 			let t, i = new Promise((e, i) => {
@@ -61977,39 +61977,39 @@ var tB, kLe = o((() => {
 		});
 	}
 	e.spawn = S;
-})), RLe = /* @__PURE__ */ s(((e) => {
+})), LLe = /* @__PURE__ */ s(((e) => {
 	Object.defineProperty(e, "__esModule", { value: !0 }), e.Worker = e.BlobWorker = e.isWorkerRuntime = e.Thread = e.spawn = e.Pool = void 0;
-	var t = Cz();
+	var t = wz();
 	Object.defineProperty(e, "isWorkerRuntime", {
 		enumerable: !0,
 		get: function() {
 			return t.isWorkerRuntime;
 		}
 	});
-	var n = MLe();
+	var n = jLe();
 	Object.defineProperty(e, "Pool", {
 		enumerable: !0,
 		get: function() {
 			return n.Pool;
 		}
 	});
-	var r = LLe();
+	var r = ILe();
 	Object.defineProperty(e, "spawn", {
 		enumerable: !0,
 		get: function() {
 			return r.spawn;
 		}
 	});
-	var i = aB();
+	var i = oB();
 	Object.defineProperty(e, "Thread", {
 		enumerable: !0,
 		get: function() {
 			return i.Thread;
 		}
 	}), e.BlobWorker = t.getWorkerImplementation().blob, e.Worker = t.getWorkerImplementation().default;
-})), zLe = /* @__PURE__ */ s(((e, t) => {
+})), RLe = /* @__PURE__ */ s(((e, t) => {
 	t.exports = (e) => e ? typeof Symbol.observable == "symbol" && typeof e[Symbol.observable] == "function" ? e === e[Symbol.observable]() : typeof e["@@observable"] == "function" && e === e["@@observable"]() : !1;
-})), BLe = /* @__PURE__ */ s(((e) => {
+})), zLe = /* @__PURE__ */ s(((e) => {
 	Object.defineProperty(e, "__esModule", { value: !0 }), e.default = {
 		isWorkerRuntime: function() {
 			let e = typeof self < "u" && typeof Window < "u" && self instanceof Window;
@@ -62027,7 +62027,7 @@ var tB, kLe = o((() => {
 			};
 		}
 	};
-})), VLe = /* @__PURE__ */ s(((e) => {
+})), BLe = /* @__PURE__ */ s(((e) => {
 	var t = e && e.__awaiter || function(e, t, n, r) {
 		function i(e) {
 			return e instanceof n ? e : new n(function(t) {
@@ -62058,14 +62058,14 @@ var tB, kLe = o((() => {
 		return e && e.__esModule ? e : { default: e };
 	};
 	Object.defineProperty(e, "__esModule", { value: !0 }), e.expose = e.isWorkerRuntime = e.Transfer = e.registerSerializer = void 0;
-	var r = n(zLe()), i = Sz(), a = oB(), o = sB(), s = n(BLe()), c = Sz();
+	var r = n(RLe()), i = Cz(), a = sB(), o = cB(), s = n(zLe()), c = Cz();
 	Object.defineProperty(e, "registerSerializer", {
 		enumerable: !0,
 		get: function() {
 			return c.registerSerializer;
 		}
 	});
-	var l = oB();
+	var l = sB();
 	Object.defineProperty(e, "Transfer", {
 		enumerable: !0,
 		get: function() {
@@ -62188,7 +62188,7 @@ var tB, kLe = o((() => {
 	}), process.on("unhandledRejection", (e) => {
 		e && typeof e.message == "string" && setTimeout(() => S(e), 250);
 	}));
-})), cB = /* @__PURE__ */ u((/* @__PURE__ */ s(((e) => {
+})), lB = /* @__PURE__ */ u((/* @__PURE__ */ s(((e) => {
 	var t = e && e.__createBinding || (Object.create ? (function(e, t, n, r) {
 		r === void 0 && (r = n), Object.defineProperty(e, r, {
 			enumerable: !0,
@@ -62202,28 +62202,28 @@ var tB, kLe = o((() => {
 		for (var r in e) r !== "default" && !Object.prototype.hasOwnProperty.call(n, r) && t(n, e, r);
 	};
 	Object.defineProperty(e, "__esModule", { value: !0 }), e.Transfer = e.DefaultSerializer = e.expose = e.registerSerializer = void 0;
-	var r = Sz();
+	var r = Cz();
 	Object.defineProperty(e, "registerSerializer", {
 		enumerable: !0,
 		get: function() {
 			return r.registerSerializer;
 		}
-	}), n(RLe(), e);
-	var i = VLe();
+	}), n(LLe(), e);
+	var i = BLe();
 	Object.defineProperty(e, "expose", {
 		enumerable: !0,
 		get: function() {
 			return i.expose;
 		}
 	});
-	var a = xz();
+	var a = Sz();
 	Object.defineProperty(e, "DefaultSerializer", {
 		enumerable: !0,
 		get: function() {
 			return a.DefaultSerializer;
 		}
 	});
-	var o = oB();
+	var o = sB();
 	Object.defineProperty(e, "Transfer", {
 		enumerable: !0,
 		get: function() {
@@ -62231,27 +62231,27 @@ var tB, kLe = o((() => {
 		}
 	});
 })))(), 1);
-cB.registerSerializer;
-var HLe = cB.default.spawn, ULe = cB.default.BlobWorker;
-cB.DefaultSerializer;
-var WLe = cB.default.Pool;
-cB.default.Thread;
-var lB = cB.Transfer;
-cB.default.Worker;
+lB.registerSerializer;
+var VLe = lB.default.spawn, HLe = lB.default.BlobWorker;
+lB.DefaultSerializer;
+var ULe = lB.default.Pool;
+lB.default.Thread;
+var uB = lB.Transfer;
+lB.default.Worker;
 //#endregion
 //#region node_modules/@geoarrow/deck.gl-layers/dist/layers/solid-polygon-layer.js
-var { data: GLe, getPolygon: KLe, ...qLe } = oO.defaultProps, uB = {
+var { data: WLe, getPolygon: GLe, ...KLe } = oO.defaultProps, dB = {
 	_normalize: !1,
 	_windingOrder: "CCW",
 	_validate: !0,
 	metrics: !1,
 	earcutWorkerUrl: "https://cdn.jsdelivr.net/npm/@geoarrow/geoarrow-js@0.3.0/dist/earcut-worker.min.js",
 	earcutWorkerPoolSize: 1
-}, JLe = {
-	...qLe,
-	...uB
-}, YLe = class extends sE {
-	static defaultProps = JLe;
+}, qLe = {
+	...KLe,
+	...dB
+}, JLe = class extends sE {
+	static defaultProps = qLe;
 	static layerName = "GeoArrowSolidPolygonLayer";
 	initializeState(e) {
 		this.state = {
@@ -62266,7 +62266,7 @@ var { data: GLe, getPolygon: KLe, ...qLe } = oO.defaultProps, uB = {
 		let e = await this.state.earcutWorkerRequest;
 		if (!e || window?.location?.href.startsWith("file://")) return null;
 		try {
-			let t = WLe(() => HLe(ULe.fromText(e)), this.props.earcutWorkerPoolSize || 1);
+			let t = ULe(() => VLe(HLe.fromText(e)), this.props.earcutWorkerPoolSize || 1);
 			return this.state.earcutWorkerPool = t, this.state.earcutWorkerPool;
 		} catch {
 			return null;
@@ -62299,7 +62299,7 @@ var { data: GLe, getPolygon: KLe, ...qLe } = oO.defaultProps, uB = {
 		this.props.metrics && console.time(r), ZR(e) && (e = $R(e));
 		let [i, a] = XR.preparePostMessage(e, !0);
 		return t.queue(async (e) => {
-			n = await e(lB(i, a));
+			n = await e(uB(i, a));
 		}), await t.completed(), this.props.metrics && console.timeEnd(r), ox(n !== null), n;
 	}
 	_earcutPolygonVectorMainThread(e) {
@@ -62314,7 +62314,7 @@ var { data: GLe, getPolygon: KLe, ...qLe } = oO.defaultProps, uB = {
 		ZR(i) && (i = $R(i));
 		let [a, o] = XR.preparePostMessage(i, !0);
 		return t.queue(async (e) => {
-			n = await e(lB(a, o));
+			n = await e(uB(a, o));
 		}), await t.completed(), this.props.metrics && console.timeEnd(r), ox(n !== null), n;
 	}
 	_earcutMultiPolygonVectorMainThread(e) {
@@ -62353,7 +62353,7 @@ var { data: GLe, getPolygon: KLe, ...qLe } = oO.defaultProps, uB = {
 		let i = rI.getPolygonChild(e), a = rI.getLineStringChild(i), o = rI.getPointChild(a), s = a.type.listSize, c = o.values, l = rz(e);
 		if (!this.state.triangles) return null;
 		let u = this.state.triangles, d = {
-			...uB,
+			...dB,
 			...r,
 			id: `${this.props.id}-geoarrow-solid-polygon`,
 			data: {
@@ -62389,7 +62389,7 @@ var { data: GLe, getPolygon: KLe, ...qLe } = oO.defaultProps, uB = {
 		let a = rI.getPolygonChild(i), o = rI.getLineStringChild(a), s = rI.getPointChild(o), c = o.type.listSize, l = e.valueOffsets, u = s.values;
 		if (!this.state.triangles) return null;
 		let d = this.state.triangles, f = rz(i), p = tIe(e), m = {
-			...uB,
+			...dB,
 			...r,
 			id: `${this.props.id}-geoarrow-solid-polygon-multi`,
 			data: {
@@ -62420,11 +62420,11 @@ var { data: GLe, getPolygon: KLe, ...qLe } = oO.defaultProps, uB = {
 };
 //#endregion
 //#region node_modules/@geoarrow/deck.gl-layers/dist/layers/polygon-layer.js
-function dB(e) {
-	return "data" in e ? new tc(e.data.map((e) => dB(e))) : e;
-}
 function fB(e) {
-	if ("data" in e) return new tc(e.data.map((e) => fB(e)));
+	return "data" in e ? new tc(e.data.map((e) => fB(e))) : e;
+}
+function pB(e) {
+	if ("data" in e) return new tc(e.data.map((e) => pB(e)));
 	let t = e.valueOffsets, n = rI.getMultiPolygonChild(e), r = n.valueOffsets, i = rI.getPolygonChild(n), a = new Int32Array(t.length);
 	for (let e = 0; e < a.length; ++e) a[e] = r[t[e]];
 	return Ps({
@@ -62436,20 +62436,20 @@ function fB(e) {
 		valueOffsets: a
 	});
 }
-var { data: XLe, getPolygon: ZLe, ...QLe } = lO.defaultProps, $Le = {
+var { data: YLe, getPolygon: XLe, ...ZLe } = lO.defaultProps, QLe = {
 	_normalize: !1,
 	_windingOrder: "CCW",
 	_validate: !0
-}, eRe = {
-	...QLe,
-	...$Le
-}, tRe = [
+}, $Le = {
+	...ZLe,
+	...QLe
+}, eRe = [
 	0,
 	0,
 	0,
 	255
-], pB = class extends sE {
-	static defaultProps = eRe;
+], tRe = class extends sE {
+	static defaultProps = $Le;
 	static layerName = "GeoArrowPolygonLayer";
 	getPickingInfo(e) {
 		return e.info;
@@ -62471,8 +62471,8 @@ var { data: XLe, getPolygon: ZLe, ...QLe } = lO.defaultProps, $Le = {
 	}
 	_renderLayers(e) {
 		let { data: t } = this.props, n;
-		yI.isPolygonData(e) ? n = dB(e) : yI.isMultiPolygonData(e) ? n = fB(e) : ox(!1);
-		let { data: r, _dataDiff: i, stroked: a, filled: o, extruded: s, wireframe: c, _normalize: l, _windingOrder: u, elevationScale: d, transitions: f, positionFormat: p } = this.props, { lineWidthUnits: m, lineWidthScale: h, lineWidthMinPixels: g, lineWidthMaxPixels: _, lineJointRounded: v, lineMiterLimit: y, lineDashJustified: b } = this.props, { getFillColor: x, getLineColor: S, getLineWidth: C, getElevation: w, getPolygon: T, updateTriggers: E, material: D, earcutWorkerPool: O, earcutWorkerPoolSize: k, earcutWorkerUrl: A } = this.props, j = this.getSubLayerClass("fill", YLe), M = this.getSubLayerClass("stroke", rLe), N = new j({
+		yI.isPolygonData(e) ? n = fB(e) : yI.isMultiPolygonData(e) ? n = pB(e) : ox(!1);
+		let { data: r, _dataDiff: i, stroked: a, filled: o, extruded: s, wireframe: c, _normalize: l, _windingOrder: u, elevationScale: d, transitions: f, positionFormat: p } = this.props, { lineWidthUnits: m, lineWidthScale: h, lineWidthMinPixels: g, lineWidthMaxPixels: _, lineJointRounded: v, lineMiterLimit: y, lineDashJustified: b } = this.props, { getFillColor: x, getLineColor: S, getLineWidth: C, getElevation: w, getPolygon: T, updateTriggers: E, material: D, earcutWorkerPool: O, earcutWorkerPoolSize: k, earcutWorkerUrl: A } = this.props, j = this.getSubLayerClass("fill", JLe), M = this.getSubLayerClass("stroke", xz), N = new j({
 			extruded: s,
 			elevationScale: d,
 			filled: o,
@@ -62481,7 +62481,7 @@ var { data: XLe, getPolygon: ZLe, ...QLe } = lO.defaultProps, $Le = {
 			_windingOrder: u,
 			getElevation: w,
 			getFillColor: x,
-			getLineColor: s && c ? S : tRe,
+			getLineColor: s && c ? S : eRe,
 			material: D,
 			transitions: f,
 			earcutWorkerPool: O,
@@ -113776,81 +113776,86 @@ function kot({ model: e, el: t }) {
 	}
 	let oe = () => !!document.fullscreenElement, se = () => oe() ? document.exitFullscreen() : a.requestFullscreen?.(), ce = () => setTimeout(() => F.resize(), 60);
 	document.addEventListener("fullscreenchange", ce), new ResizeObserver(() => F.resize()).observe(o);
-	let le = null, ue = null, de = null, fe = null, pe = null, me = 0, he = "foot";
-	function ge() {
+	let le = null, ue = null, de = null, fe = null, pe = null, me = null, he = null, ge = null, _e = 0, ve = 0, ye = 0, be = "foot";
+	function xe() {
 		let t = e.get("foot");
-		t && t.byteLength && Te && (le = Kl(t instanceof DataView ? new Uint8Array(t.buffer, t.byteOffset, t.byteLength) : t instanceof Uint8Array ? t : new Uint8Array(t)).batches[0] ?? null, I = Ue = -1, We(), ue = le ? jtt(le) : null, de = fe = pe = null, we());
+		t && t.byteLength && je && (le = Kl(t instanceof DataView ? new Uint8Array(t.buffer, t.byteOffset, t.byteLength) : t instanceof Uint8Array ? t : new Uint8Array(t)).batches[0] ?? null, Je = Ye = -1, Xe(), ue = le ? jtt(le) : null, de = fe = pe = me = he = ge = null, ke());
 	}
-	e.on("change:foot", ge), e.on("change:foot_status", () => te(String(e.get("foot_status") || "")));
-	let _e = (e) => Att(le, e), ve = (e) => [
+	e.on("change:foot", xe), e.on("change:foot_status", () => te(String(e.get("foot_status") || "")));
+	let Se = (e) => Att(le, e), Ce = (e) => [
 		1,
 		3,
 		5
-	].map((t) => parseInt(e.slice(t, t + 2), 16)), ye = O7.map(ve), be = A7.map(ve), xe = ve(j7), Se = 0;
-	function Ce() {
-		clearTimeout(Se), Se = window.setTimeout(we, 300);
+	].map((t) => parseInt(e.slice(t, t + 2), 16)), we = O7.map(Ce), Te = A7.map(Ce), Ee = Ce(j7), De = 0;
+	function Oe() {
+		clearTimeout(De), De = window.setTimeout(ke, 300);
 	}
-	function we() {
-		if (!Te || !ue) return Je();
-		let e = Te.at, t = Mtt(ue, e, r.look.year, (e) => ye[e - 2018] ?? [
+	function ke() {
+		if (!je || !ue) return et();
+		let e = je.at, t = Mtt(ue, e, r.look.year, (e) => we[e - 2018] ?? [
 			0,
 			0,
 			0
-		], be, xe), n = new Uint8Array(t.length), i = new Uint8Array(t.length);
+		], Te, Ee), n = new Uint8Array(t.length), i = new Uint8Array(t.length);
 		for (let e = 0; e < ue.rows; e++) {
 			let r = 4 * e, a = t[r + 3] > 0;
 			i.set(a ? Tot : X9, r), n[r] = a ? t[r] : Z9[0], n[r + 1] = a ? t[r + 1] : Z9[1], n[r + 2] = a ? t[r + 2] : Z9[2], n[r + 3] = 255;
 		}
-		de = F7(t, ue.rows), fe = F7(n, ue.rows), pe = F7(i, ue.rows), me++, Je();
+		let a = !1;
+		(!de || !Ae(me, t)) && (me = t, de = F7(t, ue.rows), _e++, a = !0), (!fe || !Ae(he, n)) && (he = n, fe = F7(n, ue.rows), ve++, a = !0), (!pe || !Ae(ge, i)) && (ge = i, pe = F7(i, ue.rows), ye++, a = !0), a && et();
 	}
-	let Te = null, Ee = null;
-	function De(e) {
-		e && r.pair || (r.holding = e, ze() && Ee?.discover(r.s2Year), Ve(), Je());
+	let Ae = (e, t) => {
+		if (!e || e.length !== t.length) return !1;
+		for (let n = 0; n < e.length; n++) if (e[n] !== t[n]) return !1;
+		return !0;
+	}, je = null, Me = null;
+	function Ne(e) {
+		e && r.pair || (r.holding = e, We() && Me?.discover(r.s2Year), Ke(), et());
 	}
-	let Oe = null, ke = null, Ae = !1, je = (e) => ({
+	let Pe = null, Fe = null, Ie = !1, Le = (e) => ({
 		center: e.getCenter(),
 		zoom: e.getZoom(),
 		bearing: e.getBearing(),
 		pitch: e.getPitch()
 	});
-	function Me() {
-		if (Oe) return;
-		let e = Oe = new b3({
+	function Re() {
+		if (Pe) return;
+		let e = Pe = new b3({
 			container: s,
 			style: ne,
-			...je(F),
+			...Le(F),
 			maxPitch: 0,
 			dragRotate: !1,
 			attributionControl: !1,
 			maxCanvasSize: [8192, 8192]
 		});
-		e.keyboard.disable(), ke = new JE({
+		e.keyboard.disable(), Fe = new JE({
 			interleaved: !0,
 			layers: []
-		}), e.addControl(ke), e.on("load", () => {
+		}), e.addControl(Fe), e.on("load", () => {
 			for (let t of e.getStyle().layers) t.type !== "background" && e.setLayoutProperty(t.id, "visibility", "none");
-			Je();
+			et();
 		});
 		let t = (e, t) => e.on("move", () => {
-			!Ae && r.pair && (Ae = !0, t.jumpTo(je(e)), Ae = !1);
+			!Ie && r.pair && (Ie = !0, t.jumpTo(Le(e)), Ie = !1);
 		});
-		t(F, e), t(e, F), e.on("mousemove", (e) => Ge(Ke(e.point))), e.on("click", (e) => qe(e.point)), s.addEventListener("mouseleave", () => Ge(-1)), new ResizeObserver(() => e.resize()).observe(s);
+		t(F, e), t(e, F), e.on("mousemove", (e) => Ze(Qe(e.point))), e.on("click", (e) => $e(e.point)), s.addEventListener("mouseleave", () => Ze(-1)), new ResizeObserver(() => e.resize()).observe(s);
 	}
-	function Ne(e) {
-		e !== r.pair && (e && (r.holding = !1), r.pair = e, a.classList.toggle("pair", e), e && (Me(), Oe.jumpTo(je(F))), ze() && Ee?.discover(r.s2Year), Ve(), Je());
+	function ze(e) {
+		e !== r.pair && (e && (r.holding = !1), r.pair = e, a.classList.toggle("pair", e), e && (Re(), Pe.jumpTo(Le(F))), We() && Me?.discover(r.s2Year), Ke(), et());
 	}
-	function Pe(e) {
+	function Be(e) {
 		let t = Math.max(0, Math.min(J9.length - 1, J9.indexOf(r.s2Year) + e));
-		J9[t] !== r.s2Year && (r.s2Year = J9[t], Ee?.discover(r.s2Year), Ve(), Je());
+		J9[t] !== r.s2Year && (r.s2Year = J9[t], Me?.discover(r.s2Year), Ke(), et());
 	}
-	let Fe = !1, Ie = fetch(Ott).then((e) => e.arrayBuffer()).then((e) => ({
+	let Ve = !1, He = fetch(Ott).then((e) => e.arrayBuffer()).then((e) => ({
 		w: new Float32Array(e),
 		layers: bot.net.layers
 	}));
-	function Le() {
-		Ce(), Je();
+	function I() {
+		Oe(), et();
 	}
-	let Re = () => r.holding, ze = () => r.holding || r.pair, Be = [
+	let Ue = () => r.holding, We = () => r.holding || r.pair, Ge = [
 		"Jan",
 		"Feb",
 		"Mar",
@@ -113864,14 +113869,14 @@ function kot({ model: e, el: t }) {
 		"Nov",
 		"Dec"
 	];
-	function Ve() {
-		let e = ze(), t = F.getCenter(), n = Ee?.dateAt(r.s2Year, t.lng, t.lat) ?? "", i = Ee?.status(r.s2Year) ?? "finding", a = e ? n ? `${Be[n.slice(5, 7) - 1]} ${+n.slice(8, 10)}` + (i === "cloudy" ? ", cloudy" : "") : i === "cloudy" ? "no scene" : "finding…" : "true color", o = `${String(J9[0]).slice(2)}/${String(J9[J9.length - 1]).slice(2)}`;
+	function Ke() {
+		let e = We(), t = F.getCenter(), n = Me?.dateAt(r.s2Year, t.lng, t.lat) ?? "", i = Me?.status(r.s2Year) ?? "finding", a = e ? n ? `${Ge[n.slice(5, 7) - 1]} ${+n.slice(8, 10)}` + (i === "cloudy" ? ", cloudy" : "") : i === "cloudy" ? "no scene" : "finding…" : "true color", o = `${String(J9[0]).slice(2)}/${String(J9[J9.length - 1]).slice(2)}`;
 		P.innerHTML = `<div class="s2hd"><b>${r.s2Year}</b><span>Sentinel-2<br>${a}</span><span class="zw">z<br><i class="z">${F.getZoom().toFixed(1)}</i></span></div><div class="keys">${e ? `<span>${r.holding ? "Scroll or " : ""}<kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${o}</span><span><kbd>N</kbd> next</span>` : "<span><kbd>Space</kbd> or <kbd>P</kbd> to see it</span>"}</div>`, P.classList.toggle("showing", e);
 	}
-	let He = [], I = -1, Ue = -1;
-	function We() {
-		if (!ke) return;
-		let e = Ue >= 0 ? Ue : I, t = r.pair && e >= 0 && le ? _e(e) : null, n = t ? [new HD({
+	let qe = [], Je = -1, Ye = -1;
+	function Xe() {
+		if (!Fe) return;
+		let e = Ye >= 0 ? Ye : Je, t = r.pair && e >= 0 && le ? Se(e) : null, n = t ? [new HD({
 			id: "hi",
 			data: [t],
 			getPath: (e) => e,
@@ -113880,12 +113885,12 @@ function kot({ model: e, el: t }) {
 			widthUnits: "pixels",
 			jointRounded: !0
 		})] : [];
-		ke.setProps({ layers: [...He, ...n] });
+		Fe.setProps({ layers: [...qe, ...n] });
 	}
-	function Ge(e) {
-		e !== I && (I = e, r.pair && Ue < 0 && We());
+	function Ze(e) {
+		e !== Je && (Je = e, r.pair && Ye < 0 && Xe());
 	}
-	let Ke = (e) => {
+	let Qe = (e) => {
 		let t = r.picking && le ? ie.pickObject({
 			x: e.x,
 			y: e.y,
@@ -113894,23 +113899,23 @@ function kot({ model: e, el: t }) {
 		}) : null;
 		return t && t.index >= 0 ? t.index : -1;
 	};
-	function qe(e) {
-		Ue = Ue >= 0 ? -1 : Ke(e), r.pair && We();
+	function $e(e) {
+		Ye = Ye >= 0 ? -1 : Qe(e), r.pair && Xe();
 	}
-	function Je() {
-		if (!Fe || !Te) return;
+	function et() {
+		if (!Ve || !je) return;
 		let e = [];
-		if (Ee && !r.pair && e.push(...Ee.layers(r.s2Year, Re(), "foot")), Oe && ke && (He = r.pair && Ee ? Ee.layers(r.s2Year, !0, void 0, "l") : [], We(), Oe.isStyleLoaded() || Oe.once("idle", We)), !r.area) {
+		if (Me && !r.pair && e.push(...Me.layers(r.s2Year, Ue(), "foot")), Pe && Fe && (qe = r.pair && Me ? Me.layers(r.s2Year, !0, void 0, "l") : [], Xe(), Pe.isStyleLoaded() || Pe.once("idle", Xe)), !r.area) {
 			ie.setProps({ layers: e });
 			return;
 		}
 		let t = le && {
 			data: le,
 			getPolygon: le.getChild("geometry").data[0],
-			visible: !Re(),
+			visible: !Ue(),
 			earcutWorkerUrl: null
 		};
-		le && e.push(new pB({
+		le && e.push(new tRe({
 			...t,
 			id: "foot-poly",
 			filled: !0,
@@ -113922,32 +113927,37 @@ function kot({ model: e, el: t }) {
 				0
 			],
 			pickable: !0,
-			updateTriggers: { getFillColor: me },
-			beforeId: he
-		})), e.push(Te.layer({
+			updateTriggers: { getFillColor: _e },
+			beforeId: be
+		})), e.push(je.layer({
 			minZoom: 12,
 			area: r.area,
 			readId: r.readId,
-			visible: !Re(),
-			beforeId: he,
+			visible: !Ue(),
+			beforeId: be,
 			onTile: () => {
-				tt(), Ce();
+				st(), Oe();
 			}
-		})), le && e.push(new pB({
-			...t,
+		})), le && e.push(new xz({
 			id: "foot-line",
-			filled: !1,
-			stroked: !0,
-			getLineColor: Re() ? fe ?? X9 : pe ?? X9,
-			getLineWidth: Re() ? 1.5 : 2,
-			lineWidthUnits: Re() ? "pixels" : "meters",
-			lineWidthMinPixels: Re() ? 1 : .5,
-			lineWidthMaxPixels: 2,
-			updateTriggers: { getLineColor: [me, Re()] },
+			data: le,
+			getPath: le.getChild("geometry").data[0],
+			visible: !Ue(),
+			getColor: Ue() ? fe ?? X9 : pe ?? X9,
+			getWidth: Ue() ? 1.5 : 2,
+			widthUnits: Ue() ? "pixels" : "meters",
+			widthMinPixels: Ue() ? 1 : .5,
+			widthMaxPixels: 2,
+			_pathType: "loop",
+			updateTriggers: { getColor: [
+				ve,
+				ye,
+				Ue()
+			] },
 			beforeId: "foot"
-		})), ie.setProps({ layers: e }), F.isStyleLoaded() || F.once("idle", () => ie.setProps({ layers: e })), tt();
+		})), ie.setProps({ layers: e }), F.isStyleLoaded() || F.once("idle", () => ie.setProps({ layers: e })), st();
 	}
-	function Ye() {
+	function tt() {
 		let e = r.look;
 		if (v.classList.toggle("on", e.src === "ours"), y.classList.toggle("on", e.src === "wsf"), b.replaceChildren(), h.querySelector(".years")?.remove(), e.year == null) f.innerHTML = "<b>Dug by year</b>", b.style.gridTemplateColumns = "repeat(4, 1fr)", O7.forEach((e, t) => {
 			let n = k7 + t, r = i("button", "chip", String(n));
@@ -113955,18 +113965,18 @@ function kot({ model: e, el: t }) {
 		}), x.textContent = e.src === "ours" ? "Buildings filled by the year their ground was dug or graded. Elsewhere the color is dug ground with no building on it: where to look." : "The ground colored by the year it first read as built-up. Click a year to open it by half-year.";
 		else {
 			f.innerHTML = `<span class="crumb">All years</span><span class="sep">&rsaquo;</span><b>${e.year}</b>`, f.querySelector(".crumb").onclick = (e) => {
-				e.stopPropagation(), Qe({
+				e.stopPropagation(), it({
 					...r.look,
 					year: null
 				});
 			};
 			let t = i("div", "years"), n = i("button", "allyears", "All");
-			n.title = "back to every year (Esc)", n.onclick = () => Qe({
+			n.title = "back to every year (Esc)", n.onclick = () => it({
 				...r.look,
 				year: null
 			}), t.appendChild(n), O7.forEach((n, a) => {
 				let o = k7 + a, s = i("button", "yr" + (o === e.year ? " on" : ""), String(o).slice(2));
-				s.style.background = n, s.style.color = a < 4 ? "#fff" : "#111", s.title = o === e.year ? "back to every year" : `open ${o}`, s.onclick = () => Qe({
+				s.style.background = n, s.style.color = a < 4 ? "#fff" : "#111", s.title = o === e.year ? "back to every year" : `open ${o}`, s.onclick = () => it({
 					...r.look,
 					year: o === e.year ? null : o
 				}), t.appendChild(s);
@@ -113989,15 +113999,15 @@ function kot({ model: e, el: t }) {
 				o.style.background = r, o.style.color = a === 0 && e.src === "ours" ? "#fff" : "#111", o.style.cursor = "default", b.appendChild(o);
 			}), x.innerHTML = e.src === "ours" ? `${e.year}'s buildings and dug ground by the quarter it changed, from the decoder. <span style="color:${j7}">Gray</span>: no quarter made out. <kbd>[</kbd> <kbd>]</kbd> step the year, <kbd>Esc</kbd> all years.` : `${e.year}'s built-up ground by WSF's half-year. <kbd>[</kbd> <kbd>]</kbd> step the year, <kbd>Esc</kbd> all years.`;
 		}
-		Xe();
+		nt();
 	}
-	function Xe() {
+	function nt() {
 		let e = F.getZoom(), t = P.querySelector(".z");
 		t && (t.textContent = e.toFixed(1)), S.innerHTML = `Zoom ${e.toFixed(1)} · reads by itself from zoom ${Q9}` + (e < Q9 ? " <span class=\"warn\">zoom in to read</span>" : "") + "<div class=\"keys\"><span><kbd>Space</kbd> Sentinel-2</span><span><kbd>P</kbd> pair</span><span><kbd>L</kbd> labels</span><span><kbd>Q</kbd> picking</span><span><kbd>H</kbd> fold</span><span><kbd>K</kbd> PNG</span><span><kbd>Shift</kbd><kbd>&larr;</kbd><kbd>&rarr;</kbd> pivot</span></div>";
 	}
-	function Ze() {
+	function rt() {
 		if (F.getZoom() < 12) {
-			Xe();
+			nt();
 			return;
 		}
 		let t = F.getBounds();
@@ -114009,40 +114019,40 @@ function kot({ model: e, el: t }) {
 		], r.readId++, e.set("foot_ask", JSON.stringify({
 			area: r.area,
 			t: Date.now()
-		})), e.save_changes(), Le();
+		})), e.save_changes(), I();
 	}
-	function Qe(e) {
+	function it(e) {
 		e.src === "ours" && e.year != null && e.year < 2018 && (e = {
 			...e,
 			year: null
-		}), r.look = e, Ye(), Te?.setLook(e), tt();
+		}), r.look = e, tt(), je?.setLook(e), st();
 	}
-	v.onclick = () => Qe({
+	v.onclick = () => it({
 		...r.look,
 		src: "ours"
-	}), y.onclick = () => Qe({
+	}), y.onclick = () => it({
 		...r.look,
 		src: "wsf"
 	});
-	let $e = (e) => {
+	let at = (e) => {
 		r.folded = e, u.classList.toggle("folded", e), m.title = e ? "open the card (H)" : "fold the card (H)";
 	};
-	d.onclick = () => $e(!r.folded);
-	let et = 0;
-	function tt() {
-		clearTimeout(et), et = window.setTimeout(nt, 150);
+	d.onclick = () => at(!r.folded);
+	let ot = 0;
+	function st() {
+		clearTimeout(ot), ot = window.setTimeout(ct, 150);
 	}
-	function nt() {
-		if (Xe(), !Te || F.getZoom() < 12) {
+	function ct() {
+		if (nt(), !je || F.getZoom() < 12) {
 			c.classList.remove("on"), l.classList.remove("on");
 			return;
 		}
-		let e = Te.work(), t = e.reading > 0, n = !t && e.decoding > 0, i = t || n;
+		let e = je.work(), t = e.reading > 0, n = !t && e.decoding > 0, i = t || n;
 		if (c.classList.toggle("on", i), l.classList.toggle("on", i), !i) return;
 		let [a, o] = t ? [e.readDone, e.readDone + e.reading] : [e.decodeDone, e.decodeDone + e.decoding];
-		c.firstChild.style.width = (100 * a / Math.max(1, o)).toFixed(1) + "%", l.innerHTML = t ? `Scoring chunks: ${a} of ${o}, every year 2017 to 2025` + (o > 30 ? " <span>zoom in to load faster</span>" : "") : `Decoding ${r.look.year}'s quarters: ${a} of ${o} chunks`, tt();
+		c.firstChild.style.width = (100 * a / Math.max(1, o)).toFixed(1) + "%", l.innerHTML = t ? `Scoring chunks: ${a} of ${o}, every year 2017 to 2025` + (o > 30 ? " <span>zoom in to load faster</span>" : "") : `Decoding ${r.look.year}'s quarters: ${a} of ${o} chunks`, st();
 	}
-	let rt = (e, t, n) => {
+	let lt = (e, t, n) => {
 		let r = !1;
 		for (let i = 0, a = n.length - 1; i < n.length; a = i++) {
 			let [o, s] = n[i], [c, l] = n[a];
@@ -114050,19 +114060,19 @@ function kot({ model: e, el: t }) {
 		}
 		return r;
 	};
-	function it(e, t) {
-		if (!Te) return "";
+	function ut(e, t) {
+		if (!je) return "";
 		let n = Infinity, i = Infinity, a = -Infinity, o = -Infinity;
 		for (let t of e) for (let [e, r] of t) n = Math.min(n, e), a = Math.max(a, e), i = Math.min(i, r), o = Math.max(o, r);
 		let [s, c] = P7(n, o), [l, u] = P7(a, i), d = [];
 		for (let t = c; t <= u; t++) for (let n = s; n <= l; n++) {
 			let [r, i] = Dtt(n, t);
-			if (!e.some((e) => rt(r, i, e))) continue;
-			let a = Te.at(n, t);
+			if (!e.some((e) => lt(r, i, e))) continue;
+			let a = je.at(n, t);
 			a && d.push(a);
 		}
 		if (!d.length) {
-			let [e, t] = P7((n + a) / 2, (i + o) / 2), r = Te.at(e, t);
+			let [e, t] = P7((n + a) / 2, (i + o) / 2), r = je.at(e, t);
 			r && (d = [r]);
 		}
 		if (!d.length) return "<b>Overture</b><br><span class=\"dim\">not read here yet</span>";
@@ -114087,21 +114097,21 @@ function kot({ model: e, el: t }) {
 		}
 		return `<b>Overture</b><br>Dug or graded: ${h}`;
 	}
-	let at = {
+	let dt = {
 		x: 0,
 		y: 0
 	};
-	function ot(e) {
+	function ft(e) {
 		if (!e) {
 			O.style.display = "none";
 			return;
 		}
 		O.innerHTML = e, O.style.display = "block";
-		let t = a.getBoundingClientRect(), n = O.offsetWidth, r = O.offsetHeight, i = at.x + o.offsetLeft, s = at.y + o.offsetTop, c = i + 14, l = s + 14;
+		let t = a.getBoundingClientRect(), n = O.offsetWidth, r = O.offsetHeight, i = dt.x + o.offsetLeft, s = dt.y + o.offsetTop, c = i + 14, l = s + 14;
 		c + n > t.width - 8 && (c = i - n - 14), l + r > t.height - 8 && (l = s - r - 14), O.style.left = c + "px", O.style.top = l + "px";
 	}
 	F.on("mousemove", (e) => {
-		if (at = e.point, !r.picking || !Te || !F.getLayer("foot")) return Ge(-1);
+		if (dt = e.point, !r.picking || !je || !F.getLayer("foot")) return Ze(-1);
 		if (le) {
 			let t = ie.pickObject({
 				x: e.point.x,
@@ -114111,14 +114121,14 @@ function kot({ model: e, el: t }) {
 			});
 			if (t && t.index >= 0) {
 				let e = `a:${t.index}`;
-				Ge(t.index), ot(it([_e(t.index)], e));
+				Ze(t.index), ft(ut([Se(t.index)], e));
 				return;
 			}
 		}
-		Ge(-1);
-		let [t, n] = P7(e.lngLat.lng, e.lngLat.lat), i = Te.at(t, n), a = r.look.year == null ? -1 : r.look.year - C8;
+		Ze(-1);
+		let [t, n] = P7(e.lngLat.lng, e.lngLat.lat), i = je.at(t, n), a = r.look.year == null ? -1 : r.look.year - C8;
 		if (!i || !i.ours || a > 0 && !(i.bits & 1 << a - 1)) {
-			ot("");
+			ft("");
 			return;
 		}
 		`${t}${n}`;
@@ -114127,11 +114137,11 @@ function kot({ model: e, el: t }) {
 			let e = a > 0 ? a : i.ours;
 			i.season(e), o = String(C8 + e);
 		}
-		ot(`<b>No footprint</b><br>Dug or graded: ${o}`);
-	}), F.on("click", (e) => qe(e.point)), o.addEventListener("mouseleave", () => {
-		ot(""), Ge(-1);
+		ft(`<b>No footprint</b><br>Dug or graded: ${o}`);
+	}), F.on("click", (e) => $e(e.point)), o.addEventListener("mouseleave", () => {
+		ft(""), Ze(-1);
 	});
-	let st = [], ct = -1, lt = 0, ut = 0, dt = null, ft = null, pt = 0, mt = (e) => {
+	let pt = [], mt = -1, ht = 0, gt = 0, _t = null, vt = null, yt = 0, bt = (e) => {
 		let t = e.properties;
 		return [
 			t.name,
@@ -114140,43 +114150,43 @@ function kot({ model: e, el: t }) {
 			t.state,
 			t.country
 		].filter(Boolean).join(", ");
-	}, ht = (e) => {
+	}, xt = (e) => {
 		let t = e.properties;
 		return [t.osm_value, t.type].filter((e) => e && e !== "yes").join(", ");
-	}, gt = () => {
-		N.style.display = "none", N.replaceChildren(), ct = -1;
-	}, _t = () => {
-		if (N.replaceChildren(), !st.length) return gt();
-		st.forEach((e, t) => {
-			let n = i("div", "hit" + (t === ct ? " sel" : ""));
-			n.textContent = mt(e);
+	}, St = () => {
+		N.style.display = "none", N.replaceChildren(), mt = -1;
+	}, Ct = () => {
+		if (N.replaceChildren(), !pt.length) return St();
+		pt.forEach((e, t) => {
+			let n = i("div", "hit" + (t === mt ? " sel" : ""));
+			n.textContent = bt(e);
 			let r = i("small");
-			r.textContent = ht(e), n.appendChild(r), n.onmousedown = (t) => {
-				t.preventDefault(), St(e);
+			r.textContent = xt(e), n.appendChild(r), n.onmousedown = (t) => {
+				t.preventDefault(), Ot(e);
 			}, n.onmouseenter = () => {
-				ct = t, _t();
+				mt = t, Ct();
 			}, N.appendChild(n);
 		}), N.style.display = "block";
-	}, vt = (e) => {
-		N.replaceChildren(), ct = -1;
+	}, wt = (e) => {
+		N.replaceChildren(), mt = -1;
 		let t = i("div", "hit wait");
 		t.textContent = e, N.appendChild(t), N.style.display = "block";
-	}, yt = async (e, t) => {
+	}, Tt = async (e, t) => {
 		let n = new URLSearchParams({
 			q: e,
 			limit: "6",
 			lang: "en"
 		}), r = F.getCenter();
-		n.set("lon", r.lng.toFixed(4)), n.set("lat", r.lat.toFixed(4)), ft?.abort();
-		let i = ft = new AbortController(), a = setTimeout(() => i.abort(), t);
+		n.set("lon", r.lng.toFixed(4)), n.set("lat", r.lat.toFixed(4)), vt?.abort();
+		let i = vt = new AbortController(), a = setTimeout(() => i.abort(), t);
 		try {
 			return ((await (await fetch("https://photon.komoot.io/api/?" + n.toString(), { signal: i.signal })).json()).features || []).filter((e) => e.geometry && e.geometry.coordinates);
 		} finally {
 			clearTimeout(a);
 		}
-	}, bt = async (e) => {
-		let t = pt + 1100 - Date.now();
-		t > 0 && await new Promise((e) => setTimeout(e, t)), pt = Date.now();
+	}, Et = async (e) => {
+		let t = yt + 1100 - Date.now();
+		t > 0 && await new Promise((e) => setTimeout(e, t)), yt = Date.now();
 		let n = new URLSearchParams({
 			q: e,
 			format: "jsonv2",
@@ -114209,39 +114219,39 @@ function kot({ model: e, el: t }) {
 				}
 			};
 		});
-	}, xt = async (e = !1) => {
+	}, Dt = async (e = !1) => {
 		let t = M.value.trim();
-		if (t.length < 2) return st = [], dt = null, gt();
-		let n = ++ut, r = e && dt === t;
-		r && (ft?.abort(), dt = null), vt("searching…");
+		if (t.length < 2) return pt = [], _t = null, St();
+		let n = ++gt, r = e && _t === t;
+		r && (vt?.abort(), _t = null), wt("searching…");
 		let i = [], a = "";
 		if (!r) {
-			dt = t;
+			_t = t;
 			try {
-				i = await yt(t, e ? 2500 : 6e3);
+				i = await Tt(t, e ? 2500 : 6e3);
 			} catch (e) {
 				a = e.name === "AbortError" ? "slow" : "down";
 			}
-			if (n !== ut) return;
-			dt = null;
+			if (n !== gt) return;
+			_t = null;
 		}
 		if (!i.length && e) {
-			vt("searching Nominatim…");
+			wt("searching Nominatim…");
 			try {
-				i = await bt(t);
+				i = await Et(t);
 			} catch {
 				a = "down";
 			}
-			if (n !== ut) return;
+			if (n !== gt) return;
 		}
-		st = i, ct = i.length ? 0 : -1, i.length ? _t() : vt(e ? a ? "search is not answering, try again in a moment" : "no match" : a === "slow" ? "Photon is slow: press Enter to search Nominatim" : a ? "Photon is not answering: press Enter to search Nominatim" : "no match: press Enter to search Nominatim");
-	}, St = (e) => {
+		pt = i, mt = i.length ? 0 : -1, i.length ? Ct() : wt(e ? a ? "search is not answering, try again in a moment" : "no match" : a === "slow" ? "Photon is slow: press Enter to search Nominatim" : a ? "Photon is not answering: press Enter to search Nominatim" : "no match: press Enter to search Nominatim");
+	}, Ot = (e) => {
 		let [t, n] = e.geometry.coordinates, r = e.properties.extent, i = 13.5;
 		if (r && r.length === 4) {
 			let e = Math.max(Math.abs(r[2] - r[0]), Math.abs(r[1] - r[3]) * 2, .01);
 			i = Math.log2(360 * ((o.clientWidth || 1200) / 512) / e) - .3;
 		}
-		i = Math.max(Q9, Math.min(16, i)), M.value = mt(e), st = [], gt(), M.blur(), F.flyTo({
+		i = Math.max(Q9, Math.min(16, i)), M.value = bt(e), pt = [], St(), M.blur(), F.flyTo({
 			center: [t, n],
 			zoom: i,
 			duration: 2200,
@@ -114249,15 +114259,15 @@ function kot({ model: e, el: t }) {
 		});
 	};
 	M.addEventListener("input", () => {
-		clearTimeout(lt), lt = window.setTimeout(xt, 250);
-	}), M.addEventListener("focus", () => st.length && _t()), M.addEventListener("blur", () => setTimeout(gt, 120)), M.addEventListener("keydown", (e) => {
-		e.stopPropagation(), e.key === "ArrowDown" && st.length ? (ct = (ct + 1) % st.length, _t(), e.preventDefault()) : e.key === "ArrowUp" && st.length ? (ct = (ct - 1 + st.length) % st.length, _t(), e.preventDefault()) : e.key === "Enter" ? (e.preventDefault(), st.length ? St(st[Math.max(0, ct)]) : (clearTimeout(lt), xt(!0).then(() => st.length && St(st[0])))) : e.key === "Escape" && (gt(), M.blur());
+		clearTimeout(ht), ht = window.setTimeout(Dt, 250);
+	}), M.addEventListener("focus", () => pt.length && Ct()), M.addEventListener("blur", () => setTimeout(St, 120)), M.addEventListener("keydown", (e) => {
+		e.stopPropagation(), e.key === "ArrowDown" && pt.length ? (mt = (mt + 1) % pt.length, Ct(), e.preventDefault()) : e.key === "ArrowUp" && pt.length ? (mt = (mt - 1 + pt.length) % pt.length, Ct(), e.preventDefault()) : e.key === "Enter" ? (e.preventDefault(), pt.length ? Ot(pt[Math.max(0, mt)]) : (clearTimeout(ht), Dt(!0).then(() => pt.length && Ot(pt[0])))) : e.key === "Escape" && (St(), M.blur());
 	});
-	let Ct = !1, wt = (e, t) => {
+	let kt = !1, At = (e, t) => {
 		let n = t._deck?.device?.canvasContext, r = e.getCanvas();
 		n?.setDrawingBufferSize(r.width, r.height);
 	};
-	async function Tt(e) {
+	async function jt(e) {
 		return await new Promise((t) => {
 			e.once("idle", () => t()), e.triggerRepaint();
 		}), new Promise((t) => {
@@ -114267,7 +114277,7 @@ function kot({ model: e, el: t }) {
 			}), e.triggerRepaint();
 		});
 	}
-	async function Et(e) {
+	async function Mt(e) {
 		for (let t = 2048;; t -= 128) {
 			let n = Math.min(1, t / Math.max(e.width, e.height)), r = Math.round(e.width * n), i = Math.round(e.height * n), a = e;
 			for (; a.width / 2 >= r;) {
@@ -114288,74 +114298,74 @@ function kot({ model: e, el: t }) {
 			};
 		}
 	}
-	let Dt = "'Instrument Sans', system-ui, sans-serif";
-	function Ot(e, t, n, r) {
+	let Nt = "'Instrument Sans', system-ui, sans-serif";
+	function Pt(e, t, n, r) {
 		e.save(), e.shadowColor = "rgba(0,0,0,.75)", e.shadowBlur = 6 * r, e.textBaseline = "middle";
 		let i = n + 10 * r;
-		e.font = `600 ${15 * r}px ${Dt}`, e.fillStyle = "#e6e9ec", e.fillText("Dug by year", t, i);
+		e.font = `600 ${15 * r}px ${Nt}`, e.fillStyle = "#e6e9ec", e.fillText("Dug by year", t, i);
 		let a = t + e.measureText("Dug by year").width + 14 * r;
-		e.font = `500 ${13 * r}px ${Dt}`, e.fillStyle = "#c9cfd5";
+		e.font = `500 ${13 * r}px ${Nt}`, e.fillStyle = "#c9cfd5";
 		let o = String(k7), s = String(k7 + O7.length - 1);
 		e.fillText(o, a, i), a += e.measureText(o).width + 8 * r, O7.forEach((t) => {
 			e.fillStyle = t, e.fillRect(a, i - 7 * r, 20 * r, 14 * r), a += 22 * r;
 		}), e.fillStyle = "#c9cfd5", e.fillText(s, a + 6 * r, i), e.restore();
 	}
-	function kt(e, t, n, i) {
-		let a = F.getCenter(), o = Ee?.dateAt(r.s2Year, a.lng, a.lat) ?? "";
-		e.save(), e.shadowColor = "rgba(0,0,0,.75)", e.shadowBlur = 6 * i, e.textBaseline = "top", e.font = `600 ${34 * i}px ${Dt}`, e.fillStyle = "#e6e9ec", e.fillText(String(r.s2Year), t, n), e.font = `500 ${13 * i}px ${Dt}`, e.fillStyle = "#c9cfd5", e.fillText("Sentinel-2" + (o ? ` · ${Be[o.slice(5, 7) - 1]} ${+o.slice(8, 10)}` : ""), t, n + 40 * i), e.restore();
+	function Ft(e, t, n, i) {
+		let a = F.getCenter(), o = Me?.dateAt(r.s2Year, a.lng, a.lat) ?? "";
+		e.save(), e.shadowColor = "rgba(0,0,0,.75)", e.shadowBlur = 6 * i, e.textBaseline = "top", e.font = `600 ${34 * i}px ${Nt}`, e.fillStyle = "#e6e9ec", e.fillText(String(r.s2Year), t, n), e.font = `500 ${13 * i}px ${Nt}`, e.fillStyle = "#c9cfd5", e.fillText("Sentinel-2" + (o ? ` · ${Ge[o.slice(5, 7) - 1]} ${+o.slice(8, 10)}` : ""), t, n + 40 * i), e.restore();
 	}
-	async function At() {
-		if (Ct) return;
-		Ct = !0, te("Exporting a 4x PNG...");
-		let t = r.pair && Oe && ke ? [[Oe, ke], [F, ie]] : [[F, ie]];
+	async function It() {
+		if (kt) return;
+		kt = !0, te("Exporting a 4x PNG...");
+		let t = r.pair && Pe && Fe ? [[Pe, Fe], [F, ie]] : [[F, ie]];
 		try {
-			for (let [e, n] of t) e.setPixelRatio(4), wt(e, n);
-			let n = await Promise.all(t.map(([e]) => Tt(e))), i = n[n.length - 1].width / F.getContainer().clientWidth, a = n.length > 1 ? Math.round(2 * i) : 0, o = document.createElement("canvas");
+			for (let [e, n] of t) e.setPixelRatio(4), At(e, n);
+			let n = await Promise.all(t.map(([e]) => jt(e))), i = n[n.length - 1].width / F.getContainer().clientWidth, a = n.length > 1 ? Math.round(2 * i) : 0, o = document.createElement("canvas");
 			o.width = n.reduce((e, t) => e + t.width, 0) + a, o.height = Math.max(...n.map((e) => e.height));
 			let s = o.getContext("2d"), c = 0;
 			n.forEach((e, t) => {
 				s.drawImage(e, c, 0), c += e.width, t < n.length - 1 && (s.fillStyle = "rgba(255,255,255,.35)", s.fillRect(c, 0, a, o.height), c += a);
 			});
 			let l = 14 * i;
-			Ot(s, (n.length > 1 ? n[0].width + a : 0) + l, l, i), n.length > 1 && kt(s, l, l, i);
+			Pt(s, (n.length > 1 ? n[0].width + a : 0) + l, l, i), n.length > 1 && Ft(s, l, l, i);
 			let u = await new Promise((e) => o.toBlob(e, "image/png"));
 			if (!u) throw Error("the canvas gave no PNG");
-			let d = await Et(o), f = F.getCenter(), p = `z${F.getZoom().toFixed(1)}_${f.lat.toFixed(4)}_${f.lng.toFixed(4)}` + (r.pair ? `_pair-s2-${r.s2Year}` : Re() ? `_s2-${r.s2Year}` : "") + `_${+i.toFixed(1)}x`;
+			let d = await Mt(o), f = F.getCenter(), p = `z${F.getZoom().toFixed(1)}_${f.lat.toFixed(4)}_${f.lng.toFixed(4)}` + (r.pair ? `_pair-s2-${r.s2Year}` : Ue() ? `_s2-${r.s2Year}` : "") + `_${+i.toFixed(1)}x`;
 			e.set("snap_name", p), e.set("snap_small", new DataView(await d.png.arrayBuffer())), e.set("snap_small_size", d.size), e.set("snap", new DataView(await u.arrayBuffer())), e.save_changes();
 		} catch (e) {
 			te(`Export failed: ${e.message}`);
 		} finally {
-			for (let [e, n] of t) e.setPixelRatio(null), wt(e, n);
-			Ct = !1;
+			for (let [e, n] of t) e.setPixelRatio(null), At(e, n);
+			kt = !1;
 		}
 	}
 	e.on("change:snap_status", () => te(String(e.get("snap_status") || "")));
-	let jt = 0, Mt = (e) => {
+	let Lt = 0, Rt = (e) => {
 		if (e.metaKey || e.ctrlKey || e.altKey || e.target === M) return;
 		let t = e.key;
-		if (e.code === "Space") e.repeat || De(!0);
-		else if (t === "p" || t === "P") Ne(!r.pair);
-		else if ((t === "[" || t === "]") && ze()) Pe(t === "]" ? 1 : -1);
-		else if ((t === "b" || t === "B") && ze()) {
+		if (e.code === "Space") e.repeat || Ne(!0);
+		else if (t === "p" || t === "P") ze(!r.pair);
+		else if ((t === "[" || t === "]") && We()) Be(t === "]" ? 1 : -1);
+		else if ((t === "b" || t === "B") && We()) {
 			let e = J9.length - 1, t = J9.indexOf(r.s2Year);
-			Pe((t === e ? 0 : e) - t);
+			Be((t === e ? 0 : e) - t);
 		} else if (t === "l" || t === "L") {
 			r.labels = !r.labels;
 			for (let e of F.getStyle().layers) e.type === "symbol" && F.setLayoutProperty(e.id, "visibility", r.labels ? "visible" : "none");
 			te(r.labels ? "Labels on" : "Labels off");
-		} else if (t === "q" || t === "Q") r.picking = !r.picking, r.picking || ot(""), te(r.picking ? "Picking on" : "Picking off");
-		else if (t === "h" || t === "H") $e(!r.folded);
-		else if ((t === "n" || t === "N") && ze() && Ee) Ee.next(r.s2Year), Ve(), Je();
+		} else if (t === "q" || t === "Q") r.picking = !r.picking, r.picking || ft(""), te(r.picking ? "Picking on" : "Picking off");
+		else if (t === "h" || t === "H") at(!r.folded);
+		else if ((t === "n" || t === "N") && We() && Me) Me.next(r.s2Year), Ke(), et();
 		else if (t === "x" || t === "X") r.fit = !r.fit, ae();
 		else if (t === "f" || t === "F") se();
-		else if (t === "k" || t === "K") At();
+		else if (t === "k" || t === "K") It();
 		else if (t === "/") M.focus();
-		else if (t === "Escape") r.look.year == null ? r.fit && (r.fit = !1, ae()) : Qe({
+		else if (t === "Escape") r.look.year == null ? r.fit && (r.fit = !1, ae()) : it({
 			...r.look,
 			year: null
 		});
-		else if (e.shiftKey && (t === "ArrowLeft" || t === "ArrowRight")) jt = (F.isMoving() ? jt : F.getBearing()) + (t === "ArrowRight" ? 15 : -15), F.easeTo({
-			bearing: jt,
+		else if (e.shiftKey && (t === "ArrowLeft" || t === "ArrowRight")) Lt = (F.isMoving() ? Lt : F.getBearing()) + (t === "ArrowRight" ? 15 : -15), F.easeTo({
+			bearing: Lt,
 			duration: 250
 		});
 		else if (t === "ArrowLeft") F.panBy([-120, 0]);
@@ -114367,34 +114377,34 @@ function kot({ model: e, el: t }) {
 		else return;
 		e.preventDefault();
 	};
-	window.addEventListener("keydown", Mt);
-	let Nt = (e) => {
-		e.code === "Space" && r.holding && De(!1);
+	window.addEventListener("keydown", Rt);
+	let zt = (e) => {
+		e.code === "Space" && r.holding && Ne(!1);
 	};
-	window.addEventListener("keyup", Nt);
-	let Pt = () => r.holding && De(!1);
-	window.addEventListener("blur", Pt);
-	let Ft = 0, It = 0;
+	window.addEventListener("keyup", zt);
+	let Bt = () => r.holding && Ne(!1);
+	window.addEventListener("blur", Bt);
+	let Vt = 0, Ht = 0;
 	a.addEventListener("wheel", (e) => {
 		if (!r.holding) return;
-		e.preventDefault(), e.stopPropagation(), Ft += e.deltaY;
+		e.preventDefault(), e.stopPropagation(), Vt += e.deltaY;
 		let t = performance.now();
-		Math.abs(Ft) >= 40 && t - It > 140 && (Pe(Ft > 0 ? 1 : -1), Ft = 0, It = t);
+		Math.abs(Vt) >= 40 && t - Ht > 140 && (Be(Vt > 0 ? 1 : -1), Vt = 0, Ht = t);
 	}, {
 		capture: !0,
 		passive: !1
-	}), F.on("moveend", tt), F.on("moveend", () => {
-		ze() && (Ee?.discover(r.s2Year), Ve(), Je());
+	}), F.on("moveend", st), F.on("moveend", () => {
+		We() && (Me?.discover(r.s2Year), Ke(), et());
 	});
-	let Lt = 0;
+	let Ut = 0;
 	return F.on("moveend", () => {
-		if (clearTimeout(Lt), F.getZoom() < Q9 || !Fe) return;
+		if (clearTimeout(Ut), F.getZoom() < Q9 || !Ve) return;
 		let e = F.getBounds(), t = r.area;
-		t && e.getWest() >= t[0] && e.getEast() <= t[2] && e.getSouth() >= t[1] && e.getNorth() <= t[3] || (Lt = window.setTimeout(Ze, 500));
-	}), F.on("zoom", Xe), F.on("load", async () => {
+		t && e.getWest() >= t[0] && e.getEast() <= t[2] && e.getSouth() >= t[1] && e.getNorth() <= t[3] || (Ut = window.setTimeout(rt, 500));
+	}), F.on("zoom", nt), F.on("load", async () => {
 		for (let e of F.getStyle().layers) /building/.test(e.id) && F.setLayoutProperty(e.id, "visibility", "none");
 		let e = F.getStyle().layers, t = e.reduce((e, t, n) => t.type === "symbol" ? e : n, -1), i = e.slice(t + 1).find((e) => e.type === "symbol")?.id;
-		he = e.find((e) => e.type === "line" && /aeroway|tunnel|road|bridge|rail|transport/.test(e.id))?.id ?? "foot", F.addSource("overture", {
+		be = e.find((e) => e.type === "line" && /aeroway|tunnel|road|bridge|rail|transport/.test(e.id))?.id ?? "foot", F.addSource("overture", {
 			type: "vector",
 			url: `pmtiles://https://overturemaps-extras-us-west-2.s3.us-west-2.amazonaws.com/tiles/${n.release}/buildings.pmtiles`
 		}), F.addLayer({
@@ -114418,13 +114428,13 @@ function kot({ model: e, el: t }) {
 				],
 				"line-opacity": .85
 			}
-		}, i), Ee = yot(F, () => {
-			Ve(), Je();
-		}), Ve(), Te = await Ett(xot, await Ie, () => Le()), ge(), Te.setLook(r.look), Fe = !0, Ze();
-	}), Ye(), ae(), () => {
-		window.removeEventListener("keydown", Mt), window.removeEventListener("keyup", Nt), window.removeEventListener("blur", Pt), document.removeEventListener("fullscreenchange", ce), document.documentElement.classList.remove($9);
+		}, i), Me = yot(F, () => {
+			Ke(), et();
+		}), Ke(), je = await Ett(xot, await He, () => I()), xe(), je.setLook(r.look), Ve = !0, rt();
+	}), tt(), ae(), () => {
+		window.removeEventListener("keydown", Rt), window.removeEventListener("keyup", zt), window.removeEventListener("blur", Bt), document.removeEventListener("fullscreenchange", ce), document.documentElement.classList.remove($9);
 		try {
-			Oe?.remove(), F.remove();
+			Pe?.remove(), F.remove();
 		} catch {}
 	};
 }
