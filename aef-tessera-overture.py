@@ -108,9 +108,12 @@ def _(anywidget, pathlib, traitlets):
         foot_ask = traitlets.Unicode("").tag(sync=True)
         foot = traitlets.Bytes(b"").tag(sync=True)
         foot_status = traitlets.Unicode("").tag(sync=True)
-        # K in the map: a 4x PNG of the map and its name (zoom, center), written to exports/; the result in snap_status
+        # K in the map: a 4x PNG of the map and its name (zoom, center), written to exports/, and the same scaled for a
+        # LinkedIn post (`snap_small`, its "WxH" in `snap_small_size`) to exports/for_linkedin/; the result in snap_status
         snap = traitlets.Bytes(b"").tag(sync=True)
         snap_name = traitlets.Unicode("").tag(sync=True)
+        snap_small = traitlets.Bytes(b"").tag(sync=True)
+        snap_small_size = traitlets.Unicode("").tag(sync=True)
         snap_status = traitlets.Unicode("").tag(sync=True)
 
     return (SeasonsMap,)
@@ -265,11 +268,20 @@ def _(HOLD, pathlib, re, time, view):
             name = re.sub(r"[^A-Za-z0-9._-]", "", view.snap_name or "map")
             path = out / f"{time.strftime('%Y%m%d-%H%M%S')}_{name}.png"
             path.write_bytes(bytes(data))
-            view.snap_status = f"Saved exports/{path.name} ({len(data) / 1e6:.1f} MB)"
+            msg = f"Saved exports/{path.name} ({len(data) / 1e6:.1f} MB)"
+            if view.snap_small:
+                small = out / "for_linkedin"
+                small.mkdir(exist_ok=True)
+                size = re.sub(r"[^0-9x]", "", view.snap_small_size or "")
+                spath = small / f"{path.stem}-{size}.png"
+                spath.write_bytes(bytes(view.snap_small))
+                msg += f" and for_linkedin/{spath.name}"
+            view.snap_status = msg
         except Exception as exc:
             view.snap_status = f"Export failed: {type(exc).__name__}: {exc}"
         finally:
             view.snap = b""
+            view.snap_small = b""
 
     if HOLD.get("h_snap") is not None:
         try:

@@ -138,15 +138,15 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   card.append(hd, legend, body);
   root.appendChild(card);
 
-  // ---- search (Photon, over OpenStreetMap): commented out for now
-  // const sBox = E("div", "search glass"), q = E("input") as HTMLInputElement, hits = E("div", "hits");
-  // q.placeholder = "Search a place  ( / )";
-  // q.spellcheck = false;
-  // sBox.append(q, hits);
-  // root.appendChild(sBox);
+  // ---- search (Photon, over OpenStreetMap)
+  const sBox = E("div", "search glass"), q = E("input") as HTMLInputElement, hits = E("div", "hits");
+  q.placeholder = "Search a place  ( / )";
+  q.spellcheck = false;
+  sBox.append(q, hits);
+  root.appendChild(sBox);
   const tip = E("div", "tip");
   const toast = E("div", "toast glass");
-  // the Sentinel-2 card: top left while the imagery shows
+  // the Sentinel-2 card: under the search while the imagery shows
   const s2Card = E("div", "s2card glass");
   root.append(tip, toast, s2Card);
   let toastT = 0;
@@ -689,70 +689,70 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     showTip("");
   });
 
-  // ---- search: commented out for now
-  // type Hit = { name: string; sub: string; center: [number, number] };
-  // let found: Hit[] = [], sel = 0, sT = 0;
-  // const showHits = () => {
-  //   hits.replaceChildren();
-  //   found.forEach((h, i) => {
-  //     const r = E("div", "hit" + (i === sel ? " sel" : ""));
-  //     r.textContent = h.name;
-  //     const s = E("small");
-  //     s.textContent = h.sub;
-  //     r.appendChild(s);
-  //     r.onmousedown = (ev) => {
-  //       ev.preventDefault();
-  //       go(h);
-  //     };
-  //     hits.appendChild(r);
-  //   });
-  //   hits.style.display = found.length ? "block" : "none";
-  // };
-  // q.oninput = () => {
-  //   clearTimeout(sT);
-  //   sT = window.setTimeout(async () => {
-  //     const t = q.value.trim();
-  //     if (t.length < 2) {
-  //       found = [];
-  //       showHits();
-  //       return;
-  //     }
-  //     try {
-  //       const c = map.getCenter();
-  //       const j = await (await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(t)}&limit=6&lat=${c.lat}&lon=${c.lng}`)).json();
-  //       found = (j.features || []).map((f: { geometry: { coordinates: [number, number] }; properties: Record<string, string> }) => ({
-  //         name: f.properties.name || f.properties.city || "",
-  //         sub: [f.properties.city, f.properties.state, f.properties.country].filter((v) => v && v !== f.properties.name).join(", "),
-  //         center: f.geometry.coordinates,
-  //       }));
-  //       sel = 0;
-  //       showHits();
-  //     } catch {
-  //       // a search let go for the next one
-  //     }
-  //   }, 250);
-  // };
-  // const go = (h: Hit) => {
-  //   found = [];
-  //   showHits();
-  //   q.blur();
-  //   map.flyTo({ center: h.center, zoom: 13.5 });
-  // };
-  // q.onkeydown = (e) => {
-  //   e.stopPropagation();
-  //   if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-  //     e.preventDefault();
-  //     sel = Math.max(0, Math.min(found.length - 1, sel + (e.key === "ArrowDown" ? 1 : -1)));
-  //     showHits();
-  //   } else if (e.key === "Enter" && found[sel]) go(found[sel]);
-  //   else if (e.key === "Escape") {
-  //     q.value = "";
-  //     found = [];
-  //     showHits();
-  //     q.blur();
-  //   }
-  // };
-  // q.onblur = () => window.setTimeout(() => (hits.style.display = "none"), 150);
+  // ---- search
+  type Hit = { name: string; sub: string; center: [number, number] };
+  let found: Hit[] = [], sel = 0, sT = 0;
+  const showHits = () => {
+    hits.replaceChildren();
+    found.forEach((h, i) => {
+      const r = E("div", "hit" + (i === sel ? " sel" : ""));
+      r.textContent = h.name;
+      const s = E("small");
+      s.textContent = h.sub;
+      r.appendChild(s);
+      r.onmousedown = (ev) => {
+        ev.preventDefault();
+        go(h);
+      };
+      hits.appendChild(r);
+    });
+    hits.style.display = found.length ? "block" : "none";
+  };
+  q.oninput = () => {
+    clearTimeout(sT);
+    sT = window.setTimeout(async () => {
+      const t = q.value.trim();
+      if (t.length < 2) {
+        found = [];
+        showHits();
+        return;
+      }
+      try {
+        const c = map.getCenter();
+        const j = await (await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(t)}&limit=6&lat=${c.lat}&lon=${c.lng}`)).json();
+        found = (j.features || []).map((f: { geometry: { coordinates: [number, number] }; properties: Record<string, string> }) => ({
+          name: f.properties.name || f.properties.city || "",
+          sub: [f.properties.city, f.properties.state, f.properties.country].filter((v) => v && v !== f.properties.name).join(", "),
+          center: f.geometry.coordinates,
+        }));
+        sel = 0;
+        showHits();
+      } catch {
+        // a search let go for the next one
+      }
+    }, 250);
+  };
+  const go = (h: Hit) => {
+    found = [];
+    showHits();
+    q.blur();
+    map.flyTo({ center: h.center, zoom: 13.5 });
+  };
+  q.onkeydown = (e) => {
+    e.stopPropagation();
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      sel = Math.max(0, Math.min(found.length - 1, sel + (e.key === "ArrowDown" ? 1 : -1)));
+      showHits();
+    } else if (e.key === "Enter" && found[sel]) go(found[sel]);
+    else if (e.key === "Escape") {
+      q.value = "";
+      found = [];
+      showHits();
+      q.blur();
+    }
+  };
+  q.onblur = () => window.setTimeout(() => (hits.style.display = "none"), 150);
 
   // ---- K: the map (no cards; paired, both halves) as a PNG at SNAP_X times its size on screen, written by the kernel
   // to exports/
@@ -782,6 +782,33 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       });
       m.triggerRepaint();
     });
+  }
+  /** The export scaled for a LinkedIn post (as aef-explorer's fit_linkedin.py): ratio kept, long side 2048, stepped
+   * down 128 at a time until the PNG is under 5 MB; halved in steps first so the downscale stays sharp. */
+  async function forLinkedIn(src: HTMLCanvasElement) {
+    for (let long = 2048; ; long -= 128) {
+      const k = Math.min(1, long / Math.max(src.width, src.height));
+      const w = Math.round(src.width * k), h = Math.round(src.height * k);
+      let c = src;
+      while (c.width / 2 >= w) {
+        const half = document.createElement("canvas");
+        half.width = Math.round(c.width / 2);
+        half.height = Math.round(c.height / 2);
+        const g = half.getContext("2d")!;
+        g.imageSmoothingQuality = "high";
+        g.drawImage(c, 0, 0, half.width, half.height);
+        c = half;
+      }
+      const out = document.createElement("canvas");
+      out.width = w;
+      out.height = h;
+      const g = out.getContext("2d")!;
+      g.imageSmoothingQuality = "high";
+      g.drawImage(c, 0, 0, w, h);
+      const b = await new Promise<Blob | null>((r) => out.toBlob(r, "image/png"));
+      if (!b) throw new Error("the canvas gave no PNG");
+      if (b.size <= 5 * 1024 * 1024 || long <= 1080) return { png: b, size: `${w}x${h}` };
+    }
   }
   async function snap() {
     if (snapping) return;
@@ -814,12 +841,15 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       });
       const png = await new Promise<Blob | null>((r) => out.toBlob(r, "image/png"));
       if (!png) throw new Error("the canvas gave no PNG");
+      const small = await forLinkedIn(out);
       const c = map.getCenter();
       const name =
         `z${map.getZoom().toFixed(1)}_${c.lat.toFixed(4)}_${c.lng.toFixed(4)}` +
         (st.pair ? `_pair-s2-${st.s2Year}` : s2Shown() ? `_s2-${st.s2Year}` : "") +
         `_${+x.toFixed(1)}x`;
       model.set("snap_name", name);
+      model.set("snap_small", new DataView(await small.png.arrayBuffer()));
+      model.set("snap_small_size", small.size);
       model.set("snap", new DataView(await png.arrayBuffer()));
       model.save_changes();
     } catch (err) {
@@ -838,14 +868,17 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   // ---- keys
   let pivotTo = 0;
   const onKey = (e: KeyboardEvent) => {
-    if (e.metaKey || e.ctrlKey || e.altKey) return;
-    // search commented out for now
-    // if (e.target === q) return;
+    if (e.metaKey || e.ctrlKey || e.altKey || e.target === q) return;
     const k = e.key;
     if (e.code === "Space") {
       if (!e.repeat) setS2(true);
     } else if (k === "p" || k === "P") setPair(!st.pair);
     else if ((k === "[" || k === "]") && imgShown()) stepS2(k === "]" ? 1 : -1);
+    else if ((k === "b" || k === "B") && imgShown()) {
+      // from any year to the latest, then back and forth between the first and the latest
+      const last = S2_YEARS.length - 1, i = S2_YEARS.indexOf(st.s2Year);
+      stepS2((i === last ? 0 : last) - i);
+    }
     else if (k === "l" || k === "L") {
       // the basemap's labels on or off
       st.labels = !st.labels;
@@ -878,8 +911,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       sizes();
     } else if (k === "f" || k === "F") fullScreen();
     else if (k === "k" || k === "K") snap();
-    // search commented out for now
-    // else if (k === "/") q.focus();
+    else if (k === "/") q.focus();
     else if (k === "Escape") {
       if (st.look.year != null) setLook({ ...st.look, year: null });
       else if (st.fit) {

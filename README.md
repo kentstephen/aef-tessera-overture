@@ -29,12 +29,12 @@ project's web map does, and kept on disk in the browser so a place read before c
 uvx marimo run --sandbox --watch aef-tessera-overture.py
 ```
 
-The map fills the window. Zoom in: from zoom 12 the view reads by itself once the map
+The map fills the window. Search a place (`/`) and zoom in: from zoom 12 the view reads by itself once the map
 settles (below it nothing is read). Reading scores the view in the
 browser; the footprints are read by the notebook's kernel and sent as GeoArrow.
 
 Keys: `P` pair with Sentinel-2, hold space Sentinel-2 over the map, `L` labels, `Q` picking and the tooltip, `H` folds the
-card, `K` a 4x PNG of the map to `exports/`, `Shift` `←` `→` pivot, `X` notebook view, `F` full screen, `Esc` back.
+card, `/` search, `K` a 4x PNG of the map to `exports/`, `Shift` `←` `→` pivot, `X` notebook view, `F` full screen, `Esc` back.
 
 ## How it is built
 
