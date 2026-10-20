@@ -54,7 +54,7 @@ type Feature = {
 type Scene = { id: string; bbox: [number, number, number, number]; tile: string; url: string; scl: string; epsg: number };
 /** One acquisition: its MGRS tiles over the view, all one day. */
 type Pass = { key: string; date: string; cloud: number; scenes: Scene[] };
-type Rated = Pass & { cover: number; bad: number };
+export type Rated = Pass & { cover: number; bad: number };
 type BBox = [number, number, number, number];
 
 type YearState = {
@@ -170,8 +170,11 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
   };
 
   /** A scene's SCL class at each of the points (lon, lat pairs), 0 where it has no data. */
-  async function classes(s: Scene, pts: Float64Array, span: number): Promise<Uint8Array> {
-    const g = await tiff(s.scl);
+  const classes = (s: Scene, pts: Float64Array, span: number) => readAt(s.scl, s, pts, span, 1);
+  /** A scene's `nb` bands (bytes) at each of the points (lon, lat pairs), from the coarsest level that still has a pixel
+   * or two between them; 0 where it has no data. */
+  async function readAt(url: string, s: Scene, pts: Float64Array, span: number, nb: number): Promise<Uint8Array> {
+    const g = await tiff(url);
     const zone = s.epsg % 100, south = Math.floor(s.epsg / 100) === 327;
     const n = pts.length / 2;
     const xy = new Float64Array(pts.length);
@@ -201,22 +204,25 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
       lvl = levels[levels.indexOf(lvl) - 1];
       need = tilesOf(lvl);
     }
-    const tiles = new Map<string, { w: number; data: ArrayLike<number> }>();
+    const tiles = new Map<string, { w: number; at: (i: number, b: number) => number }>();
     await Promise.all(
       [...need].map(async ([k, [tx, ty]]) => {
         const t = await lvl.fetchTile(tx, ty, { pool: poolGet(), boundless: true });
         const arr = t.array;
-        tiles.set(k, { w: arr.width, data: arr.layout === "band-separate" ? arr.bands[0] : arr.data });
+        const at = arr.layout === "band-separate" ? (i: number, b: number) => arr.bands[b][i] : (i: number, b: number) => arr.data[i * nb + b];
+        tiles.set(k, { w: arr.width, at });
       }),
     );
-    const out = new Uint8Array(n);
+    const out = new Uint8Array(n * nb);
     const [a, , c, , e, f] = lvl.transform;
     for (let i = 0; i < n; i++) {
       const col = Math.floor((xy[2 * i] - c) / a), row = Math.floor((xy[2 * i + 1] - f) / e);
       if (col < 0 || row < 0 || col >= lvl.width || row >= lvl.height) continue;
       const tx = Math.floor(col / lvl.tileWidth), ty = Math.floor(row / lvl.tileHeight);
       const t = tiles.get(tx + "," + ty);
-      if (t) out[i] = t.data[(row - ty * lvl.tileHeight) * t.w + (col - tx * lvl.tileWidth)];
+      if (!t) continue;
+      const j = (row - ty * lvl.tileHeight) * t.w + (col - tx * lvl.tileWidth);
+      for (let b = 0; b < nb; b++) out[i * nb + b] = t.at(j, b);
     }
     return out;
   }
@@ -385,9 +391,64 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
     return out;
   }
 
+  /**
+   * Up to `n` clear passes of the year over the view (more checked as needed), the one shown first; the least cloudy
+   * checked when none is clear.
+   */
+  async function candidates(year: number, n: number): Promise<Rated[]> {
+    await choose(year).catch(() => {});
+    const s = years.get(year);
+    if (!s) return [];
+    while (s.busy) await new Promise((r) => setTimeout(r, 150));
+    if (years.get(year) === s) await fill(year, s, n).catch(() => {});
+    const shown = shownOf(s);
+    const out = s.clear.length ? [...s.clear] : shown ? [shown] : [];
+    if (shown) out.sort((a, b) => (a === shown ? -1 : b === shown ? 1 : 0));
+    return out.slice(0, n);
+  }
+  /** The year's pass shown, once chosen. */
+  async function shownPass(year: number): Promise<Rated | null> {
+    await choose(year).catch(() => {});
+    const s = years.get(year);
+    if (!s) return null;
+    for (let i = 0; i < 200 && !shownOf(s); i++) await new Promise((r) => setTimeout(r, 150));
+    return shownOf(s);
+  }
+  /**
+   * A pass at the points (lon, lat pairs): each point's true color (TCI) and SCL class, from the first of its scenes
+   * with data there; class 0 and color 0 where none has. `span`: the points' extent in meters, for the level read.
+   */
+  async function sample(p: Rated, pts: Float64Array, span: number) {
+    const n = pts.length / 2, rgb = new Uint8Array(3 * n), cls = new Uint8Array(n);
+    let W = Infinity, S = Infinity, E = -Infinity, N = -Infinity;
+    for (let i = 0; i < n; i++) (W = Math.min(W, pts[2 * i])), (E = Math.max(E, pts[2 * i])), (S = Math.min(S, pts[2 * i + 1])), (N = Math.max(N, pts[2 * i + 1]));
+    const over = p.scenes.filter((sc) => sc.bbox[0] < E && sc.bbox[2] > W && sc.bbox[1] < N && sc.bbox[3] > S);
+    const got = await Promise.all(
+      over.map(async (sc) => {
+        const [c, l] = await Promise.all([readAt(sc.url, sc, pts, span, 3), readAt(sc.scl, sc, pts, span, 1)]).catch(() => [null, null]);
+        return c && l ? { c, l } : null;
+      }),
+    );
+    for (let i = 0; i < n; i++)
+      for (const g of got) {
+        if (!g || !g.l[i]) continue;
+        cls[i] = g.l[i];
+        rgb.set(g.c.subarray(3 * i, 3 * i + 3), 3 * i);
+        break;
+      }
+    return { rgb, cls };
+  }
+  const isBad = (c: number) => BAD.has(c);
+
   /** The years given chosen for the view now, side by side, ahead of the rest (each kept if already chosen near here). */
   function want(ys: number[]) {
     for (const y of ys) choose(y).catch(() => {});
+  }
+
+  /** A given pass of the year, shown. */
+  function layerForPass(year: number, p: Rated, tag: string, extra: Record<string, unknown> = {}) {
+    poolGet();
+    return [layerOf(year, p, true, undefined, tag, extra)];
   }
 
   /** The year's pass alone, shown (none until it is chosen). `tag` keeps another map's layer ids apart; `extra` goes on
@@ -398,5 +459,5 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
     return p ? [layerOf(year, p, true, undefined, tag, extra)] : [];
   }
 
-  return { discover, layers, layerFor, want, dateAt, status, next };
+  return { discover, layers, layerFor, layerForPass, want, candidates, shownPass, sample, isBad, dateAt, status, next };
 }

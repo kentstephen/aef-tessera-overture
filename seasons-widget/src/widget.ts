@@ -11,7 +11,7 @@ import maplibreWorker from "maplibre-gl/dist/maplibre-gl-worker.mjs?raw";
 import { MIN_ZOOM, RES, X0, Y0 } from "./aef";
 import { createCodesLayer, pixelOf } from "./codes-layer";
 import decoderBin from "./decoder_month.bin?url";
-import { createS2, S2_YEARS } from "./es-s2";
+import { createS2, type Rated, S2_YEARS } from "./es-s2";
 import { filledRuns, outlineOfRuns, type Patch, patchesIn } from "./patch";
 import decoderMeta from "./decoder_month.json";
 import type { WorldModel } from "./earthwork-cpu";
@@ -30,8 +30,9 @@ type Model = {
 const ORCHID: [number, number, number, number] = [240, 165, 255, 255];
 // from this zoom the view reads by itself once the map settles; below it nothing is read
 const AUTO_Z = MIN_ZOOM;
-// the panels come no closer than this: Sentinel-2's 10 m pixels stay under about 3 screen pixels
-const PANEL_MAX_Z = 15;
+// the panels come no closer than this (aef-tessera-earthwork's spotlight flies to a patch no closer either): Sentinel-2's
+// 10 m pixels stay small, not blocks; a bigger patch is framed farther out
+const PANEL_MAX_Z = 14.2;
 const FIT_CLS = "sm-fit-on";
 // the panels' maps: no basemap, the imagery alone on a dark ground
 const BLANK = { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": "#0e0e0e" } }] } as maplibregl.StyleSpecification;
@@ -123,7 +124,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     document.head.appendChild(s);
   }
 
-  const st = { fit: true, area: null as [number, number, number, number] | null, readId: 0, s2Year: S2_YEARS[S2_YEARS.length - 1], open: null as Patch | null, lines: true, panelLines: false };
+  const st = { fit: true, area: null as [number, number, number, number] | null, readId: 0, s2Year: S2_YEARS[S2_YEARS.length - 1], open: null as Patch | null, lines: true, panelLines: true };
   const E = (t: string, c?: string, h?: string) => {
     const e = document.createElement(t);
     if (c) e.className = c;
@@ -147,13 +148,14 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   sBox.append(q, E("kbd", "", "/"), hits);
   const s2Card = E("div", "s2card glass showing");
   top.append(sBox, s2Card);
-  // the panels: the clicked patch in one to four years side by side over the whole window; a click anywhere goes back
+  // the panels: the clicked patch before, dug and in 2025, side by side over the whole window; a click anywhere goes back
   const tri = E("div", "tri");
-  const panels = [0, 1, 2, 3].map(() => {
+  const panels = [0, 1, 2].map(() => {
     const p = E("div", "pan"), m = E("div", "pm"), l = E("div", "pl");
     p.append(m, l);
     tri.appendChild(p);
-    return { el: p, mapEl: m, label: l, map: null as maplibregl.Map | null, overlay: null as InstanceType<typeof MapboxOverlay> | null, year: 0, role: "" };
+    // pass: a given pass (the dug panel's pick), else the year's pass shown; wait: its pick still being made
+    return { el: p, mapEl: m, label: l, map: null as maplibregl.Map | null, overlay: null as InstanceType<typeof MapboxOverlay> | null, year: 0, role: "", pass: null as Rated | null, wait: false };
   });
   const back = E("div", "back glass");
   tri.appendChild(back);
@@ -337,20 +339,72 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   }
 
   // ---- the panels
-  /** Each year's place in the panels: the first year any of the patch was dug, the last year any of it was, and 2025;
-   * when it was all dug in two years or one, 2017 in front, the ground before it. */
-  function yearsOf(p: Patch) {
-    const last = S2_YEARS[S2_YEARS.length - 1];
-    const ys: [number, string][] = [[p.first, "first dug"], [p.last, "last dug"], [last, "latest"]];
-    if (p.last - p.first <= 1 && p.first > S2_YEARS[0]) ys.unshift([S2_YEARS[0], "before"]);
-    // a year in two places (first and last dug the same year, or last dug in 2025): one panel for both
-    const out: [number, string][] = [];
-    for (const [y, r] of ys) {
-      const o = out.find((x) => x[0] === y);
-      if (o) o[1] += ", " + r;
-      else out.push([y, r]);
+  /**
+   * The dug panel's pass: of the clear passes (up to three a year) in the years any of the patch was dug, the one whose
+   * ground inside the patch is most unlike both the before panel's and 2025's (each point's color distance to the
+   * nearer of the two, averaged), so the three show the most change. A pass with cloud, shadow or snow over more than
+   * PICK_BAD of the patch is passed over. The panel shows the best so far as each year is checked.
+   */
+  const PICK_BAD = 0.05;
+  let pickSeq = 0;
+  async function pickDug(p: Patch, before: number, after: number) {
+    const tok = ++pickSeq, pn = panels[1];
+    if (!s2) return;
+    // the patch's pixels (holes filled), at most about 1500 of them, as points
+    const r = filledRuns(p.runs), all: number[] = [];
+    for (let i = 0; i < r.length; i += 3) for (let x = r[i + 1]; x < r[i + 2]; x++) all.push(X0 + (x + 0.5) * RES, Y0 - (r[i] + 0.5) * RES);
+    const k = Math.max(1, Math.ceil(all.length / 2 / 1500)), pts = new Float64Array(2 * Math.ceil(all.length / 2 / k));
+    for (let i = 0, j = 0; i < all.length / 2; i += k, j++) (pts[2 * j] = all[2 * i]), (pts[2 * j + 1] = all[2 * i + 1]);
+    const lat = (p.box[1] + p.box[3]) / 2;
+    const span = Math.max((p.box[2] - p.box[0]) * 111320 * Math.cos((lat * Math.PI) / 180), (p.box[3] - p.box[1]) * 110540);
+    const fallback = () => {
+      // nothing to compare against or nothing clear: the last year dug, as the map shows it
+      pn.year = p.last;
+      pn.pass = null;
+      pn.wait = false;
+      drawPanels();
+    };
+    const [bp, ap] = await Promise.all([s2.shownPass(before), s2.shownPass(after)]);
+    if (tok !== pickSeq) return;
+    if (!bp || !ap) return fallback();
+    const [B, A] = await Promise.all([s2.sample(bp, pts, span), s2.sample(ap, pts, span)]);
+    if (tok !== pickSeq) return;
+    let best = -1;
+    const n = pts.length / 2;
+    for (let y = p.first; y <= p.last; y++) {
+      const cs = await s2.candidates(y, 3);
+      if (tok !== pickSeq) return;
+      for (const c of cs) {
+        if (c.key === bp.key || c.key === ap.key) continue;
+        const P = await s2.sample(c, pts, span);
+        if (tok !== pickSeq) return;
+        let cov = 0, bad = 0, m = 0, sum = 0;
+        for (let i = 0; i < n; i++) {
+          if (!P.cls[i]) continue;
+          cov++;
+          if (s2.isBad(P.cls[i])) {
+            bad++;
+            continue;
+          }
+          if (!B.cls[i] || !A.cls[i]) continue;
+          const d = (o: Uint8Array) => Math.hypot(P.rgb[3 * i] - o[3 * i], P.rgb[3 * i + 1] - o[3 * i + 1], P.rgb[3 * i + 2] - o[3 * i + 2]);
+          sum += Math.min(d(B.rgb), d(A.rgb));
+          m++;
+        }
+        if (!cov || bad / cov > PICK_BAD || !m) continue;
+        if (sum / m > best) {
+          best = sum / m;
+          pn.year = y;
+          pn.pass = c;
+        }
+      }
+      // the best so far shown once a year is checked
+      if (pn.pass) {
+        pn.wait = false;
+        drawPanels();
+      }
     }
-    return out;
+    if (!pn.pass) fallback();
   }
   function bootPanel(i: number) {
     const pn = panels[i];
@@ -395,10 +449,18 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       if (!pn.year || !pn.map || !pn.overlay) return;
       const line = new PathLayer({ id: "patch", data: openPaths, getPath: (r: number[][]) => r as never, getColor: ORCHID, getWidth: 2.5, widthUnits: "pixels", jointRounded: true, capRounded: true });
       // the mask first, then the imagery dimmed outside it (each scene's layer given the mask from its first tile)
-      const mask = openMask && new SpotMaskLayer({ id: "spot-mask", image: openMask.image, bounds: openMask.bounds, operation: "mask", extensions: [DISCARD_CLEAR], _imageCoordinateSystem: COORDINATE_SYSTEM.LNGLAT } as never);
-      const img = s2!.layerFor(pn.year, `t${i}`, mask ? { extensions: [SPOT], maskId: "spot-mask", maskByInstance: false } : {});
+      // the dimming around the patch commented out for now: the imagery drawn as it is
+      const mask = null as InstanceType<typeof SpotMaskLayer> | null;
+      void openMask;
+      // const mask = openMask && new SpotMaskLayer({ id: "spot-mask", image: openMask.image, bounds: openMask.bounds, operation: "mask", extensions: [DISCARD_CLEAR], _imageCoordinateSystem: COORDINATE_SYSTEM.LNGLAT } as never);
+      const ext = mask ? { extensions: [SPOT], maskId: "spot-mask", maskByInstance: false } : {};
+      const img = pn.wait ? [] : pn.pass ? s2!.layerForPass(pn.year, pn.pass, `t${i}`, ext) : s2!.layerFor(pn.year, `t${i}`, ext);
       pn.overlay.setProps({ layers: [...(mask ? [mask] : []), ...img, ...(st.panelLines ? [line] : [])] as never });
-      const d = s2!.dateAt(pn.year), stt = s2!.status(pn.year);
+      if (pn.wait) {
+        pn.label.innerHTML = `<b>Dug</b><span>finding the pass that shows it…</span>`;
+        return;
+      }
+      const d = pn.pass?.date ?? s2!.dateAt(pn.year), stt = pn.pass ? "clear" : s2!.status(pn.year);
       const day = d ? `${MONTHS[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}` + (stt === "cloudy" ? ", cloudy" : "") : stt === "cloudy" ? "no scene" : "finding…";
       pn.label.innerHTML = `<b>${pn.year}</b><span>${pn.role}<br>Sentinel-2 · ${day}</span>`;
     });
@@ -409,13 +471,17 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     openMask = maskOf(p);
     // its size, to see where a cutoff for small patches would sit: hectares from its 10 m pixels at its latitude
     const ha = (p.n * (RES * 111320) ** 2 * Math.cos((((p.box[1] + p.box[3]) / 2) * Math.PI) / 180)) / 1e4;
-    back.innerHTML = `${ha < 10 ? ha.toFixed(2) : ha.toFixed(0)} ha, ${p.n.toLocaleString()} pixels · click anywhere or <kbd>Esc</kbd> to go back · <kbd>O</kbd> outline · <kbd>J</kbd> dark or gray around it`;
-    const ys = yearsOf(p);
-    s2?.want(ys.map((y) => y[0]));
+    back.innerHTML = `${ha < 10 ? ha.toFixed(2) : ha.toFixed(0)} ha, ${p.n.toLocaleString()} pixels · click anywhere or <kbd>Esc</kbd> to go back · <kbd>O</kbd> outline`;
+    // before, dug, 2025: the year before any of it was dug, its dug year picked for the most change, and the latest
+    const last = S2_YEARS[S2_YEARS.length - 1], before = Math.max(S2_YEARS[0], p.first - 1);
+    const ys: [number, string][] = [[before, "before"], [p.last, "dug"], [last, "latest"]];
+    s2?.want([before, last]);
     tri.classList.add("on");
     panels.forEach((pn, i) => {
       pn.year = ys[i]?.[0] ?? 0;
       pn.role = ys[i]?.[1] ?? "";
+      pn.pass = null;
+      pn.wait = i === 1;
       pn.el.classList.toggle("off", !pn.year);
       // the last open patch's imagery off until this one's is drawn
       if (!pn.year) pn.overlay?.setProps({ layers: [] });
@@ -424,9 +490,11 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     for (const pn of panels) pn.map?.resize();
     frame();
     drawPanels();
+    pickDug(p, before, last);
   }
   function closePatch() {
     st.open = null;
+    pickSeq++;
     tri.classList.remove("on");
     for (const pn of panels) pn.overlay?.setProps({ layers: [] });
   }
@@ -711,8 +779,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   // the PNG carries no cards: each image's year and day drawn at its top left, text with a soft shadow, no box
   // (LinkedIn's rule)
   const FONT = "'Instrument Sans', system-ui, sans-serif";
-  function drawYear(g: CanvasRenderingContext2D, x0: number, y0: number, k: number, year: number, role: string) {
-    const d = s2?.dateAt(year) ?? "";
+  function drawYear(g: CanvasRenderingContext2D, x0: number, y0: number, k: number, year: number, role: string, d: string) {
     g.save();
     g.shadowColor = "rgba(0,0,0,.9)";
     g.shadowBlur = 5 * k;
@@ -736,9 +803,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     note(`Exporting a ${SNAP_X}x PNG...`);
     // the panels open: each side by side with the divider between them, as on screen; else the map
     const open = st.open ? panels.filter((p) => p.year && p.map && p.overlay) : [];
-    const maps: [maplibregl.Map, InstanceType<typeof MapboxOverlay>, number, string][] = open.length
-      ? open.map((p) => [p.map!, p.overlay!, p.year, p.role])
-      : [[map, overlay, st.s2Year, ""]];
+    const maps: [maplibregl.Map, InstanceType<typeof MapboxOverlay>, number, string, string][] = open.length
+      ? open.map((p) => [p.map!, p.overlay!, p.year, p.role, p.pass?.date ?? s2?.dateAt(p.year) ?? ""])
+      : [[map, overlay, st.s2Year, "", s2?.dateAt(st.s2Year) ?? ""]];
     try {
       for (const [m, ov] of maps) {
         m.setPixelRatio(SNAP_X);
@@ -756,7 +823,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       const pad = 14 * x;
       shots.forEach((c, i) => {
         g.drawImage(c, at, 0);
-        drawYear(g, at + pad, pad, x, maps[i][2], maps[i][3]);
+        drawYear(g, at + pad, pad, x, maps[i][2], maps[i][3], maps[i][4]);
         at += c.width;
         if (i < shots.length - 1) {
           g.fillStyle = "rgba(255,255,255,.35)";
@@ -794,8 +861,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     const k = e.key;
     if (k === "k" || k === "K") snap();
     else if (k === "o" || k === "O") {
-      // the outline on or off: the patch's in the panels while they are open (off to start: the imagery shows the change
-      // by itself), else every patch's on the map
+      // the outline on or off: the patch's in the panels while they are open, else every patch's on the map
       const on = st.open ? (st.panelLines = !st.panelLines) : (st.lines = !st.lines);
       if (st.open) drawPanels();
       else draw();
@@ -807,12 +873,14 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
         st.fit = false;
         sizes();
       }
-    } else if (k === "j" || k === "J") {
-      // around the patch in the panels: darkened or gray
-      spot.gray = !spot.gray;
-      for (const pn of panels) pn.map?.triggerRepaint();
-      note(spot.gray ? "Around the patch: gray (J for dark)" : "Around the patch: dark (J for gray)");
-    } else if (k === "f" || k === "F") fullScreen();
+    }
+    // J, dark or gray around the patch: commented out with the dimming
+    // else if (k === "j" || k === "J") {
+    //   spot.gray = !spot.gray;
+    //   for (const pn of panels) pn.map?.triggerRepaint();
+    //   note(spot.gray ? "Around the patch: gray (J for dark)" : "Around the patch: dark (J for gray)");
+    // }
+    else if (k === "f" || k === "F") fullScreen();
     else if (k === "x" || k === "X") {
       st.fit = !st.fit;
       sizes();
