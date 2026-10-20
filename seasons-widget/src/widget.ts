@@ -276,7 +276,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   const camOf = (m: maplibregl.Map) => ({ center: m.getCenter(), zoom: m.getZoom(), bearing: m.getBearing(), pitch: m.getPitch() });
   function boot2() {
     if (map2) return;
-    const m2 = (map2 = new maplibregl.Map({ container: mapEl2, style: STYLE, ...camOf(map), maxPitch: 0, dragRotate: false, attributionControl: false }));
+    const m2 = (map2 = new maplibregl.Map({ container: mapEl2, style: STYLE, ...camOf(map), maxPitch: 0, dragRotate: false, attributionControl: false, maxCanvasSize: [8192, 8192] }));
     m2.keyboard.disable();
     overlay2 = new MapboxOverlay({ interleaved: true, layers: [] });
     m2.addControl(overlay2 as unknown as maplibregl.IControl);
@@ -622,9 +622,11 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     tip.innerHTML = html;
     tip.style.display = "block";
     const r = root.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
-    let x = lastPoint.x + 14, y = lastPoint.y + 14;
-    if (x + tw > r.width - 8) x = lastPoint.x - tw - 14;
-    if (y + th > r.height - 8) y = lastPoint.y - th - 14;
+    // the pointer is in the map's own box, which the pair moves to the right half
+    const px = lastPoint.x + mapEl.offsetLeft, py = lastPoint.y + mapEl.offsetTop;
+    let x = px + 14, y = py + 14;
+    if (x + tw > r.width - 8) x = px - tw - 14;
+    if (y + th > r.height - 8) y = py - th - 14;
     tip.style.left = x + "px";
     tip.style.top = y + "px";
   }
@@ -752,44 +754,71 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   // };
   // q.onblur = () => window.setTimeout(() => (hits.style.display = "none"), 150);
 
-  // ---- K: the map (no cards) as a PNG at SNAP_X times its size on screen, written by the kernel to exports/
+  // ---- K: the map (no cards; paired, both halves) as a PNG at SNAP_X times its size on screen, written by the kernel
+  // to exports/
   const SNAP_X = 4;
   let snapping = false;
   // deck.gl sizes its drawing from the canvas's CSS size changing, which a new pixel ratio alone does not do: without
   // this it draws at the screen's ratio into a corner of the bigger canvas
-  const deckFollow = () => {
-    const ctx = (overlay as unknown as { _deck?: { device?: { canvasContext?: { setDrawingBufferSize(w: number, h: number): void } } } })._deck?.device?.canvasContext;
-    const c = map.getCanvas();
+  const deckFollow = (m: maplibregl.Map, ov: InstanceType<typeof MapboxOverlay>) => {
+    const ctx = (ov as unknown as { _deck?: { device?: { canvasContext?: { setDrawingBufferSize(w: number, h: number): void } } } })._deck?.device?.canvasContext;
+    const c = m.getCanvas();
     ctx?.setDrawingBufferSize(c.width, c.height);
   };
+  /** A map drawn again at SNAP_X with every tile in, copied in the frame it was drawn (the buffer clears after it). */
+  async function grab(m: maplibregl.Map) {
+    await new Promise<void>((r) => {
+      m.once("idle", () => r());
+      m.triggerRepaint();
+    });
+    return new Promise<HTMLCanvasElement>((r) => {
+      m.once("render", () => {
+        const c = m.getCanvas();
+        const out = document.createElement("canvas");
+        out.width = c.width;
+        out.height = c.height;
+        out.getContext("2d")!.drawImage(c, 0, 0);
+        r(out);
+      });
+      m.triggerRepaint();
+    });
+  }
   async function snap() {
     if (snapping) return;
     snapping = true;
     note(`Exporting a ${SNAP_X}x PNG...`);
+    // paired, both halves side by side with the divider between them, as on screen
+    const maps: [maplibregl.Map, InstanceType<typeof MapboxOverlay>][] = st.pair && map2 && overlay2 ? [[map2, overlay2], [map, overlay]] : [[map, overlay]];
     try {
-      map.setPixelRatio(SNAP_X);
-      deckFollow();
-      // drawn again at SNAP_X with every tile in, then copied in the frame it was drawn (the buffer clears after it)
-      await new Promise<void>((r) => {
-        map.once("idle", () => r());
-        map.triggerRepaint();
+      for (const [m, ov] of maps) {
+        m.setPixelRatio(SNAP_X);
+        deckFollow(m, ov);
+      }
+      const shots = await Promise.all(maps.map(([m]) => grab(m)));
+      // the ratio drawn, lower than SNAP_X where maxCanvasSize held the canvas back
+      const x = shots[shots.length - 1].width / map.getContainer().clientWidth;
+      const line = shots.length > 1 ? Math.round(2 * x) : 0;
+      const out = document.createElement("canvas");
+      out.width = shots.reduce((w, c) => w + c.width, 0) + line;
+      out.height = Math.max(...shots.map((c) => c.height));
+      const g = out.getContext("2d")!;
+      let at = 0;
+      shots.forEach((c, i) => {
+        g.drawImage(c, at, 0);
+        at += c.width;
+        if (i < shots.length - 1) {
+          g.fillStyle = "rgba(255,255,255,.35)";
+          g.fillRect(at, 0, line, out.height);
+          at += line;
+        }
       });
-      const png = await new Promise<Blob | null>((r) => {
-        map.once("render", () => {
-          const c = map.getCanvas();
-          const out = document.createElement("canvas");
-          out.width = c.width;
-          out.height = c.height;
-          out.getContext("2d")!.drawImage(c, 0, 0);
-          out.toBlob(r, "image/png");
-        });
-        map.triggerRepaint();
-      });
+      const png = await new Promise<Blob | null>((r) => out.toBlob(r, "image/png"));
       if (!png) throw new Error("the canvas gave no PNG");
       const c = map.getCenter();
-      // the ratio drawn, lower than SNAP_X where maxCanvasSize held the canvas back
-      const x = +(map.getCanvas().width / map.getContainer().clientWidth).toFixed(1);
-      const name = `z${map.getZoom().toFixed(1)}_${c.lat.toFixed(4)}_${c.lng.toFixed(4)}` + (s2Shown() ? `_s2-${st.s2Year}` : "") + `_${x}x`;
+      const name =
+        `z${map.getZoom().toFixed(1)}_${c.lat.toFixed(4)}_${c.lng.toFixed(4)}` +
+        (st.pair ? `_pair-s2-${st.s2Year}` : s2Shown() ? `_s2-${st.s2Year}` : "") +
+        `_${+x.toFixed(1)}x`;
       model.set("snap_name", name);
       model.set("snap", new DataView(await png.arrayBuffer()));
       model.save_changes();
@@ -797,8 +826,10 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       note(`Export failed: ${(err as Error).message}`);
     } finally {
       // back to the screen's own ratio
-      map.setPixelRatio(null as never);
-      deckFollow();
+      for (const [m, ov] of maps) {
+        m.setPixelRatio(null as never);
+        deckFollow(m, ov);
+      }
       snapping = false;
     }
   }
@@ -836,6 +867,12 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     // WSF commented out for now
     // else if (k === "c" || k === "C") setLook({ ...st.look, src: st.look.src === "ours" ? "wsf" : "ours" });
     else if (k === "h" || k === "H") setFold(!st.folded);
+    else if ((k === "n" || k === "N") && imgShown() && s2) {
+      // the year's next look: another of its clear scenes
+      s2.next(st.s2Year);
+      drawS2Card();
+      render();
+    }
     else if (k === "x" || k === "X") {
       st.fit = !st.fit;
       sizes();

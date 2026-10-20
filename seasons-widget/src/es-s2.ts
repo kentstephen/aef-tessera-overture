@@ -12,7 +12,8 @@ import type * as maplibregl from "maplibre-gl";
  *
  * A year shows, for each MGRS tile, the latest scene of that year with almost no cloud and no missing pixels (the
  * ground as it stood by the year's end), and under it the tile's next clearest scenes, which fill an orbit's edge or a
- * cloud hole. Every year the model reads, 2017 to 2025.
+ * cloud hole. `next` steps a year to another look: each tile's next earlier clear scene, round again after the last.
+ * Every year the model reads, 2017 to 2025.
  */
 const STAC = "https://earth-search.aws.element84.com/v1/search";
 const COLLECTION = "sentinel-2-l2a";
@@ -21,6 +22,8 @@ export const S2_YEARS = [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
 const CLEAR = 1, WHOLE = 1;
 /** scenes under the top one of a tile, to fill its gaps */
 const UNDER = 2;
+/** the most scenes a tile keeps to step through */
+const KEEP = 12;
 
 type Feature = {
   id: string;
@@ -28,7 +31,9 @@ type Feature = {
   assets: Record<string, { href?: string }>;
   properties: { datetime?: string; "eo:cloud_cover"?: number; "s2:nodata_pixel_percentage"?: number; "grid:code"?: string };
 };
-type Item = { id: string; url: string; bbox: [number, number, number, number]; fill: boolean; date: string; tile: string };
+type Item = { id: string; url: string; bbox: [number, number, number, number]; date: string; tile: string; score: number };
+/** A tile's scenes in the order the looks step through them: the clear, whole ones latest first, then the rest. */
+type Tile = { tile: string; ranked: Item[]; bbox: [number, number, number, number] };
 
 const searches = new Map<string, Promise<Feature[]>>();
 function search(year: number, bbox: number[]): Promise<Feature[]> {
@@ -59,8 +64,8 @@ function search(year: number, bbox: number[]): Promise<Feature[]> {
 /** the MGRS tile a scene belongs to ("12SUC") */
 const tileOf = (f: Feature) => f.properties["grid:code"]?.replace(/^MGRS-/, "") ?? /_(\d{1,2}[A-Z]{3})_/.exec(f.id)?.[1] ?? f.bbox.map((v) => v.toFixed(1)).join(",");
 
-/** The year's scenes under one web mercator tile, by MGRS tile: the top scene and the ones under it. */
-async function items(year: number, z: number, x: number, y: number): Promise<Item[]> {
+/** The year's scenes under one web mercator tile, by MGRS tile, ranked. */
+async function tilesUnder(year: number, z: number, x: number, y: number): Promise<Tile[]> {
   const n = 2 ** z;
   const lon = (i: number) => (i / n) * 360 - 180;
   const lat = (j: number) => (Math.atan(Math.sinh(Math.PI * (1 - (2 * j) / n))) * 180) / Math.PI;
@@ -71,19 +76,18 @@ async function items(year: number, z: number, x: number, y: number): Promise<Ite
     const t = tileOf(f);
     byTile.set(t, [...(byTile.get(t) ?? []), f]);
   }
-  const out: Item[] = [];
+  const out: Tile[] = [];
   const cloud = (f: Feature) => f.properties["eo:cloud_cover"] ?? 100;
   const missing = (f: Feature) => f.properties["s2:nodata_pixel_percentage"] ?? 100;
   const date = (f: Feature) => (f.properties.datetime ?? "").slice(0, 10);
   for (const [tile, fs] of byTile) {
-    // the top: the latest clear, whole scene; where there is none, the one with the least cloud and missing together
+    const item = (f: Feature): Item => ({ id: f.id, url: f.assets.visual.href!, bbox: f.bbox, date: date(f), tile, score: cloud(f) + missing(f) });
+    // the clear, whole scenes, latest first; where a tile has none, the rest by cloud and missing together
     const good = fs.filter((f) => cloud(f) < CLEAR && missing(f) < WHOLE).sort((a, b) => (date(a) < date(b) ? 1 : -1));
-    const top = good[0] ?? [...fs].sort((a, b) => cloud(a) + missing(a) - cloud(b) - missing(b))[0];
-    // under it, the tile's next clearest on other days
-    const under = fs.filter((f) => f !== top && date(f) !== date(top)).slice(0, UNDER);
-    const item = (f: Feature, fill: boolean): Item => ({ id: f.id, url: f.assets.visual.href!, bbox: f.bbox, fill, date: date(f), tile });
-    // the cloudiest first: drawn first, so the clearer cover it
-    out.push(...under.reverse().map((f) => item(f, true)), item(top, false));
+    const rest = fs.filter((f) => !good.includes(f)).sort((a, b) => cloud(a) + missing(a) - cloud(b) - missing(b));
+    const ranked = [...good, ...rest].slice(0, KEEP).map(item);
+    const bbox = ranked.reduce((b, it) => [Math.min(b[0], it.bbox[0]), Math.min(b[1], it.bbox[1]), Math.max(b[2], it.bbox[2]), Math.max(b[3], it.bbox[3])] as [number, number, number, number], [180, 90, -180, -90] as [number, number, number, number]);
+    out.push({ tile, ranked, bbox });
   }
   return out;
 }
@@ -114,10 +118,22 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
     }
     return p;
   };
-  // year -> the MGRS tiles chosen and their scenes, in batches (a batch a search's answer: its own MosaicLayers, so it
-  // shows at once). A tile is chosen once a year: a later search that meets it again leaves it be
-  const src = new Map<number, { tiles: Set<string>; batches: { key: string; yearly: Item[]; fill: Item[]; bbox: number[] }[] }>();
+  // year -> the MGRS tiles found and their ranked scenes, in batches (a batch a search's answer: its own MosaicLayers,
+  // so it shows at once). A tile is taken once a year: a later search that meets it again leaves it be
+  const src = new Map<number, { tiles: Map<string, Tile>; batches: { key: string; tiles: Tile[]; bbox: number[] }[] }>();
   const asked = new Set<string>();
+  // year -> how many looks it has stepped (N)
+  const looks = new Map<number, number>();
+  /** A tile's scene on top in the year's look, and the clearest of its other days under it (cloudiest first). */
+  function pick(year: number, t: Tile) {
+    const top = t.ranked[(looks.get(year) ?? 0) % t.ranked.length];
+    const under = t.ranked.filter((it) => it !== top && it.date !== top.date).sort((a, b) => a.score - b.score).slice(0, UNDER).reverse();
+    return { top, under };
+  }
+  /** The year's next look: each tile's next scene. */
+  function next(year: number) {
+    looks.set(year, (looks.get(year) ?? 0) + 1);
+  }
 
   /** Looks for the year's scenes under the view (and half of it again around), once per tile. */
   function discover(year: number) {
@@ -135,22 +151,16 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
         const k = `${year}/${z}/${x}/${y}`;
         if (asked.has(k)) continue;
         asked.add(k);
-        items(year, z, x, y).then(
-          (its) => {
+        tilesUnder(year, z, x, y).then(
+          (ts) => {
             let e = src.get(year);
-            if (!e) src.set(year, (e = { tiles: new Set(), batches: [] }));
-            const bt = { key: k.replace(/\//g, "-"), yearly: [] as Item[], fill: [] as Item[], bbox: [180, 90, -180, -90] };
-            const fresh = new Set(its.map((it) => it.tile).filter((t) => !e.tiles.has(t)));
-            for (const it of its) {
-              if (!fresh.has(it.tile)) continue;
-              (it.fill ? bt.fill : bt.yearly).push(it);
-              bt.bbox = [Math.min(bt.bbox[0], it.bbox[0]), Math.min(bt.bbox[1], it.bbox[1]), Math.max(bt.bbox[2], it.bbox[2]), Math.max(bt.bbox[3], it.bbox[3])];
-            }
-            fresh.forEach((t) => e.tiles.add(t));
-            if (bt.yearly.length || bt.fill.length) {
-              e.batches.push(bt);
-              onChange();
-            }
+            if (!e) src.set(year, (e = { tiles: new Map(), batches: [] }));
+            const fresh = ts.filter((t) => t.ranked.length && !e.tiles.has(t.tile));
+            if (!fresh.length) return;
+            fresh.forEach((t) => e.tiles.set(t.tile, t));
+            const bbox = fresh.reduce((b, t) => [Math.min(b[0], t.bbox[0]), Math.min(b[1], t.bbox[1]), Math.max(b[2], t.bbox[2]), Math.max(b[3], t.bbox[3])], [180, 90, -180, -90]);
+            e.batches.push({ key: k.replace(/\//g, "-"), tiles: fresh, bbox });
+            onChange();
           },
           () => asked.delete(k),
         );
@@ -161,7 +171,11 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
   function dateAt(year: number, lon: number, lat: number) {
     const e = src.get(year);
     let d = "";
-    for (const bt of e?.batches ?? []) for (const it of bt.yearly) if (it.bbox[0] <= lon && lon <= it.bbox[2] && it.bbox[1] <= lat && lat <= it.bbox[3]) d = it.date;
+    for (const bt of e?.batches ?? [])
+      for (const t of bt.tiles) {
+        const it = pick(year, t).top;
+        if (it.bbox[0] <= lon && lon <= it.bbox[2] && it.bbox[1] <= lat && lat <= it.bbox[3]) d = it.date;
+      }
     return d;
   }
 
@@ -192,12 +206,19 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
     const b = map.getBounds(), dx = (b.getEast() - b.getWest()) / 2, dy = (b.getNorth() - b.getSouth()) / 2;
     const W = b.getWest() - dx, E = b.getEast() + dx, S = b.getSouth() - dy, N = b.getNorth() + dy;
     const live = e.batches.filter((bt) => bt.bbox[0] < E && bt.bbox[2] > W && bt.bbox[1] < N && bt.bbox[3] > S);
-    const parts = [...live.filter((bt) => bt.fill.length).map((bt) => [bt, "fill"] as const), ...live.filter((bt) => bt.yearly.length).map((bt) => [bt, "yearly"] as const)];
+    const look = looks.get(year) ?? 0;
+    const parts = live.flatMap((bt) => {
+      const picks = bt.tiles.map((t) => pick(year, t));
+      const fill = picks.flatMap((p) => p.under), yearly = picks.map((p) => p.top);
+      return [...(fill.length ? [[bt.key, "fill", fill] as const] : []), [bt.key, "yearly", yearly] as const];
+    });
+    // the fill under every batch's top scenes
+    parts.sort((a, b) => (a[1] === b[1] ? 0 : a[1] === "fill" ? -1 : 1));
     return parts.map(
-      ([bt, part]) =>
+      ([key, part, sources]) =>
         new MosaicLayer({
-          id: `s2${tag}-${year}-${bt.key}-${part}`,
-          sources: bt[part],
+          id: `s2${tag}-${year}-${look}-${key}-${part}`,
+          sources,
           maxCacheSize: 0,
           minZoom: 7,
           visible,
@@ -220,5 +241,5 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
     );
   }
 
-  return { discover, layers, dateAt };
+  return { discover, layers, dateAt, next };
 }

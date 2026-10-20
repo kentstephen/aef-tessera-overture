@@ -112522,8 +112522,8 @@ var not = "https://earth-search.aws.element84.com/v1/search", rot = "sentinel-2-
 	2023,
 	2024,
 	2025
-], iot = 1, aot = 1, oot = 2, K9 = /* @__PURE__ */ new Map();
-function sot(e, t) {
+], iot = 1, aot = 1, oot = 2, sot = 12, K9 = /* @__PURE__ */ new Map();
+function cot(e, t) {
 	let n = e + ":" + t.map((e) => e.toFixed(3)).join(","), r = K9.get(n);
 	return r || (r = fetch(not, {
 		method: "POST",
@@ -112541,9 +112541,9 @@ function sot(e, t) {
 		})
 	}).then((e) => e.ok ? e.json() : Promise.reject(/* @__PURE__ */ Error(`Earth Search ${e.status}`))).then((e) => e.features), r.catch(() => K9.delete(n)), K9.set(n, r)), r;
 }
-var cot = (e) => e.properties["grid:code"]?.replace(/^MGRS-/, "") ?? /_(\d{1,2}[A-Z]{3})_/.exec(e.id)?.[1] ?? e.bbox.map((e) => e.toFixed(1)).join(",");
-async function lot(e, t, n, r) {
-	let i = 2 ** t, a = (e) => e / i * 360 - 180, o = (e) => Math.atan(Math.sinh(Math.PI * (1 - 2 * e / i))) * 180 / Math.PI, s = await sot(e, [
+var lot = (e) => e.properties["grid:code"]?.replace(/^MGRS-/, "") ?? /_(\d{1,2}[A-Z]{3})_/.exec(e.id)?.[1] ?? e.bbox.map((e) => e.toFixed(1)).join(",");
+async function uot(e, t, n, r) {
+	let i = 2 ** t, a = (e) => e / i * 360 - 180, o = (e) => Math.atan(Math.sinh(Math.PI * (1 - 2 * e / i))) * 180 / Math.PI, s = await cot(e, [
 		a(n),
 		o(r + 1),
 		a(n + 1),
@@ -112551,75 +112551,103 @@ async function lot(e, t, n, r) {
 	]), c = /* @__PURE__ */ new Map();
 	for (let e of s) {
 		if (!e.assets.visual?.href || !e.bbox) continue;
-		let t = cot(e);
+		let t = lot(e);
 		c.set(t, [...c.get(t) ?? [], e]);
 	}
 	let l = [], u = (e) => e.properties["eo:cloud_cover"] ?? 100, d = (e) => e.properties["s2:nodata_pixel_percentage"] ?? 100, f = (e) => (e.properties.datetime ?? "").slice(0, 10);
 	for (let [e, t] of c) {
-		let n = t.filter((e) => u(e) < iot && d(e) < aot).sort((e, t) => f(e) < f(t) ? 1 : -1)[0] ?? [...t].sort((e, t) => u(e) + d(e) - u(t) - d(t))[0], r = t.filter((e) => e !== n && f(e) !== f(n)).slice(0, oot), i = (t, n) => ({
+		let n = (t) => ({
 			id: t.id,
 			url: t.assets.visual.href,
 			bbox: t.bbox,
-			fill: n,
 			date: f(t),
-			tile: e
+			tile: e,
+			score: u(t) + d(t)
+		}), r = t.filter((e) => u(e) < iot && d(e) < aot).sort((e, t) => f(e) < f(t) ? 1 : -1), i = t.filter((e) => !r.includes(e)).sort((e, t) => u(e) + d(e) - u(t) - d(t)), a = [...r, ...i].slice(0, sot).map(n), o = a.reduce((e, t) => [
+			Math.min(e[0], t.bbox[0]),
+			Math.min(e[1], t.bbox[1]),
+			Math.max(e[2], t.bbox[2]),
+			Math.max(e[3], t.bbox[3])
+		], [
+			180,
+			90,
+			-180,
+			-90
+		]);
+		l.push({
+			tile: e,
+			ranked: a,
+			bbox: o
 		});
-		l.push(...r.reverse().map((e) => i(e, !0)), i(n, !1));
 	}
 	return l;
 }
-var uot = {
+var dot = {
 	name: "s2Look",
 	inject: { "fs:DECKGL_FILTER_COLOR": "\n  if (color.a < 0.5) discard;\n  color = vec4(color.rgb / color.a, 1.0);\n" }
 };
-function dot(e, t) {
+function fot(e, t) {
 	let n = null, r = () => n ||= new gat({
 		size: Math.min(6, navigator.hardwareConcurrency || 4),
 		createWorker: () => new tot()
 	}), i = new aat({ maxRequests: 16 }), a = /* @__PURE__ */ new Map(), o = (e) => {
 		let t = a.get(e);
 		return t || (t = V9.fromUrl(e, { concurrencyLimiter: i }), a.set(e, t), t.catch(() => a.get(e) === t && a.delete(e))), t;
-	}, s = /* @__PURE__ */ new Map(), c = /* @__PURE__ */ new Set();
-	function l(n) {
+	}, s = /* @__PURE__ */ new Map(), c = /* @__PURE__ */ new Set(), l = /* @__PURE__ */ new Map();
+	function u(e, t) {
+		let n = t.ranked[(l.get(e) ?? 0) % t.ranked.length];
+		return {
+			top: n,
+			under: t.ranked.filter((e) => e !== n && e.date !== n.date).sort((e, t) => e.score - t.score).slice(0, oot).reverse()
+		};
+	}
+	function d(e) {
+		l.set(e, (l.get(e) ?? 0) + 1);
+	}
+	function f(n) {
 		let r = Math.max(7, Math.min(9, Math.floor(e.getZoom()))), i = 2 ** r, a = e.getBounds(), o = (a.getEast() - a.getWest()) / 2, l = (a.getNorth() - a.getSouth()) / 2, u = (e) => Math.min(i - 1, Math.max(0, Math.floor((e + 180) / 360 * i))), d = (e) => {
 			let t = Math.sin(e * Math.PI / 180);
 			return Math.min(i - 1, Math.max(0, Math.floor((.5 - Math.log((1 + t) / (1 - t)) / (4 * Math.PI)) * i)));
 		}, f = u(a.getWest() - o), p = u(a.getEast() + o), m = d(Math.min(85, a.getNorth() + l)), h = d(Math.max(-85, a.getSouth() - l));
 		if (!((p - f + 1) * (h - m + 1) > 64)) for (let e = f; e <= p; e++) for (let i = m; i <= h; i++) {
 			let a = `${n}/${r}/${e}/${i}`;
-			c.has(a) || (c.add(a), lot(n, r, e, i).then((e) => {
+			c.has(a) || (c.add(a), uot(n, r, e, i).then((e) => {
 				let r = s.get(n);
 				r || s.set(n, r = {
-					tiles: /* @__PURE__ */ new Set(),
+					tiles: /* @__PURE__ */ new Map(),
 					batches: []
 				});
-				let i = {
-					key: a.replace(/\//g, "-"),
-					yearly: [],
-					fill: [],
-					bbox: [
-						180,
-						90,
-						-180,
-						-90
-					]
-				}, o = new Set(e.map((e) => e.tile).filter((e) => !r.tiles.has(e)));
-				for (let t of e) o.has(t.tile) && ((t.fill ? i.fill : i.yearly).push(t), i.bbox = [
-					Math.min(i.bbox[0], t.bbox[0]),
-					Math.min(i.bbox[1], t.bbox[1]),
-					Math.max(i.bbox[2], t.bbox[2]),
-					Math.max(i.bbox[3], t.bbox[3])
+				let i = e.filter((e) => e.ranked.length && !r.tiles.has(e.tile));
+				if (!i.length) return;
+				i.forEach((e) => r.tiles.set(e.tile, e));
+				let o = i.reduce((e, t) => [
+					Math.min(e[0], t.bbox[0]),
+					Math.min(e[1], t.bbox[1]),
+					Math.max(e[2], t.bbox[2]),
+					Math.max(e[3], t.bbox[3])
+				], [
+					180,
+					90,
+					-180,
+					-90
 				]);
-				o.forEach((e) => r.tiles.add(e)), (i.yearly.length || i.fill.length) && (r.batches.push(i), t());
+				r.batches.push({
+					key: a.replace(/\//g, "-"),
+					tiles: i,
+					bbox: o
+				}), t();
 			}, () => c.delete(a)));
 		}
 	}
-	function u(e, t, n) {
+	function p(e, t, n) {
 		let r = s.get(e), i = "";
-		for (let e of r?.batches ?? []) for (let r of e.yearly) r.bbox[0] <= t && t <= r.bbox[2] && r.bbox[1] <= n && n <= r.bbox[3] && (i = r.date);
+		for (let a of r?.batches ?? []) for (let r of a.tiles) {
+			let a = u(e, r).top;
+			a.bbox[0] <= t && t <= a.bbox[2] && a.bbox[1] <= n && n <= a.bbox[3] && (i = a.date);
+		}
 		return i;
 	}
-	async function d(e, t) {
+	async function m(e, t) {
 		let { array: n } = await e.fetchTile(t.x, t.y, {
 			boundless: !1,
 			pool: t.pool,
@@ -112647,14 +112675,25 @@ function dot(e, t) {
 			height: i
 		};
 	}
-	function f(t, i, a, c = "") {
+	function h(t, i, a, c = "") {
 		r();
-		let l = s.get(t);
-		if (!l) return [];
-		let u = e.getBounds(), f = (u.getEast() - u.getWest()) / 2, p = (u.getNorth() - u.getSouth()) / 2, m = u.getWest() - f, h = u.getEast() + f, g = u.getSouth() - p, _ = u.getNorth() + p, v = l.batches.filter((e) => e.bbox[0] < h && e.bbox[2] > m && e.bbox[1] < _ && e.bbox[3] > g);
-		return [...v.filter((e) => e.fill.length).map((e) => [e, "fill"]), ...v.filter((e) => e.yearly.length).map((e) => [e, "yearly"])].map(([e, r]) => new Zat({
-			id: `s2${c}-${t}-${e.key}-${r}`,
-			sources: e[r],
+		let d = s.get(t);
+		if (!d) return [];
+		let f = e.getBounds(), p = (f.getEast() - f.getWest()) / 2, h = (f.getNorth() - f.getSouth()) / 2, g = f.getWest() - p, _ = f.getEast() + p, v = f.getSouth() - h, y = f.getNorth() + h, b = d.batches.filter((e) => e.bbox[0] < _ && e.bbox[2] > g && e.bbox[1] < y && e.bbox[3] > v), x = l.get(t) ?? 0, S = b.flatMap((e) => {
+			let n = e.tiles.map((e) => u(t, e)), r = n.flatMap((e) => e.under), i = n.map((e) => e.top);
+			return [...r.length ? [[
+				e.key,
+				"fill",
+				r
+			]] : [], [
+				e.key,
+				"yearly",
+				i
+			]];
+		});
+		return S.sort((e, t) => e[1] === t[1] ? 0 : e[1] === "fill" ? -1 : 1), S.map(([e, r, s]) => new Zat({
+			id: `s2${c}-${t}-${x}-${e}-${r}`,
+			sources: s,
 			maxCacheSize: 0,
 			minZoom: 7,
 			visible: i,
@@ -112663,7 +112702,7 @@ function dot(e, t) {
 			renderSource: (e, { data: r, signal: i }) => r ? new zat({
 				id: `s2${c}-${t}-${e.id}`,
 				geotiff: r,
-				getTileData: (e, t) => d(e, t),
+				getTileData: (e, t) => m(e, t),
 				pool: n,
 				signal: i,
 				refinementStrategy: "best-available",
@@ -112672,28 +112711,29 @@ function dot(e, t) {
 					module: O8,
 					props: { textureName: e.texture }
 				}, {
-					module: uot,
+					module: dot,
 					props: {}
 				}] })
 			}) : null
 		}));
 	}
 	return {
-		discover: l,
-		layers: f,
-		dateAt: u
+		discover: f,
+		layers: h,
+		dateAt: p,
+		next: d
 	};
 }
 //#endregion
 //#region src/halo.ts
 Lb();
-var fot = [
+var pot = [
 	14,
 	14,
 	14
-].map((e) => (e / 255).toFixed(4)).join(", "), pot = 4096, q9 = 4096, J9 = 512, mot = 40075016.686, Y9 = (e) => e * J9 / 360, X9 = (e) => J9 / (2 * Math.PI) * Math.log(Math.tan(Math.PI / 4 + e * Math.PI / 360)), hot = /* @__PURE__ */ new WeakMap();
-function got(e) {
-	let t = hot.get(e);
+].map((e) => (e / 255).toFixed(4)).join(", "), mot = 4096, q9 = 4096, J9 = 512, hot = 40075016.686, Y9 = (e) => e * J9 / 360, X9 = (e) => J9 / (2 * Math.PI) * Math.log(Math.tan(Math.PI / 4 + e * Math.PI / 360)), got = /* @__PURE__ */ new WeakMap();
+function _ot(e) {
+	let t = got.get(e);
 	if (t) return t;
 	let n = e.getChild("geometry").data[0], r = n.children[0], i = n.valueOffsets, a = r.valueOffsets, o = r.children[0].children[0].values, s = n.length, c = n.offset, l = new Float64Array(2 * s), u = new Float32Array(2 * s), d = new Float32Array(3 * s), f = 0;
 	for (let e = 0; e < s; e++) {
@@ -112702,13 +112742,13 @@ function got(e) {
 	}
 	let p = Math.max(1, Math.ceil(f / q9)), m = new Float32Array(2 * q9 * p), h = 0;
 	for (let e = 0; e < s; e++) {
-		let t = i[c + e], n = a[t], r = Math.min(a[t + 1] - 1, n + pot), s = Infinity, f = -Infinity, p = Infinity, g = -Infinity;
+		let t = i[c + e], n = a[t], r = Math.min(a[t + 1] - 1, n + mot), s = Infinity, f = -Infinity, p = Infinity, g = -Infinity;
 		for (let e = n; e < r; e++) {
 			let t = o[2 * e], n = o[2 * e + 1];
 			t < s && (s = t), t > f && (f = t), n < p && (p = n), n > g && (g = n);
 		}
 		if (r <= n) continue;
-		let _ = (s + f) / 2, v = (p + g) / 2, y = Y9(_), b = X9(v), x = 30 * J9 / (mot * Math.cos(v * Math.PI / 180));
+		let _ = (s + f) / 2, v = (p + g) / 2, y = Y9(_), b = X9(v), x = 30 * J9 / (hot * Math.cos(v * Math.PI / 180));
 		l[2 * e] = _, l[2 * e + 1] = v, u[2 * e] = (Y9(f) - Y9(s)) / 2 + x * 1.02, u[2 * e + 1] = (X9(g) - X9(p)) / 2 + x * 1.02, d[3 * e] = h, d[3 * e + 1] = r - n, d[3 * e + 2] = x;
 		for (let e = n; e < r; e++, h++) m[2 * h] = Y9(o[2 * e]) - y, m[2 * h + 1] = X9(o[2 * e + 1]) - b;
 	}
@@ -112720,9 +112760,9 @@ function got(e) {
 		xy: m,
 		height: p
 	};
-	return hot.set(e, g), g;
+	return got.set(e, g), g;
 }
-var _ot = "#version 300 es\n#define SHADER_NAME foot-halo-vertex-shader\nin vec3 positions;\nin vec3 instancePositions;\nin vec3 instancePositions64Low;\nin vec2 instanceExtent;\nin vec3 instanceVerts;\nout vec2 vLocal;\nflat out vec3 vVerts;\nvoid main(void) {\n  geometry.worldPosition = instancePositions;\n  geometry.uv = positions.xy;\n  vLocal = positions.xy * instanceExtent;\n  vVerts = instanceVerts;\n  gl_Position = project_position_to_clipspace(instancePositions, instancePositions64Low, vec3(vLocal, 0.0), geometry.position);\n  DECKGL_FILTER_GL_POSITION(gl_Position, geometry);\n}\n", vot = `#version 300 es
+var vot = "#version 300 es\n#define SHADER_NAME foot-halo-vertex-shader\nin vec3 positions;\nin vec3 instancePositions;\nin vec3 instancePositions64Low;\nin vec2 instanceExtent;\nin vec3 instanceVerts;\nout vec2 vLocal;\nflat out vec3 vVerts;\nvoid main(void) {\n  geometry.worldPosition = instancePositions;\n  geometry.uv = positions.xy;\n  vLocal = positions.xy * instanceExtent;\n  vVerts = instanceVerts;\n  gl_Position = project_position_to_clipspace(instancePositions, instancePositions64Low, vec3(vLocal, 0.0), geometry.position);\n  DECKGL_FILTER_GL_POSITION(gl_Position, geometry);\n}\n", yot = `#version 300 es
 #define SHADER_NAME foot-halo-fragment-shader
 precision highp float;
 precision highp int;
@@ -112740,7 +112780,7 @@ void main(void) {
   bool inside = false;
   vec2 p = vLocal;
   vec2 a = haloVertex(s + n - 1);
-  for (int k = 0; k < ${pot}; k++) {
+  for (int k = 0; k < ${mot}; k++) {
     if (k >= n) break;
     vec2 b = haloVertex(s + k);
     vec2 e = b - a, w = p - a;
@@ -112751,15 +112791,15 @@ void main(void) {
     a = b;
   }
   if (inside || d >= reach) discard;
-  fragColor = vec4(${fot}, 1.0 - smoothstep(0.0, 1.0, d / reach));
+  fragColor = vec4(${pot}, 1.0 - smoothstep(0.0, 1.0, d / reach));
   DECKGL_FILTER_COLOR(fragColor, geometry);
 }
-`, yot = class extends aE {
+`, bot = class extends aE {
 	static layerName = "FootHaloLayer";
 	getShaders() {
 		return super.getShaders({
-			vs: _ot,
-			fs: vot,
+			vs: vot,
+			fs: yot,
 			modules: [Vv, hy]
 		});
 	}
@@ -112832,9 +112872,9 @@ void main(void) {
 		e && t && (e.setBindings({ haloVerts: t }), e.draw(this.context.renderPass));
 	}
 };
-function bot(e, t) {
-	let n = got(e);
-	return new yot({
+function xot(e, t) {
+	let n = _ot(e);
+	return new bot({
 		id: "foot-halo",
 		data: n,
 		getPosition: (e, { index: t }) => [
@@ -112853,7 +112893,7 @@ function bot(e, t) {
 		beforeId: t.beforeId
 	});
 }
-var xot = {
+var Sot = {
 	inputs: "[unit AlphaEarth (64, dequantized sign(v) (v / 127.5)^2), unit TESSERA (128, int8 as stored)] / sqrt(2)",
 	target: "sqrt of reflectance, red green blue",
 	net: {
@@ -112880,7 +112920,7 @@ var xot = {
 			}
 		]
 	}
-}, Sot = {
+}, Cot = {
 	aef: {
 		w: [
 			.13020645081996918,
@@ -113666,12 +113706,12 @@ var xot = {
 		aef: .6035261750221252,
 		tessera: .8016068339347839
 	}
-}, Cot = ".sm{--glass:#1a1d21eb;--card:#1a1d21d9;--glass-hi:#23272c;--line:#ffffff1f;--text:#e6e9ec;--muted:#9ba5af;--faint:#ffffff2e;--cool:#56b4e9;--sel:#ffffff14;--on:#15181b;--col:264px;font-variant-numeric:tabular-nums;width:100%;height:780px;color:var(--text);-webkit-font-smoothing:antialiased;background:#0e0e0e;font:14px/1.45 Instrument Sans,ui-sans-serif,system-ui,sans-serif;position:relative;overflow:hidden}.sm *{box-sizing:border-box}.sm .glass{background:var(--card);-webkit-backdrop-filter:blur(18px)saturate(1.15);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 22px #00000059}.sm kbd{color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:1px 4px;font:10.5px/1 ui-monospace,SFMono-Regular,Menlo,monospace}.sm .load i{background:var(--cool);width:0;height:100%;transition:width .3s ease-out;display:block}.sm .loadtag{z-index:6;white-space:nowrap;pointer-events:none;padding:5px 10px;font-size:12px;display:none;position:absolute;top:12px;left:50%;transform:translate(-50%)}.sm .loadtag span{color:var(--muted);margin-left:6px}.sm .loadtag.on{display:block}.sm .card{width:var(--col);z-index:5;max-width:calc(50vw - 24px);padding:9px 11px;font-size:12.5px;position:absolute;top:12px;right:12px}.sm .card.folded{width:auto;padding:7px 8px 7px 11px}.sm .card.folded .body{display:none}.sm .hd{cursor:pointer;-webkit-user-select:none;user-select:none;justify-content:space-between;align-items:center;gap:8px;display:flex}.sm .ht{flex:1;align-items:baseline;gap:6px;display:flex}.sm .ht b{font-size:13px;font-weight:600}.sm .ht .crumb{color:var(--muted);cursor:pointer}.sm .ht .crumb:hover{color:var(--text)}.sm .ht .sep{color:var(--muted)}.sm .cb{color:var(--muted);cursor:pointer;background:0 0;border:0;border-radius:7px;flex:none;justify-content:center;align-items:center;width:26px;height:26px;margin:-4px -4px -4px 0;padding:0;display:inline-flex}.sm .cb:hover{background:var(--sel);color:var(--text)}.sm .cb svg{transition:transform .15s}.sm .folded .cb svg{transform:rotate(-90deg)}.sm .lab{color:var(--muted);min-width:46px;font-size:12px}.sm .seg{border:1px solid var(--line);border-radius:9px;gap:2px;width:max-content;padding:2px;display:flex}.sm .seg button{color:var(--muted);cursor:pointer;font:inherit;background:0 0;border:0;border-radius:7px;padding:2px 6px;font-size:12.5px}.sm .seg button:hover{color:var(--text)}.sm .seg button.on{background:var(--text);color:var(--on)}.sm .s2card{z-index:5;padding:9px 12px 10px;display:none;position:absolute;top:12px;left:12px}.sm .s2card.on{display:block}.sm .s2hd{flex-direction:column;align-items:flex-start;gap:5px;display:flex}.sm .s2hd b{letter-spacing:-.03em;font-size:34px;font-weight:600;line-height:1}.sm .s2hd span{color:var(--muted);white-space:nowrap;font-size:12px;line-height:1.25}.sm .s2card .keys{flex-wrap:wrap;gap:3px 9px;margin:9px 0 0;font-size:12px;line-height:1.5;display:flex}.sm .s2card .keys>span{white-space:nowrap}.sm .search{z-index:6;align-items:center;width:212px;height:34px;padding:0 10px;transition:width .15s;display:flex;position:absolute;top:12px;left:12px}.sm .search:focus-within{width:var(--col);border-color:#ffffff4d}.sm .search input{min-width:0;color:var(--text);font:inherit;background:0 0;border:0;outline:none;flex:1;font-size:13px}.sm .search input::placeholder{color:var(--muted)}.sm .hits{background:var(--glass-hi);border:1px solid var(--line);border-radius:10px;padding:4px;display:none;position:absolute;top:40px;left:-1px;right:-1px;box-shadow:0 6px 22px #00000059}.sm .hit{cursor:pointer;white-space:nowrap;text-overflow:ellipsis;border-radius:8px;padding:7px 10px;font-size:13px;overflow:hidden}.sm .hit small{color:var(--muted);font-size:12px;display:block}.sm .hit:hover,.sm .hit.sel{background:var(--sel)}.sm .tip{pointer-events:none;background:var(--glass-hi);border:1px solid var(--line);z-index:7;border-radius:8px;max-width:260px;padding:6px 9px;font-size:12.5px;line-height:1.4;display:none;position:absolute;box-shadow:0 4px 14px #00000059}.sm .toast{color:var(--muted);z-index:7;opacity:0;pointer-events:none;padding:6px 11px;font-size:13px;transition:opacity .2s;position:absolute;bottom:40px;left:50%;transform:translate(-50%)}.sm .toast.on{opacity:1}.sm .maplibregl-ctrl-attrib{color:var(--muted);background:var(--card)!important}.sm .maplibregl-ctrl-attrib a{color:var(--muted)}.sm.fit{z-index:9999;height:100vh;position:fixed;inset:0}.sm:fullscreen{width:100vw;height:100vh}.sm .map{position:absolute;inset:0}.sm .map2{border-right:2px solid #ffffff59;display:none;position:absolute;inset:0 50% 0 0}.sm.pair .map{left:50%}.sm.pair .map2{display:block}.sm.pair .loadtag{left:calc(50% + 12px);transform:none}.sm.pair .toast{left:75%}.sm :focus,.sm :focus-visible,.sm .maplibregl-canvas:focus{outline:none!important}.sm .load{z-index:6;background:#ffffff14;height:3px;display:none;position:absolute;top:0;left:0;right:0}.sm .load.on{display:block}.sm .body{flex-direction:column;gap:8px;margin-top:8px;display:flex}.sm .row{align-items:center;gap:8px;display:flex}.sm .chips{gap:3px;display:grid}.sm .chip{font:inherit;cursor:pointer;text-align:center;border:0;border-radius:5px;padding:5px 0 4px;font-size:11.5px;font-weight:600}.sm .chip small{opacity:.85;font-size:10px;font-weight:400;display:block}.sm .chip:disabled{opacity:.25;cursor:default}.sm button.chip:not(:disabled):hover{outline:2px solid #fff!important}.sm .notes{flex-direction:column;gap:8px;display:flex}.sm .card.short .notes{display:none}.sm .less{color:var(--muted);cursor:pointer;background:0 0;border:0;border-radius:5px;justify-content:center;align-self:center;align-items:center;width:100%;height:14px;margin:-4px 0 -6px;padding:0;display:flex}.sm .less:hover{background:var(--sel);color:var(--text)}.sm .less svg{transition:transform .15s;transform:rotate(180deg)}.sm .card.short .less svg{transform:none}.sm .hint{color:#b8bec5;font-size:11.5px;line-height:1.4}.sm .zoom{color:var(--muted);font-size:11.5px}.sm .zoom .warn{color:var(--cool);margin-left:4px}.sm .tip .dim{color:var(--muted)}.sm .tip .bar{border-radius:3px;height:8px;margin:4px 0 3px;display:flex;overflow:hidden}.sm .tip .mix{color:#b8bec5;flex-wrap:wrap;gap:2px 10px;font-size:11.5px;display:flex}.sm .tip .mix i{border-radius:2px;width:8px;height:8px;margin-right:4px;display:inline-block}.sm .years{align-items:center;gap:2px;display:flex}.sm .years .allyears{color:#e6e9ec;font:inherit;cursor:pointer;background:0 0;border:1px solid #ffffff38;border-radius:5px;margin-right:2px;padding:2px 6px;font-size:11px}.sm .years .allyears:hover{background:#ffffff1a}.sm .years .yr{min-width:0;font:inherit;cursor:pointer;opacity:.55;border:0;border-radius:4px;flex:1;padding:3px 0;font-size:10.5px;font-weight:600}.sm .years .yr.on{opacity:1;outline-offset:1px;outline:2px solid #fff!important}.sm .years .yr:not(:disabled):hover{opacity:1}.sm .years .yr:disabled{opacity:.15;cursor:default}.sm .years kbd{margin-left:4px}.sm .zoom .keys{flex-wrap:wrap;gap:3px 9px;margin-top:6px;display:flex}.sm .zoom .keys>span{white-space:nowrap}.sm .legend{color:var(--muted);align-items:center;gap:8px;margin-top:8px;font-size:11.5px;display:none}.sm .lline{gap:1px;width:168px;height:6px;display:flex}.sm .lline i{flex:1}.sm .lline i:first-child{border-radius:3px 0 0 3px}.sm .lline i:last-child{border-radius:0 3px 3px 0}.sm.clean .card{align-items:center;gap:12px;width:auto;padding:7px 12px;display:flex}.sm.clean .card .legend{margin-top:0;display:flex}.sm.clean .card .body,.sm.clean .card .cb{display:none}.sm.clean .hd{cursor:default;pointer-events:none}.sm.clean .s2card .keys{display:none}", wot = [
+}, wot = ".sm{--glass:#1a1d21eb;--card:#1a1d21d9;--glass-hi:#23272c;--line:#ffffff1f;--text:#e6e9ec;--muted:#9ba5af;--faint:#ffffff2e;--cool:#56b4e9;--sel:#ffffff14;--on:#15181b;--col:264px;font-variant-numeric:tabular-nums;width:100%;height:780px;color:var(--text);-webkit-font-smoothing:antialiased;background:#0e0e0e;font:14px/1.45 Instrument Sans,ui-sans-serif,system-ui,sans-serif;position:relative;overflow:hidden}.sm *{box-sizing:border-box}.sm .glass{background:var(--card);-webkit-backdrop-filter:blur(18px)saturate(1.15);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 22px #00000059}.sm kbd{color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:1px 4px;font:10.5px/1 ui-monospace,SFMono-Regular,Menlo,monospace}.sm .load i{background:var(--cool);width:0;height:100%;transition:width .3s ease-out;display:block}.sm .loadtag{z-index:6;white-space:nowrap;pointer-events:none;padding:5px 10px;font-size:12px;display:none;position:absolute;top:12px;left:50%;transform:translate(-50%)}.sm .loadtag span{color:var(--muted);margin-left:6px}.sm .loadtag.on{display:block}.sm .card{width:var(--col);z-index:5;max-width:calc(50vw - 24px);padding:9px 11px;font-size:12.5px;position:absolute;top:12px;right:12px}.sm .card.folded{width:auto;padding:7px 8px 7px 11px}.sm .card.folded .body{display:none}.sm .hd{cursor:pointer;-webkit-user-select:none;user-select:none;justify-content:space-between;align-items:center;gap:8px;display:flex}.sm .ht{flex:1;align-items:baseline;gap:6px;display:flex}.sm .ht b{font-size:13px;font-weight:600}.sm .ht .crumb{color:var(--muted);cursor:pointer}.sm .ht .crumb:hover{color:var(--text)}.sm .ht .sep{color:var(--muted)}.sm .cb{color:var(--muted);cursor:pointer;background:0 0;border:0;border-radius:7px;flex:none;justify-content:center;align-items:center;width:26px;height:26px;margin:-4px -4px -4px 0;padding:0;display:inline-flex}.sm .cb:hover{background:var(--sel);color:var(--text)}.sm .cb svg{transition:transform .15s}.sm .folded .cb svg{transform:rotate(-90deg)}.sm .lab{color:var(--muted);min-width:46px;font-size:12px}.sm .seg{border:1px solid var(--line);border-radius:9px;gap:2px;width:max-content;padding:2px;display:flex}.sm .seg button{color:var(--muted);cursor:pointer;font:inherit;background:0 0;border:0;border-radius:7px;padding:2px 6px;font-size:12.5px}.sm .seg button:hover{color:var(--text)}.sm .seg button.on{background:var(--text);color:var(--on)}.sm .s2card{z-index:5;padding:9px 12px 10px;display:none;position:absolute;top:12px;left:12px}.sm .s2card.on{display:block}.sm .s2hd{flex-direction:column;align-items:flex-start;gap:5px;display:flex}.sm .s2hd b{letter-spacing:-.03em;font-size:34px;font-weight:600;line-height:1}.sm .s2hd span{color:var(--muted);white-space:nowrap;font-size:12px;line-height:1.25}.sm .s2card .keys{flex-wrap:wrap;gap:3px 9px;margin:9px 0 0;font-size:12px;line-height:1.5;display:flex}.sm .s2card .keys>span{white-space:nowrap}.sm .search{z-index:6;align-items:center;width:212px;height:34px;padding:0 10px;transition:width .15s;display:flex;position:absolute;top:12px;left:12px}.sm .search:focus-within{width:var(--col);border-color:#ffffff4d}.sm .search input{min-width:0;color:var(--text);font:inherit;background:0 0;border:0;outline:none;flex:1;font-size:13px}.sm .search input::placeholder{color:var(--muted)}.sm .hits{background:var(--glass-hi);border:1px solid var(--line);border-radius:10px;padding:4px;display:none;position:absolute;top:40px;left:-1px;right:-1px;box-shadow:0 6px 22px #00000059}.sm .hit{cursor:pointer;white-space:nowrap;text-overflow:ellipsis;border-radius:8px;padding:7px 10px;font-size:13px;overflow:hidden}.sm .hit small{color:var(--muted);font-size:12px;display:block}.sm .hit:hover,.sm .hit.sel{background:var(--sel)}.sm .tip{pointer-events:none;background:var(--glass-hi);border:1px solid var(--line);z-index:7;border-radius:8px;max-width:260px;padding:6px 9px;font-size:12.5px;line-height:1.4;display:none;position:absolute;box-shadow:0 4px 14px #00000059}.sm .toast{color:var(--muted);z-index:7;opacity:0;pointer-events:none;padding:6px 11px;font-size:13px;transition:opacity .2s;position:absolute;bottom:40px;left:50%;transform:translate(-50%)}.sm .toast.on{opacity:1}.sm .maplibregl-ctrl-attrib{color:var(--muted);background:var(--card)!important}.sm .maplibregl-ctrl-attrib a{color:var(--muted)}.sm.fit{z-index:9999;height:100vh;position:fixed;inset:0}.sm:fullscreen{width:100vw;height:100vh}.sm .map{position:absolute;inset:0}.sm .map2{border-right:2px solid #ffffff59;display:none;position:absolute;inset:0 50% 0 0}.sm.pair .map{left:50%}.sm.pair .map2{display:block}.sm.pair .loadtag{left:calc(50% + 12px);transform:none}.sm.pair .toast{left:75%}.sm :focus,.sm :focus-visible,.sm .maplibregl-canvas:focus{outline:none!important}.sm .load{z-index:6;background:#ffffff14;height:3px;display:none;position:absolute;top:0;left:0;right:0}.sm .load.on{display:block}.sm .body{flex-direction:column;gap:8px;margin-top:8px;display:flex}.sm .row{align-items:center;gap:8px;display:flex}.sm .chips{gap:3px;display:grid}.sm .chip{font:inherit;cursor:pointer;text-align:center;border:0;border-radius:5px;padding:5px 0 4px;font-size:11.5px;font-weight:600}.sm .chip small{opacity:.85;font-size:10px;font-weight:400;display:block}.sm .chip:disabled{opacity:.25;cursor:default}.sm button.chip:not(:disabled):hover{outline:2px solid #fff!important}.sm .notes{flex-direction:column;gap:8px;display:flex}.sm .card.short .notes{display:none}.sm .less{color:var(--muted);cursor:pointer;background:0 0;border:0;border-radius:5px;justify-content:center;align-self:center;align-items:center;width:100%;height:14px;margin:-4px 0 -6px;padding:0;display:flex}.sm .less:hover{background:var(--sel);color:var(--text)}.sm .less svg{transition:transform .15s;transform:rotate(180deg)}.sm .card.short .less svg{transform:none}.sm .hint{color:#b8bec5;font-size:11.5px;line-height:1.4}.sm .zoom{color:var(--muted);font-size:11.5px}.sm .zoom .warn{color:var(--cool);margin-left:4px}.sm .tip .dim{color:var(--muted)}.sm .tip .bar{border-radius:3px;height:8px;margin:4px 0 3px;display:flex;overflow:hidden}.sm .tip .mix{color:#b8bec5;flex-wrap:wrap;gap:2px 10px;font-size:11.5px;display:flex}.sm .tip .mix i{border-radius:2px;width:8px;height:8px;margin-right:4px;display:inline-block}.sm .years{align-items:center;gap:2px;display:flex}.sm .years .allyears{color:#e6e9ec;font:inherit;cursor:pointer;background:0 0;border:1px solid #ffffff38;border-radius:5px;margin-right:2px;padding:2px 6px;font-size:11px}.sm .years .allyears:hover{background:#ffffff1a}.sm .years .yr{min-width:0;font:inherit;cursor:pointer;opacity:.55;border:0;border-radius:4px;flex:1;padding:3px 0;font-size:10.5px;font-weight:600}.sm .years .yr.on{opacity:1;outline-offset:1px;outline:2px solid #fff!important}.sm .years .yr:not(:disabled):hover{opacity:1}.sm .years .yr:disabled{opacity:.15;cursor:default}.sm .years kbd{margin-left:4px}.sm .zoom .keys{flex-wrap:wrap;gap:3px 9px;margin-top:6px;display:flex}.sm .zoom .keys>span{white-space:nowrap}.sm .legend{color:var(--muted);align-items:center;gap:8px;margin-top:8px;font-size:11.5px;display:none}.sm .lline{gap:1px;width:168px;height:6px;display:flex}.sm .lline i{flex:1}.sm .lline i:first-child{border-radius:3px 0 0 3px}.sm .lline i:last-child{border-radius:0 3px 3px 0}.sm.clean .card{align-items:center;gap:12px;width:auto;padding:7px 12px;display:flex}.sm.clean .card .legend{margin-top:0;display:flex}.sm.clean .card .body,.sm.clean .card .cb{display:none}.sm.clean .hd{cursor:default;pointer-events:none}.sm.clean .s2card .keys{display:none}", Tot = [
 	["Q1", "Jan-Mar"],
 	["Q2", "Apr-Jun"],
 	["Q3", "Jul-Sep"],
 	["Q4", "Oct-Dec"]
-], Tot = "#4fd6ff", Eot = [
+], Eot = "#4fd6ff", Dot = [
 	200,
 	205,
 	212,
@@ -113680,15 +113720,15 @@ var xot = {
 	79,
 	214,
 	255
-], Dot = "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"><path d=\"M6 9l6 6 6-6\"/></svg>", Q9 = 12, $9 = "sm-fit-on", Oot = !1;
+], Oot = "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"><path d=\"M6 9l6 6 6-6\"/></svg>", Q9 = 12, $9 = "sm-fit-on", kot = !1;
 K0e(URL.createObjectURL(new Blob([q0e], { type: "text/javascript" })));
-function kot({ model: e, el: t }) {
+function Aot({ model: e, el: t }) {
 	let n = JSON.parse(String(e.get("config") || "{}"));
 	for (let e of /* @__PURE__ */ new Set([document.head, t.getRootNode()])) {
 		let t = e instanceof ShadowRoot ? e : document.head;
 		if (t.querySelector?.("#sm-styles")) continue;
 		let n = document.createElement("style");
-		n.id = "sm-styles", n.textContent = p + "\n" + Cot, t.appendChild(n);
+		n.id = "sm-styles", n.textContent = p + "\n" + wot, t.appendChild(n);
 	}
 	if (!document.getElementById("sm-fonts")) {
 		let e = document.createElement("link");
@@ -113708,7 +113748,7 @@ function kot({ model: e, el: t }) {
 			"chrome-controls-bottom-right"
 		].map((e) => `html.${$9} [data-testid='${e}']`).join(",") + `{display:none!important}html.${$9}{overflow:hidden}html.${$9} *:focus,html.${$9} *:focus-visible,html.${$9} *:focus-within{outline:none!important;box-shadow:none!important}`, document.head.appendChild(e);
 	}
-	Oot ||= (jze("pmtiles", new h2e().tile), !0);
+	kot ||= (jze("pmtiles", new h2e().tile), !0);
 	let r = {
 		look: {
 			src: "ours",
@@ -113728,13 +113768,13 @@ function kot({ model: e, el: t }) {
 		return t && (r.className = t), n != null && (r.innerHTML = n), r;
 	}, a = i("div", "sm clean"), o = i("div", "map"), s = i("div", "map2"), c = i("div", "load", "<i></i>"), l = i("div", "loadtag glass");
 	a.append(s, o, c, l), t.appendChild(a);
-	let u = i("div", "card glass"), d = i("div", "hd"), f = i("div", "ht"), m = i("button", "cb", Dot);
+	let u = i("div", "card glass"), d = i("div", "hd"), f = i("div", "ht"), m = i("button", "cb", Oot);
 	m.title = "fold the card (H)", d.append(f, m);
 	let h = i("div", "body"), g = i("div", "row"), _ = i("div", "seg"), v = i("button", "", "Ours"), y = i("button", "", "WSF");
 	v.title = "the aggregate earthwork model (AlphaEarth and TESSERA): when the ground was dug or graded", y.title = "the WSF Tracker: when the ground first read as built-up", _.append(v, y), g.append(i("span", "lab", "Color by"), _, i("kbd", "", "C"));
 	let b = i("div", "chips"), x = i("div", "hint"), S = i("div", "zoom"), C = i("div", "notes");
 	C.append(x, S);
-	let w = i("button", "less", Dot), T = (e) => {
+	let w = i("button", "less", Oot), T = (e) => {
 		u.classList.toggle("short", e), w.title = e ? "show the notes" : "hide the notes, the years alone";
 	};
 	w.onclick = () => T(!u.classList.contains("short")), T(!1), h.append(b, C, w);
@@ -113824,7 +113864,8 @@ function kot({ model: e, el: t }) {
 			...Ee(P),
 			maxPitch: 0,
 			dragRotate: !1,
-			attributionControl: !1
+			attributionControl: !1,
+			maxCanvasSize: [8192, 8192]
 		});
 		e.keyboard.disable(), we = new qE({
 			interleaved: !0,
@@ -113847,7 +113888,7 @@ function kot({ model: e, el: t }) {
 	}
 	let Ae = !1, je = fetch(ktt).then((e) => e.arrayBuffer()).then((e) => ({
 		w: new Float32Array(e),
-		layers: xot.net.layers
+		layers: Sot.net.layers
 	}));
 	function Me() {
 		ve(), Le();
@@ -113887,7 +113928,7 @@ function kot({ model: e, el: t }) {
 			onTile: () => {
 				Ue(), ve();
 			}
-		})), oe && e.push(bot(oe, {
+		})), oe && e.push(xot(oe, {
 			visible: !Ne(),
 			beforeId: ue
 		}), new rRe({
@@ -113903,7 +113944,7 @@ function kot({ model: e, el: t }) {
 				0,
 				0
 			],
-			getLineColor: Ne() && ce ? ce : Eot,
+			getLineColor: Ne() && ce ? ce : Dot,
 			getLineWidth: Ne() ? 1.5 : 2,
 			lineWidthUnits: Ne() ? "pixels" : "meters",
 			lineWidthMinPixels: Ne() ? 1 : .5,
@@ -113941,7 +113982,7 @@ function kot({ model: e, el: t }) {
 					year: o === e.year ? null : o
 				}), t.appendChild(s);
 			}), b.before(t);
-			let a = e.src === "ours" ? wot.map(([e, t], n) => [
+			let a = e.src === "ours" ? Tot.map(([e, t], n) => [
 				e,
 				t,
 				k7[n]
@@ -114066,8 +114107,8 @@ function kot({ model: e, el: t }) {
 			return;
 		}
 		O.innerHTML = e, O.style.display = "block";
-		let t = a.getBoundingClientRect(), n = O.offsetWidth, r = O.offsetHeight, i = qe.x + 14, o = qe.y + 14;
-		i + n > t.width - 8 && (i = qe.x - n - 14), o + r > t.height - 8 && (o = qe.y - r - 14), O.style.left = i + "px", O.style.top = o + "px";
+		let t = a.getBoundingClientRect(), n = O.offsetWidth, r = O.offsetHeight, i = qe.x + o.offsetLeft, s = qe.y + o.offsetTop, c = i + 14, l = s + 14;
+		c + n > t.width - 8 && (c = i - n - 14), l + r > t.height - 8 && (l = s - r - 14), O.style.left = c + "px", O.style.top = l + "px";
 	}
 	P.on("mousemove", (e) => {
 		if (qe = e.point, !r.picking || !be || !P.getLayer("foot")) return;
@@ -114099,35 +114140,45 @@ function kot({ model: e, el: t }) {
 	}), o.addEventListener("mouseleave", () => {
 		Je("");
 	});
-	let Ye = !1, Xe = () => {
-		let e = te._deck?.device?.canvasContext, t = P.getCanvas();
-		e?.setDrawingBufferSize(t.width, t.height);
+	let Ye = !1, Xe = (e, t) => {
+		let n = t._deck?.device?.canvasContext, r = e.getCanvas();
+		n?.setDrawingBufferSize(r.width, r.height);
 	};
-	async function Ze() {
-		if (!Ye) {
-			Ye = !0, M("Exporting a 4x PNG...");
-			try {
-				P.setPixelRatio(4), Xe(), await new Promise((e) => {
-					P.once("idle", () => e()), P.triggerRepaint();
-				});
-				let t = await new Promise((e) => {
-					P.once("render", () => {
-						let t = P.getCanvas(), n = document.createElement("canvas");
-						n.width = t.width, n.height = t.height, n.getContext("2d").drawImage(t, 0, 0), n.toBlob(e, "image/png");
-					}), P.triggerRepaint();
-				});
-				if (!t) throw Error("the canvas gave no PNG");
-				let n = P.getCenter(), i = +(P.getCanvas().width / P.getContainer().clientWidth).toFixed(1), a = `z${P.getZoom().toFixed(1)}_${n.lat.toFixed(4)}_${n.lng.toFixed(4)}` + (Ne() ? `_s2-${r.s2Year}` : "") + `_${i}x`;
-				e.set("snap_name", a), e.set("snap", new DataView(await t.arrayBuffer())), e.save_changes();
-			} catch (e) {
-				M(`Export failed: ${e.message}`);
-			} finally {
-				P.setPixelRatio(null), Xe(), Ye = !1;
-			}
+	async function Ze(e) {
+		return await new Promise((t) => {
+			e.once("idle", () => t()), e.triggerRepaint();
+		}), new Promise((t) => {
+			e.once("render", () => {
+				let n = e.getCanvas(), r = document.createElement("canvas");
+				r.width = n.width, r.height = n.height, r.getContext("2d").drawImage(n, 0, 0), t(r);
+			}), e.triggerRepaint();
+		});
+	}
+	async function Qe() {
+		if (Ye) return;
+		Ye = !0, M("Exporting a 4x PNG...");
+		let t = r.pair && Ce && we ? [[Ce, we], [P, te]] : [[P, te]];
+		try {
+			for (let [e, n] of t) e.setPixelRatio(4), Xe(e, n);
+			let n = await Promise.all(t.map(([e]) => Ze(e))), i = n[n.length - 1].width / P.getContainer().clientWidth, a = n.length > 1 ? Math.round(2 * i) : 0, o = document.createElement("canvas");
+			o.width = n.reduce((e, t) => e + t.width, 0) + a, o.height = Math.max(...n.map((e) => e.height));
+			let s = o.getContext("2d"), c = 0;
+			n.forEach((e, t) => {
+				s.drawImage(e, c, 0), c += e.width, t < n.length - 1 && (s.fillStyle = "rgba(255,255,255,.35)", s.fillRect(c, 0, a, o.height), c += a);
+			});
+			let l = await new Promise((e) => o.toBlob(e, "image/png"));
+			if (!l) throw Error("the canvas gave no PNG");
+			let u = P.getCenter(), d = `z${P.getZoom().toFixed(1)}_${u.lat.toFixed(4)}_${u.lng.toFixed(4)}` + (r.pair ? `_pair-s2-${r.s2Year}` : Ne() ? `_s2-${r.s2Year}` : "") + `_${+i.toFixed(1)}x`;
+			e.set("snap_name", d), e.set("snap", new DataView(await l.arrayBuffer())), e.save_changes();
+		} catch (e) {
+			M(`Export failed: ${e.message}`);
+		} finally {
+			for (let [e, n] of t) e.setPixelRatio(null), Xe(e, n);
+			Ye = !1;
 		}
 	}
 	e.on("change:snap_status", () => M(String(e.get("snap_status") || "")));
-	let Qe = 0, $e = (e) => {
+	let $e = 0, et = (e) => {
 		if (e.metaKey || e.ctrlKey || e.altKey) return;
 		let t = e.key;
 		if (e.code === "Space") e.repeat || Se(!0);
@@ -114139,15 +114190,16 @@ function kot({ model: e, el: t }) {
 			M(r.labels ? "Labels on" : "Labels off");
 		} else if (t === "q" || t === "Q") r.picking = !r.picking, r.picking || Je(""), M(r.picking ? "Picking on" : "Picking off");
 		else if (t === "h" || t === "H") He(!r.folded);
+		else if ((t === "n" || t === "N") && Pe() && xe) xe.next(r.s2Year), Ie(), Le();
 		else if (t === "x" || t === "X") r.fit = !r.fit, ne();
 		else if (t === "f" || t === "F") ie();
-		else if (t === "k" || t === "K") Ze();
+		else if (t === "k" || t === "K") Qe();
 		else if (t === "Escape") r.look.year == null ? r.fit && (r.fit = !1, ne()) : Ve({
 			...r.look,
 			year: null
 		});
-		else if (e.shiftKey && (t === "ArrowLeft" || t === "ArrowRight")) Qe = (P.isMoving() ? Qe : P.getBearing()) + (t === "ArrowRight" ? 15 : -15), P.easeTo({
-			bearing: Qe,
+		else if (e.shiftKey && (t === "ArrowLeft" || t === "ArrowRight")) $e = (P.isMoving() ? $e : P.getBearing()) + (t === "ArrowRight" ? 15 : -15), P.easeTo({
+			bearing: $e,
 			duration: 250
 		});
 		else if (t === "ArrowLeft") P.panBy([-120, 0]);
@@ -114159,30 +114211,30 @@ function kot({ model: e, el: t }) {
 		else return;
 		e.preventDefault();
 	};
-	window.addEventListener("keydown", $e);
-	let et = (e) => {
+	window.addEventListener("keydown", et);
+	let tt = (e) => {
 		e.code === "Space" && r.holding && Se(!1);
 	};
-	window.addEventListener("keyup", et);
-	let tt = () => r.holding && Se(!1);
-	window.addEventListener("blur", tt);
-	let nt = 0, rt = 0;
+	window.addEventListener("keyup", tt);
+	let nt = () => r.holding && Se(!1);
+	window.addEventListener("blur", nt);
+	let rt = 0, it = 0;
 	a.addEventListener("wheel", (e) => {
 		if (!r.holding) return;
-		e.preventDefault(), e.stopPropagation(), nt += e.deltaY;
+		e.preventDefault(), e.stopPropagation(), rt += e.deltaY;
 		let t = performance.now();
-		Math.abs(nt) >= 40 && t - rt > 140 && (ke(nt > 0 ? 1 : -1), nt = 0, rt = t);
+		Math.abs(rt) >= 40 && t - it > 140 && (ke(rt > 0 ? 1 : -1), rt = 0, it = t);
 	}, {
 		capture: !0,
 		passive: !1
 	}), P.on("moveend", Ue), P.on("moveend", () => {
 		Pe() && (xe?.discover(r.s2Year), Ie(), Le());
 	});
-	let it = 0;
+	let at = 0;
 	return P.on("moveend", () => {
-		if (clearTimeout(it), P.getZoom() < Q9 || !Ae) return;
+		if (clearTimeout(at), P.getZoom() < Q9 || !Ae) return;
 		let e = P.getBounds(), t = r.area;
-		t && e.getWest() >= t[0] && e.getEast() <= t[2] && e.getSouth() >= t[1] && e.getNorth() <= t[3] || (it = window.setTimeout(Be, 500));
+		t && e.getWest() >= t[0] && e.getEast() <= t[2] && e.getSouth() >= t[1] && e.getNorth() <= t[3] || (at = window.setTimeout(Be, 500));
 	}), P.on("zoom", ze), P.on("load", async () => {
 		for (let e of P.getStyle().layers) /building/.test(e.id) && P.setLayoutProperty(e.id, "visibility", "none");
 		let e = P.getStyle().layers, t = e.reduce((e, t, n) => t.type === "symbol" ? e : n, -1), i = e.slice(t + 1).find((e) => e.type === "symbol")?.id;
@@ -114196,7 +114248,7 @@ function kot({ model: e, el: t }) {
 			"source-layer": "building",
 			layout: { visibility: "none" },
 			paint: {
-				"line-color": Tot,
+				"line-color": Eot,
 				"line-width": [
 					"interpolate",
 					["linear"],
@@ -114210,16 +114262,16 @@ function kot({ model: e, el: t }) {
 				],
 				"line-opacity": .85
 			}
-		}, i), xe = dot(P, () => {
+		}, i), xe = fot(P, () => {
 			Ie(), Le();
-		}), be = await Dtt(Sot, await je, () => Me()), de(), be.setLook(r.look), Ae = !0, Be();
+		}), be = await Dtt(Cot, await je, () => Me()), de(), be.setLook(r.look), Ae = !0, Be();
 	}), Re(), ne(), () => {
-		window.removeEventListener("keydown", $e), window.removeEventListener("keyup", et), window.removeEventListener("blur", tt), document.removeEventListener("fullscreenchange", ae), document.documentElement.classList.remove($9);
+		window.removeEventListener("keydown", et), window.removeEventListener("keyup", tt), window.removeEventListener("blur", nt), document.removeEventListener("fullscreenchange", ae), document.documentElement.classList.remove($9);
 		try {
 			Ce?.remove(), P.remove();
 		} catch {}
 	};
 }
-var Aot = { render: kot };
+var jot = { render: Aot };
 //#endregion
-export { Aot as default };
+export { jot as default };
