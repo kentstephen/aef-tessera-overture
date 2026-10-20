@@ -2,7 +2,7 @@ import { COGLayer, MosaicLayer } from "@developmentseed/deck.gl-geotiff";
 import { DecoderPool, GeoTIFF, PerOriginSemaphore } from "@developmentseed/geotiff";
 import GeoTiffWorker from "@developmentseed/geotiff/pool/worker?worker&inline";
 import type * as maplibregl from "maplibre-gl";
-import { getTileData, renderTile, type S2TileData } from "./s2-shaders";
+import { getTileData, renderTile, type S2TileData, tileRgba } from "./s2-shaders";
 
 /**
  * Sentinel-2 behind the map: one clear L2A pass a year, found through Element 84's Earth Search (AWS Open Data's
@@ -310,15 +310,59 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
   }
   const shownOf = (s: YearState): Rated | null => (s.clear.length ? s.clear[s.look % s.clear.length] : s.done ? s.best : s.prev);
 
+  /**
+   * The year's pass over the view read ahead, its full-resolution tiles into the shared tile cache (s2-shaders.ts), one
+   * at a time: a panel opened on a patch in view then draws without waiting. Stops when the view moves (`gen`).
+   */
+  async function warmView(year: number, gen: number) {
+    const s = years.get(year), p = s && shownOf(s), v = viewBox();
+    if (!p) return;
+    for (const sc of p.scenes) {
+      if (!(sc.bbox[0] < v[2] && sc.bbox[2] > v[0] && sc.bbox[1] < v[3] && sc.bbox[3] > v[1])) continue;
+      const g = await tiff(sc.url);
+      if (gen !== warmGen) return;
+      const zone = sc.epsg % 100, south = Math.floor(sc.epsg / 100) === 327;
+      const [a, , c, , e, f] = g.transform;
+      let c0 = Infinity, c1 = -Infinity, r0 = Infinity, r1 = -Infinity;
+      for (const [lon, lat] of [[v[0], v[1]], [v[0], v[3]], [v[2], v[1]], [v[2], v[3]], [(v[0] + v[2]) / 2, v[1]], [(v[0] + v[2]) / 2, v[3]]]) {
+        const [x, y] = utm(lon, lat, zone, south);
+        const col = (x - c) / a, row = (y - f) / e;
+        (c0 = Math.min(c0, col)), (c1 = Math.max(c1, col)), (r0 = Math.min(r0, row)), (r1 = Math.max(r1, row));
+      }
+      const tx0 = Math.max(0, Math.floor(c0 / g.tileWidth)), tx1 = Math.min(Math.ceil(g.width / g.tileWidth) - 1, Math.floor(c1 / g.tileWidth));
+      const ty0 = Math.max(0, Math.floor(r0 / g.tileHeight)), ty1 = Math.min(Math.ceil(g.height / g.tileHeight) - 1, Math.floor(r1 / g.tileHeight));
+      for (let ty = ty0; ty <= ty1; ty++)
+        for (let tx = tx0; tx <= tx1; tx++) {
+          await tileRgba(g, tx, ty).catch(() => {});
+          if (gen !== warmGen) return;
+        }
+    }
+  }
+
   let chain: Promise<void> = Promise.resolve();
-  /** Finds the year's pass for the view, then every other year's after it, one year at a time. */
+  let warmGen = 0;
+  /**
+   * Finds the year's pass for the view, then every other year's after it, one year at a time, each read ahead for the
+   * view as it is found (the year shown first); then every year's clear passes, up to three, that a patch's dug panel
+   * chooses from. Lazily: one thing at a time, and dropped when the view moves on.
+   */
   function discover(year: number) {
     const i = recent.indexOf(year);
     if (i >= 0) recent.splice(i, 1);
     recent.push(year);
+    const gen = ++warmGen;
     choose(year).then(() => {
       chain = chain.then(async () => {
-        for (const y of S2_YEARS) if (y !== year) await choose(y).catch(() => {});
+        for (const y of [year, ...S2_YEARS.filter((v) => v !== year)]) {
+          if (gen !== warmGen) return;
+          await choose(y).catch(() => {});
+          await warmView(y, gen).catch(() => {});
+        }
+        for (const y of S2_YEARS) {
+          if (gen !== warmGen) return;
+          const s = years.get(y);
+          if (s && !s.busy) await fill(y, s, 3).catch(() => {});
+        }
       });
     });
   }
