@@ -234,7 +234,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     const z = map.getZoom();
     s2Card.innerHTML =
       `<div class="s2hd"><b>${st.s2Year}</b><span>Sentinel-2<br>${day}</span><span class="zw">z<br><i class="z">${z.toFixed(1)}</i></span></div>` +
-      `<div class="keys"><span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${ends}</span><span><kbd>N</kbd> next</span><span><kbd>O</kbd> outlines</span><span><kbd>K</kbd> PNG</span></div>` +
+      `<div class="keys"><span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${ends}</span><span><kbd>N</kbd> next</span><span><kbd>O</kbd> outlines</span></div>` +
       `<div class="pnote">${z < AUTO_Z ? `Zoom in to ${AUTO_Z} to outline the dug ground` : `<i></i>Dug ground, 2018 to 2025. Click a patch for its years`}</div>`;
   }
   function stepS2(d: number) {
@@ -329,7 +329,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     openPaths = outlineOfRuns(p.runs).map(([a, b, c, d]) => [[a, b], [c, d]]);
     // its size, to see where a cutoff for small patches would sit: hectares from its 10 m pixels at its latitude
     const ha = (p.n * (RES * 111320) ** 2 * Math.cos((((p.box[1] + p.box[3]) / 2) * Math.PI) / 180)) / 1e4;
-    back.innerHTML = `${ha < 10 ? ha.toFixed(2) : ha.toFixed(0)} ha, ${p.n.toLocaleString()} pixels · click anywhere or <kbd>Esc</kbd> to go back · <kbd>O</kbd> outlines · <kbd>K</kbd> PNG`;
+    back.innerHTML = `${ha < 10 ? ha.toFixed(2) : ha.toFixed(0)} ha, ${p.n.toLocaleString()} pixels · click anywhere or <kbd>Esc</kbd> to go back · <kbd>O</kbd> outlines`;
     const ys = yearsOf(p);
     s2?.want(ys.map((y) => y[0]));
     tri.classList.add("on");

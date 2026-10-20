@@ -90785,7 +90785,7 @@ function NVe({ model: e, el: t }) {
 	}
 	function ue() {
 		let e = x.getCenter(), t = A?.dateAt(r.s2Year, e.lng, e.lat) ?? "", n = A?.status(r.s2Year) ?? "finding", i = t ? `${$9[t.slice(5, 7) - 1]} ${+t.slice(8, 10)}` + (n === "cloudy" ? ", cloudy" : "") : n === "cloudy" ? "no scene" : "finding…", a = `${String(U9[0]).slice(2)}/${String(U9[U9.length - 1]).slice(2)}`, o = x.getZoom();
-		h.innerHTML = `<div class="s2hd"><b>${r.s2Year}</b><span>Sentinel-2<br>${i}</span><span class="zw">z<br><i class="z">${o.toFixed(1)}</i></span></div><div class="keys"><span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${a}</span><span><kbd>N</kbd> next</span><span><kbd>O</kbd> outlines</span><span><kbd>K</kbd> PNG</span></div><div class="pnote">${o < X9 ? `Zoom in to ${X9} to outline the dug ground` : "<i></i>Dug ground, 2018 to 2025. Click a patch for its years"}</div>`;
+		h.innerHTML = `<div class="s2hd"><b>${r.s2Year}</b><span>Sentinel-2<br>${i}</span><span class="zw">z<br><i class="z">${o.toFixed(1)}</i></span></div><div class="keys"><span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${a}</span><span><kbd>N</kbd> next</span><span><kbd>O</kbd> outlines</span></div><div class="pnote">${o < X9 ? `Zoom in to ${X9} to outline the dug ground` : "<i></i>Dug ground, 2018 to 2025. Click a patch for its years"}</div>`;
 	}
 	function de(e) {
 		let t = Math.max(0, Math.min(U9.length - 1, U9.indexOf(r.s2Year) + e));
@@ -90894,7 +90894,7 @@ function NVe({ model: e, el: t }) {
 	function ve(e) {
 		r.open = e, ge = q9(e.runs).map(([e, t, n, r]) => [[e, t], [n, r]]);
 		let t = e.n * (k$ * 111320) ** 2 * Math.cos((e.box[1] + e.box[3]) / 2 * Math.PI / 180) / 1e4;
-		v.innerHTML = `${t < 10 ? t.toFixed(2) : t.toFixed(0)} ha, ${e.n.toLocaleString()} pixels · click anywhere or <kbd>Esc</kbd> to go back · <kbd>O</kbd> outlines · <kbd>K</kbd> PNG`;
+		v.innerHTML = `${t < 10 ? t.toFixed(2) : t.toFixed(0)} ha, ${e.n.toLocaleString()} pixels · click anywhere or <kbd>Esc</kbd> to go back · <kbd>O</kbd> outlines`;
 		let n = pe(e);
 		A?.want(n.map((e) => e[0])), g.classList.add("on"), _.forEach((e, t) => {
 			e.year = n[t]?.[0] ?? 0, e.role = n[t]?.[1] ?? "", e.el.classList.toggle("off", !e.year), e.year || e.overlay?.setProps({ layers: [] });
