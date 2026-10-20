@@ -25680,9 +25680,9 @@ function lpe(e) {
 	let t = {
 		...Mx,
 		WEBGL_disjoint_timer_query: e.getExtension("EXT_disjoint_timer_query_webgl2"),
-		WEBGL_draw_buffers: Nx(e),
-		OES_vertex_array_object: upe(e),
-		ANGLE_instanced_arrays: dpe(e)
+		WEBGL_draw_buffers: upe(e),
+		OES_vertex_array_object: dpe(e),
+		ANGLE_instanced_arrays: fpe(e)
 	}, n = e.getExtension.bind(e);
 	e.getExtension = function(e) {
 		return n(e) || (e in t ? t[e] : null);
@@ -25692,7 +25692,7 @@ function lpe(e) {
 		return (r.apply(e) || [])?.concat(Object.keys(t));
 	};
 }
-var Mx, Nx, upe, dpe, fpe = o((() => {
+var Mx, upe, dpe, fpe, ppe = o((() => {
 	Mx = {
 		WEBGL_depth_texture: { UNSIGNED_INT_24_8_WEBGL: 34042 },
 		OES_element_index_uint: {},
@@ -25706,7 +25706,7 @@ var Mx, Nx, upe, dpe, fpe = o((() => {
 			MAX_EXT: 32776
 		},
 		EXT_shader_texture_lod: {}
-	}, Nx = (e) => ({
+	}, upe = (e) => ({
 		drawBuffersWEBGL(t) {
 			return e.drawBuffers(t);
 		},
@@ -25714,7 +25714,7 @@ var Mx, Nx, upe, dpe, fpe = o((() => {
 		COLOR_ATTACHMENT1_WEBGL: 36065,
 		COLOR_ATTACHMENT2_WEBGL: 36066,
 		COLOR_ATTACHMENT3_WEBGL: 36067
-	}), upe = (e) => ({
+	}), dpe = (e) => ({
 		VERTEX_ARRAY_BINDING_OES: 34229,
 		createVertexArrayOES() {
 			return e.createVertexArray();
@@ -25728,7 +25728,7 @@ var Mx, Nx, upe, dpe, fpe = o((() => {
 		bindVertexArrayOES(t) {
 			return e.bindVertexArray(t);
 		}
-	}), dpe = (e) => ({
+	}), fpe = (e) => ({
 		VERTEX_ATTRIB_ARRAY_DIVISOR_ANGLE: 35070,
 		drawArraysInstancedANGLE(...t) {
 			return e.drawArraysInstanced(...t);
@@ -25743,34 +25743,34 @@ var Mx, Nx, upe, dpe, fpe = o((() => {
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/context/debug/debug-hooks.js
-async function ppe() {
-	Fx ? await Fx.load() : Px();
+async function mpe() {
+	Px ? await Px.load() : Nx();
 }
-function mpe(e, t) {
-	return Fx ? Fx.makeDebugContext(e, t) : (Px(), e);
+function hpe(e, t) {
+	return Px ? Px.makeDebugContext(e, t) : (Nx(), e);
 }
-async function hpe(e) {
-	Ix ? await Ix.load(e) : Px();
+async function gpe(e) {
+	Fx ? await Fx.load(e) : Nx();
 }
-function gpe(e) {
-	return Ix?.initialize(e) || null;
+function _pe(e) {
+	return Fx?.initialize(e) || null;
 }
-function Px() {
-	Lx || (Lx = !0, W.warn("Import @luma.gl/webgl/debug before enabling WebGL debugging.")());
+function Nx() {
+	Ix || (Ix = !0, W.warn("Import @luma.gl/webgl/debug before enabling WebGL debugging.")());
 }
-var Fx, Ix, Lx, _pe = o((() => {
-	Qp(), Fx = null, Ix = null, Lx = !1;
+var Px, Fx, Ix, vpe = o((() => {
+	Qp(), Px = null, Fx = null, Ix = !1;
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/context/parameters/webgl-parameter-tables.js
-function Rx(e) {
+function Lx(e) {
 	return Array.isArray(e) || ArrayBuffer.isView(e) && !(e instanceof DataView);
 }
-function zx(e, t, n) {
+function Rx(e, t, n) {
 	return t[e] === void 0 ? n[e] : t[e];
 }
-var Bx, Vx, Hx, Ux, Wx, Gx, vpe, ype, Kx, qx, Jx, bpe, xpe = o((() => {
-	Bx = {
+var zx, Bx, Vx, Hx, Ux, Wx, ype, bpe, Gx, Kx, qx, xpe, Spe = o((() => {
+	zx = {
 		3042: !1,
 		32773: new Float32Array([
 			0,
@@ -25869,10 +25869,10 @@ var Bx, Vx, Hx, Ux, Wx, Gx, vpe, ype, Kx, qx, Jx, bpe, xpe = o((() => {
 		3316: 0,
 		3315: 0,
 		32877: 0
-	}, Vx = (e, t, n) => t ? e.enable(n) : e.disable(n), Hx = (e, t, n) => e.hint(n, t), Ux = (e, t, n) => e.pixelStorei(n, t), Wx = (e, t, n) => {
+	}, Bx = (e, t, n) => t ? e.enable(n) : e.disable(n), Vx = (e, t, n) => e.hint(n, t), Hx = (e, t, n) => e.pixelStorei(n, t), Ux = (e, t, n) => {
 		let r = n === 36006 ? 36009 : 36008;
 		return e.bindFramebuffer(r, t);
-	}, Gx = (e, t, n) => {
+	}, Wx = (e, t, n) => {
 		let r = {
 			34964: 34962,
 			36662: 36662,
@@ -25881,8 +25881,8 @@ var Bx, Vx, Hx, Ux, Wx, Gx, vpe, ype, Kx, qx, Jx, bpe, xpe = o((() => {
 			35055: 35052
 		}[n];
 		e.bindBuffer(r, t);
-	}, vpe = {
-		3042: Vx,
+	}, ype = {
+		3042: Bx,
 		32773: (e, t) => e.blendColor(...t),
 		32777: "blendEquation",
 		34877: "blendEquation",
@@ -25892,40 +25892,40 @@ var Bx, Vx, Hx, Ux, Wx, Gx, vpe, ype, Kx, qx, Jx, bpe, xpe = o((() => {
 		32970: "blendFunc",
 		3106: (e, t) => e.clearColor(...t),
 		3107: (e, t) => e.colorMask(...t),
-		2884: Vx,
+		2884: Bx,
 		2885: (e, t) => e.cullFace(t),
-		2929: Vx,
+		2929: Bx,
 		2931: (e, t) => e.clearDepth(t),
 		2932: (e, t) => e.depthFunc(t),
 		2928: (e, t) => e.depthRange(...t),
 		2930: (e, t) => e.depthMask(t),
-		3024: Vx,
-		35723: Hx,
+		3024: Bx,
+		35723: Vx,
 		35725: (e, t) => e.useProgram(t),
 		36007: (e, t) => e.bindRenderbuffer(36161, t),
 		36389: (e, t) => e.bindTransformFeedback?.(36386, t),
 		34229: (e, t) => e.bindVertexArray(t),
-		36006: Wx,
-		36010: Wx,
-		34964: Gx,
-		36662: Gx,
-		36663: Gx,
-		35053: Gx,
-		35055: Gx,
+		36006: Ux,
+		36010: Ux,
+		34964: Wx,
+		36662: Wx,
+		36663: Wx,
+		35053: Wx,
+		35055: Wx,
 		2886: (e, t) => e.frontFace(t),
-		33170: Hx,
+		33170: Vx,
 		2849: (e, t) => e.lineWidth(t),
-		32823: Vx,
+		32823: Bx,
 		32824: "polygonOffset",
 		10752: "polygonOffset",
-		35977: Vx,
-		32926: Vx,
-		32928: Vx,
+		35977: Bx,
+		32926: Bx,
+		32928: Bx,
 		32938: "sampleCoverage",
 		32939: "sampleCoverage",
-		3089: Vx,
+		3089: Bx,
 		3088: (e, t) => e.scissor(...t),
-		2960: Vx,
+		2960: Bx,
 		2961: (e, t) => e.clearStencil(t),
 		2968: (e, t) => e.stencilMaskSeparate(1028, t),
 		36005: (e, t) => e.stencilMaskSeparate(1029, t),
@@ -25942,29 +25942,29 @@ var Bx, Vx, Hx, Ux, Wx, Gx, vpe, ype, Kx, qx, Jx, bpe, xpe = o((() => {
 		34818: "stencilOpBack",
 		34819: "stencilOpBack",
 		2978: (e, t) => e.viewport(...t),
-		34383: Vx,
-		10754: Vx,
-		12288: Vx,
-		12289: Vx,
-		12290: Vx,
-		12291: Vx,
-		12292: Vx,
-		12293: Vx,
-		12294: Vx,
-		12295: Vx,
-		3333: Ux,
-		3317: Ux,
-		37440: Ux,
-		37441: Ux,
-		37443: Ux,
-		3330: Ux,
-		3332: Ux,
-		3331: Ux,
-		3314: Ux,
-		32878: Ux,
-		3316: Ux,
-		3315: Ux,
-		32877: Ux,
+		34383: Bx,
+		10754: Bx,
+		12288: Bx,
+		12289: Bx,
+		12290: Bx,
+		12291: Bx,
+		12292: Bx,
+		12293: Bx,
+		12294: Bx,
+		12295: Bx,
+		3333: Hx,
+		3317: Hx,
+		37440: Hx,
+		37441: Hx,
+		37443: Hx,
+		3330: Hx,
+		3332: Hx,
+		3331: Hx,
+		3314: Hx,
+		32878: Hx,
+		3316: Hx,
+		3315: Hx,
+		32877: Hx,
 		framebuffer: (e, t) => {
 			let n = t && "handle" in t ? t.handle : t;
 			return e.bindFramebuffer(36160, n);
@@ -26003,31 +26003,31 @@ var Bx, Vx, Hx, Ux, Wx, Gx, vpe, ype, Kx, qx, Jx, bpe, xpe = o((() => {
 		scissor: (e, t) => e.scissor(...t),
 		stencilTest: (e, t) => t ? e.enable(2960) : e.disable(2960),
 		stencilMask: (e, t) => {
-			t = Rx(t) ? t : [t, t];
+			t = Lx(t) ? t : [t, t];
 			let [n, r] = t;
 			e.stencilMaskSeparate(1028, n), e.stencilMaskSeparate(1029, r);
 		},
 		stencilFunc: (e, t) => {
-			t = Rx(t) && t.length === 3 ? [...t, ...t] : t;
+			t = Lx(t) && t.length === 3 ? [...t, ...t] : t;
 			let [n, r, i, a, o, s] = t;
 			e.stencilFuncSeparate(1028, n, r, i), e.stencilFuncSeparate(1029, a, o, s);
 		},
 		stencilOp: (e, t) => {
-			t = Rx(t) && t.length === 3 ? [...t, ...t] : t;
+			t = Lx(t) && t.length === 3 ? [...t, ...t] : t;
 			let [n, r, i, a, o, s] = t;
 			e.stencilOpSeparate(1028, n, r, i), e.stencilOpSeparate(1029, a, o, s);
 		},
 		viewport: (e, t) => e.viewport(...t)
-	}, ype = {
-		blendEquation: (e, t, n) => e.blendEquationSeparate(zx(32777, t, n), zx(34877, t, n)),
-		blendFunc: (e, t, n) => e.blendFuncSeparate(zx(32969, t, n), zx(32968, t, n), zx(32971, t, n), zx(32970, t, n)),
-		polygonOffset: (e, t, n) => e.polygonOffset(zx(32824, t, n), zx(10752, t, n)),
-		sampleCoverage: (e, t, n) => e.sampleCoverage(zx(32938, t, n), zx(32939, t, n)),
-		stencilFuncFront: (e, t, n) => e.stencilFuncSeparate(1028, zx(2962, t, n), zx(2967, t, n), zx(2963, t, n)),
-		stencilFuncBack: (e, t, n) => e.stencilFuncSeparate(1029, zx(34816, t, n), zx(36003, t, n), zx(36004, t, n)),
-		stencilOpFront: (e, t, n) => e.stencilOpSeparate(1028, zx(2964, t, n), zx(2965, t, n), zx(2966, t, n)),
-		stencilOpBack: (e, t, n) => e.stencilOpSeparate(1029, zx(34817, t, n), zx(34818, t, n), zx(34819, t, n))
-	}, Kx = {
+	}, bpe = {
+		blendEquation: (e, t, n) => e.blendEquationSeparate(Rx(32777, t, n), Rx(34877, t, n)),
+		blendFunc: (e, t, n) => e.blendFuncSeparate(Rx(32969, t, n), Rx(32968, t, n), Rx(32971, t, n), Rx(32970, t, n)),
+		polygonOffset: (e, t, n) => e.polygonOffset(Rx(32824, t, n), Rx(10752, t, n)),
+		sampleCoverage: (e, t, n) => e.sampleCoverage(Rx(32938, t, n), Rx(32939, t, n)),
+		stencilFuncFront: (e, t, n) => e.stencilFuncSeparate(1028, Rx(2962, t, n), Rx(2967, t, n), Rx(2963, t, n)),
+		stencilFuncBack: (e, t, n) => e.stencilFuncSeparate(1029, Rx(34816, t, n), Rx(36003, t, n), Rx(36004, t, n)),
+		stencilOpFront: (e, t, n) => e.stencilOpSeparate(1028, Rx(2964, t, n), Rx(2965, t, n), Rx(2966, t, n)),
+		stencilOpBack: (e, t, n) => e.stencilOpSeparate(1029, Rx(34817, t, n), Rx(34818, t, n), Rx(34819, t, n))
+	}, Gx = {
 		enable: (e, t) => e({ [t]: !0 }),
 		disable: (e, t) => e({ [t]: !1 }),
 		pixelStorei: (e, t, n) => e({ [t]: n }),
@@ -26154,18 +26154,18 @@ var Bx, Vx, Hx, Ux, Wx, Gx, vpe, ype, Kx, qx, Jx, bpe, xpe = o((() => {
 			r,
 			i
 		] })
-	}, qx = (e, t) => e.isEnabled(t), Jx = {
-		3042: qx,
-		2884: qx,
-		2929: qx,
-		3024: qx,
-		32823: qx,
-		32926: qx,
-		32928: qx,
-		3089: qx,
-		2960: qx,
-		35977: qx
-	}, bpe = /* @__PURE__ */ new Set([
+	}, Kx = (e, t) => e.isEnabled(t), qx = {
+		3042: Kx,
+		2884: Kx,
+		2929: Kx,
+		3024: Kx,
+		32823: Kx,
+		32926: Kx,
+		32928: Kx,
+		3089: Kx,
+		2960: Kx,
+		35977: Kx
+	}, xpe = /* @__PURE__ */ new Set([
 		34016,
 		36388,
 		36387,
@@ -26200,88 +26200,88 @@ var Bx, Vx, Hx, Ux, Wx, Gx, vpe, ype, Kx, qx, Jx, bpe, xpe = o((() => {
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/context/parameters/unified-parameter-api.js
-function Yx(e, t) {
-	if (wpe(t)) return;
+function Jx(e, t) {
+	if (Tpe(t)) return;
 	let n = {};
 	for (let r in t) {
-		let i = Number(r), a = vpe[r];
+		let i = Number(r), a = ype[r];
 		a && (typeof a == "string" ? n[a] = !0 : a(e, t[r], i));
 	}
 	let r = e.lumaState?.cache;
 	if (r) for (let i in n) {
-		let n = ype[i];
+		let n = bpe[i];
 		n(e, t, r);
 	}
 }
-function Spe(e, t = Bx) {
+function Cpe(e, t = zx) {
 	if (typeof t == "number") {
-		let n = t, r = Jx[n];
+		let n = t, r = qx[n];
 		return r ? r(e, n) : e.getParameter(n);
 	}
 	let n = Array.isArray(t) ? t : Object.keys(t), r = {};
 	for (let t of n) {
-		let n = Jx[t];
+		let n = qx[t];
 		r[t] = n ? n(e, Number(t)) : e.getParameter(Number(t));
 	}
 	return r;
 }
-function Cpe(e) {
-	Yx(e, Bx);
-}
 function wpe(e) {
+	Jx(e, zx);
+}
+function Tpe(e) {
 	for (let t in e) return !1;
 	return !0;
 }
-var Xx = o((() => {
-	xpe();
+var Yx = o((() => {
+	Spe();
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/context/state-tracker/deep-array-equal.js
-function Tpe(e, t) {
+function Epe(e, t) {
 	if (e === t) return !0;
-	if (Epe(e) && Epe(t) && e.length === t.length) {
+	if (Dpe(e) && Dpe(t) && e.length === t.length) {
 		for (let n = 0; n < e.length; ++n) if (e[n] !== t[n]) return !1;
 		return !0;
 	}
 	return !1;
 }
-function Epe(e) {
+function Dpe(e) {
 	return Array.isArray(e) || ArrayBuffer.isView(e);
 }
-var Dpe = o((() => {}));
+var Ope = o((() => {}));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/context/state-tracker/webgl-state-tracker.js
-function Ope(e, t) {
+function kpe(e, t) {
 	let n = e[t].bind(e);
 	e[t] = function(t) {
-		if (t === void 0 || bpe.has(t)) return n(t);
-		let r = Zx.get(e);
+		if (t === void 0 || xpe.has(t)) return n(t);
+		let r = Xx.get(e);
 		return t in r.cache || (r.cache[t] = n(t)), r.enable ? r.cache[t] : n(t);
 	}, Object.defineProperty(e[t], "name", {
 		value: `${t}-from-cache`,
 		configurable: !1
 	});
 }
-function kpe(e, t, n) {
+function Ape(e, t, n) {
 	if (!e[t]) return;
 	let r = e[t].bind(e);
 	e[t] = function(...t) {
-		let { valueChanged: i, oldValue: a } = n(Zx.get(e)._updateCache, ...t);
+		let { valueChanged: i, oldValue: a } = n(Xx.get(e)._updateCache, ...t);
 		return i && r(...t), a;
 	}, Object.defineProperty(e[t], "name", {
 		value: `${t}-to-cache`,
 		configurable: !1
 	});
 }
-function Ape(e) {
+function jpe(e) {
 	let t = e.useProgram.bind(e);
 	e.useProgram = function(n) {
-		let r = Zx.get(e);
+		let r = Xx.get(e);
 		r.program !== n && (t(n), r.program = n);
 	};
 }
-var Zx, Qx = o((() => {
-	Xx(), Dpe(), xpe(), Zx = class {
+var Xx, Zx = o((() => {
+	Yx(), Ope(), Spe(), Xx = class {
 		static get(e) {
 			return e.lumaState;
 		}
@@ -26300,22 +26300,22 @@ var Zx, Qx = o((() => {
 		}
 		pop() {
 			let e = this.stateStack[this.stateStack.length - 1];
-			Yx(this.gl, e), this.stateStack.pop();
+			Jx(this.gl, e), this.stateStack.pop();
 		}
 		trackState(e, t) {
-			if (this.cache = t?.copyState ? Spe(e) : Object.assign({}, Bx), this.initialized) throw Error("WebGLStateTracker");
-			this.initialized = !0, this.gl.lumaState = this, Ape(e);
-			for (let t in Kx) {
-				let n = Kx[t];
-				kpe(e, t, n);
+			if (this.cache = t?.copyState ? Cpe(e) : Object.assign({}, zx), this.initialized) throw Error("WebGLStateTracker");
+			this.initialized = !0, this.gl.lumaState = this, jpe(e);
+			for (let t in Gx) {
+				let n = Gx[t];
+				Ape(e, t, n);
 			}
-			Ope(e, "getParameter"), Ope(e, "isEnabled");
+			kpe(e, "getParameter"), kpe(e, "isEnabled");
 		}
 		_updateCache(e) {
 			let t = !1, n, r = this.stateStack.length > 0 ? this.stateStack[this.stateStack.length - 1] : null;
 			for (let i in e) {
 				let a = e[i], o = this.cache[i];
-				Tpe(a, o) || (t = !0, n = o, r && !(i in r) && (r[i] = o), this.cache[i] = a);
+				Epe(a, o) || (t = !0, n = o, r && !(i in r) && (r[i] = o), this.cache[i] = a);
 			}
 			return {
 				valueChanged: t,
@@ -26326,7 +26326,7 @@ var Zx, Qx = o((() => {
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/context/helpers/webgl-context-data.js
-function $x(e) {
+function Qx(e) {
 	let t = e.luma || {
 		_polyfilled: !1,
 		extensions: {},
@@ -26334,10 +26334,10 @@ function $x(e) {
 	};
 	return t._polyfilled ??= !1, t.extensions ||= {}, e.luma = t, t;
 }
-var jpe = o((() => {}));
+var Mpe = o((() => {}));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/context/helpers/create-browser-context.js
-function Mpe(e, t, n) {
+function Npe(e, t, n) {
 	let r = "", i = (e) => {
 		let t = e.statusMessage;
 		t && (r ||= t);
@@ -26352,7 +26352,7 @@ function Mpe(e, t, n) {
 		s ||= e.getContext("webgl2", o), !s && o.failIfMajorPerformanceCaveat && (r ||= "Only software GPU is available. Set `failIfMajorPerformanceCaveat: false` to allow.");
 		let n = !1;
 		if (!s && a && (o.failIfMajorPerformanceCaveat = !1, s = e.getContext("webgl2", o), n = !0), s || (s = e.getContext("webgl", {}), s && (s = null, r ||= "Your browser only supports WebGL1")), !s) throw r ||= "Your browser does not support WebGL", Error(`Failed to create WebGL context: ${r}`);
-		let i = $x(s);
+		let i = Qx(s);
 		i.softwareRenderer = n;
 		let { onContextLost: c, onContextRestored: l } = t;
 		return e.addEventListener("webglcontextlost", (e) => c(e), !1), e.addEventListener("webglcontextrestored", (e) => l(e), !1), s;
@@ -26360,25 +26360,25 @@ function Mpe(e, t, n) {
 		e.removeEventListener("webglcontextcreationerror", i, !1);
 	}
 }
-var Npe = o((() => {
-	jpe();
+var Ppe = o((() => {
+	Mpe();
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/context/helpers/webgl-extensions.js
-function eS(e, t, n) {
+function $x(e, t, n) {
 	return n[t] === void 0 && (n[t] = e.getExtension(t) || null), n[t];
 }
-var tS = o((() => {}));
+var eS = o((() => {}));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/device-helpers/webgl-device-info.js
-function Ppe(e, t) {
+function Fpe(e, t) {
 	let n = e.getParameter(7936), r = e.getParameter(7937);
-	eS(e, "WEBGL_debug_renderer_info", t);
-	let i = t.WEBGL_debug_renderer_info, a = e.getParameter(i ? i.UNMASKED_VENDOR_WEBGL : 7936), o = e.getParameter(i ? i.UNMASKED_RENDERER_WEBGL : 7937), s = a || n, c = o || r, l = e.getParameter(7938), u = Fpe(s, c), d = Ipe(s, c);
+	$x(e, "WEBGL_debug_renderer_info", t);
+	let i = t.WEBGL_debug_renderer_info, a = e.getParameter(i ? i.UNMASKED_VENDOR_WEBGL : 7936), o = e.getParameter(i ? i.UNMASKED_RENDERER_WEBGL : 7937), s = a || n, c = o || r, l = e.getParameter(7938), u = Ipe(s, c), d = Lpe(s, c);
 	return {
 		type: "webgl",
 		gpu: u,
-		gpuType: Lpe(s, c),
+		gpuType: Rpe(s, c),
 		gpuBackend: d,
 		vendor: s,
 		renderer: c,
@@ -26387,31 +26387,31 @@ function Ppe(e, t) {
 		shadingLanguageVersion: 300
 	};
 }
-function Fpe(e, t) {
+function Ipe(e, t) {
 	return /NVIDIA/i.exec(e) || /NVIDIA/i.exec(t) ? "nvidia" : /INTEL/i.exec(e) || /INTEL/i.exec(t) ? "intel" : /Apple/i.exec(e) || /Apple/i.exec(t) ? "apple" : /AMD/i.exec(e) || /AMD/i.exec(t) || /ATI/i.exec(e) || /ATI/i.exec(t) ? "amd" : /SwiftShader/i.exec(e) || /SwiftShader/i.exec(t) ? "software" : "unknown";
 }
-function Ipe(e, t) {
+function Lpe(e, t) {
 	return /Metal/i.exec(e) || /Metal/i.exec(t) ? "metal" : /ANGLE/i.exec(e) || /ANGLE/i.exec(t) ? "opengl" : "unknown";
 }
-function Lpe(e, t) {
+function Rpe(e, t) {
 	if (/SwiftShader/i.exec(e) || /SwiftShader/i.exec(t)) return "cpu";
-	switch (Fpe(e, t)) {
-		case "apple": return Rpe(e, t) ? "integrated" : "unknown";
+	switch (Ipe(e, t)) {
+		case "apple": return zpe(e, t) ? "integrated" : "unknown";
 		case "intel": return "integrated";
 		case "software": return "cpu";
 		case "unknown": return "unknown";
 		default: return "discrete";
 	}
 }
-function Rpe(e, t) {
+function zpe(e, t) {
 	return /Apple (M\d|A\d|GPU)/i.test(`${e} ${t}`);
 }
-var zpe = o((() => {
-	tS();
+var Bpe = o((() => {
+	eS();
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/converters/webgl-vertex-formats.js
-function Bpe(e) {
+function Vpe(e) {
 	switch (e) {
 		case "uint8": return 5121;
 		case "sint8": return 5120;
@@ -26428,26 +26428,26 @@ function Bpe(e) {
 	}
 	throw Error(String(e));
 }
-var Vpe = o((() => {}));
+var Hpe = o((() => {}));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/converters/webgl-texture-table.js
-function Hpe(e) {
-	return e in pS;
+function Upe(e) {
+	return e in fS;
 }
-function Upe(e, t, n) {
-	return Wpe(e, t, n, /* @__PURE__ */ new Set());
+function Wpe(e, t, n) {
+	return Gpe(e, t, n, /* @__PURE__ */ new Set());
 }
-function Wpe(e, t, n, r) {
-	let i = pS[t];
+function Gpe(e, t, n, r) {
+	let i = fS[t];
 	if (!i || r.has(t)) return !1;
 	r.add(t);
-	let a = (i.features || []).every((t) => Wpe(e, t, n, r));
-	return r.delete(t), a ? (i.extensions || []).every((t) => !!eS(e, t, n)) : !1;
+	let a = (i.features || []).every((t) => Gpe(e, t, n, r));
+	return r.delete(t), a ? (i.extensions || []).every((t) => !!$x(e, t, n)) : !1;
 }
-function Gpe(e, t, n) {
-	let r = t.create, i = mS[t.format];
-	i?.gl === void 0 && (r = !1), i?.x && (r &&= !!eS(e, i.x, n)), t.format === "stencil8" && (r = !1);
-	let a = i?.r === !1 ? !1 : i?.r === void 0 || Upe(e, i.r, n), o = r && t.render && a && Kpe(e, t.format, n);
+function Kpe(e, t, n) {
+	let r = t.create, i = pS[t.format];
+	i?.gl === void 0 && (r = !1), i?.x && (r &&= !!$x(e, i.x, n)), t.format === "stencil8" && (r = !1);
+	let a = i?.r === !1 ? !1 : i?.r === void 0 || Wpe(e, i.r, n), o = r && t.render && a && qpe(e, t.format, n);
 	return {
 		format: t.format,
 		create: r && t.create,
@@ -26457,9 +26457,9 @@ function Gpe(e, t, n) {
 		store: r && t.store
 	};
 }
-function Kpe(e, t, n) {
-	let r = mS[t], i = r?.gl;
-	if (i === void 0 || r?.x && !eS(e, r.x, n)) return !1;
+function qpe(e, t, n) {
+	let r = pS[t], i = r?.gl;
+	if (i === void 0 || r?.x && !$x(e, r.x, n)) return !1;
 	let a = e.getParameter(32873), o = e.getParameter(36006), s = e.createTexture(), c = e.createFramebuffer();
 	if (!s || !c) return !1;
 	let l = Number(e.getError());
@@ -26473,16 +26473,16 @@ function Kpe(e, t, n) {
 	}
 	return u;
 }
-function qpe(e) {
-	let t = mS[e], n = Xpe(e), r = wf.getInfo(e);
+function Jpe(e) {
+	let t = pS[e], n = Zpe(e), r = wf.getInfo(e);
 	return r.compressed && (t.dataFormat = n), {
 		internalFormat: n,
-		format: t?.dataFormat || Ype(r.channels, r.integer, r.normalized, n),
-		type: r.dataType ? Bpe(r.dataType) : t?.types?.[0] || 5121,
+		format: t?.dataFormat || Xpe(r.channels, r.integer, r.normalized, n),
+		type: r.dataType ? Vpe(r.dataType) : t?.types?.[0] || 5121,
 		compressed: r.compressed || !1
 	};
 }
-function Jpe(e) {
+function Ype(e) {
 	switch (wf.getInfo(e).attachment) {
 		case "depth": return 36096;
 		case "stencil": return 36128;
@@ -26490,7 +26490,7 @@ function Jpe(e) {
 		default: throw Error(`Not a depth stencil format: ${e}`);
 	}
 }
-function Ype(e, t, n, r) {
+function Xpe(e, t, n, r) {
 	if (r === 6408 || r === 6407) return r;
 	switch (e) {
 		case "r": return t && !n ? 36244 : 6403;
@@ -26501,48 +26501,48 @@ function Ype(e, t, n, r) {
 		default: return 6408;
 	}
 }
-function Xpe(e) {
-	let t = mS[e]?.gl;
+function Zpe(e) {
+	let t = pS[e]?.gl;
 	if (t === void 0) throw Error(`Unsupported texture format ${e}`);
 	return t;
 }
-var nS, rS, iS, aS, Zpe, Qpe, $pe, eme, tme, nme, oS, sS, cS, lS, uS, dS, fS, rme, pS, mS, hS = o((() => {
-	Qp(), tS(), Vpe(), nS = "WEBGL_compressed_texture_s3tc", rS = "WEBGL_compressed_texture_s3tc_srgb", iS = "EXT_texture_compression_rgtc", aS = "EXT_texture_compression_bptc", Zpe = "WEBGL_compressed_texture_etc", Qpe = "WEBGL_compressed_texture_astc", $pe = "WEBGL_compressed_texture_etc1", eme = "WEBGL_compressed_texture_pvrtc", tme = "WEBGL_compressed_texture_atc", nme = "EXT_texture_norm16", oS = "EXT_render_snorm", sS = "EXT_color_buffer_float", cS = "snorm8-renderable-webgl", lS = "norm16-renderable-webgl", uS = "snorm16-renderable-webgl", dS = "float16-renderable-webgl", fS = "float32-renderable-webgl", rme = "rgb9e5ufloat-renderable-webgl", pS = {
-		"float32-renderable-webgl": { extensions: [sS] },
+var tS, nS, rS, iS, Qpe, $pe, eme, tme, nme, rme, aS, oS, sS, cS, lS, uS, dS, ime, fS, pS, mS = o((() => {
+	Qp(), eS(), Hpe(), tS = "WEBGL_compressed_texture_s3tc", nS = "WEBGL_compressed_texture_s3tc_srgb", rS = "EXT_texture_compression_rgtc", iS = "EXT_texture_compression_bptc", Qpe = "WEBGL_compressed_texture_etc", $pe = "WEBGL_compressed_texture_astc", eme = "WEBGL_compressed_texture_etc1", tme = "WEBGL_compressed_texture_pvrtc", nme = "WEBGL_compressed_texture_atc", rme = "EXT_texture_norm16", aS = "EXT_render_snorm", oS = "EXT_color_buffer_float", sS = "snorm8-renderable-webgl", cS = "norm16-renderable-webgl", lS = "snorm16-renderable-webgl", uS = "float16-renderable-webgl", dS = "float32-renderable-webgl", ime = "rgb9e5ufloat-renderable-webgl", fS = {
+		"float32-renderable-webgl": { extensions: [oS] },
 		"float16-renderable-webgl": { extensions: ["EXT_color_buffer_half_float"] },
 		"rgb9e5ufloat-renderable-webgl": { extensions: ["WEBGL_render_shared_exponent"] },
-		"snorm8-renderable-webgl": { extensions: [oS] },
-		"norm16-webgl": { extensions: [nme] },
+		"snorm8-renderable-webgl": { extensions: [aS] },
+		"norm16-webgl": { extensions: [rme] },
 		"norm16-renderable-webgl": { features: ["norm16-webgl"] },
 		"snorm16-renderable-webgl": {
 			features: ["norm16-webgl"],
-			extensions: [oS]
+			extensions: [aS]
 		},
 		"float32-filterable": { extensions: ["OES_texture_float_linear"] },
 		"float16-filterable-webgl": { extensions: ["OES_texture_half_float_linear"] },
 		"texture-filterable-anisotropic-webgl": { extensions: ["EXT_texture_filter_anisotropic"] },
 		"texture-blend-float-webgl": { extensions: ["EXT_float_blend"] },
 		"texture-compression-bc": { extensions: [
+			tS,
 			nS,
 			rS,
-			iS,
-			aS
+			iS
 		] },
-		"texture-compression-bc5-webgl": { extensions: [iS] },
-		"texture-compression-bc7-webgl": { extensions: [aS] },
-		"texture-compression-etc2": { extensions: [Zpe] },
-		"texture-compression-astc": { extensions: [Qpe] },
-		"texture-compression-etc1-webgl": { extensions: [$pe] },
-		"texture-compression-pvrtc-webgl": { extensions: [eme] },
-		"texture-compression-atc-webgl": { extensions: [tme] }
-	}, mS = {
+		"texture-compression-bc5-webgl": { extensions: [rS] },
+		"texture-compression-bc7-webgl": { extensions: [iS] },
+		"texture-compression-etc2": { extensions: [Qpe] },
+		"texture-compression-astc": { extensions: [$pe] },
+		"texture-compression-etc1-webgl": { extensions: [eme] },
+		"texture-compression-pvrtc-webgl": { extensions: [tme] },
+		"texture-compression-atc-webgl": { extensions: [nme] }
+	}, pS = {
 		r8unorm: {
 			gl: 33321,
 			rb: !0
 		},
 		r8snorm: {
 			gl: 36756,
-			r: cS
+			r: sS
 		},
 		r8uint: {
 			gl: 33330,
@@ -26558,7 +26558,7 @@ var nS, rS, iS, aS, Zpe, Qpe, $pe, eme, tme, nme, oS, sS, cS, lS, uS, dS, fS, rm
 		},
 		rg8snorm: {
 			gl: 36757,
-			r: cS
+			r: sS
 		},
 		rg8uint: {
 			gl: 33336,
@@ -26579,16 +26579,16 @@ var nS, rS, iS, aS, Zpe, Qpe, $pe, eme, tme, nme, oS, sS, cS, lS, uS, dS, fS, rm
 		r16float: {
 			gl: 33325,
 			rb: !0,
-			r: dS
+			r: uS
 		},
 		r16unorm: {
 			gl: 33322,
 			rb: !0,
-			r: lS
+			r: cS
 		},
 		r16snorm: {
 			gl: 36760,
-			r: uS
+			r: lS
 		},
 		"rgba4unorm-webgl": {
 			gl: 32854,
@@ -26608,7 +26608,7 @@ var nS, rS, iS, aS, Zpe, Qpe, $pe, eme, tme, nme, oS, sS, cS, lS, uS, dS, fS, rm
 		"rgba8unorm-srgb": { gl: 35907 },
 		rgba8snorm: {
 			gl: 36759,
-			r: cS
+			r: sS
 		},
 		rgba8uint: { gl: 36220 },
 		rgba8sint: { gl: 36238 },
@@ -26619,15 +26619,15 @@ var nS, rS, iS, aS, Zpe, Qpe, $pe, eme, tme, nme, oS, sS, cS, lS, uS, dS, fS, rm
 		rg16float: {
 			gl: 33327,
 			rb: !0,
-			r: dS
+			r: uS
 		},
 		rg16unorm: {
 			gl: 33324,
-			r: lS
+			r: cS
 		},
 		rg16snorm: {
 			gl: 36761,
-			r: uS
+			r: lS
 		},
 		r32uint: {
 			gl: 33334,
@@ -26639,11 +26639,11 @@ var nS, rS, iS, aS, Zpe, Qpe, $pe, eme, tme, nme, oS, sS, cS, lS, uS, dS, fS, rm
 		},
 		r32float: {
 			gl: 33326,
-			r: fS
+			r: dS
 		},
 		rgb9e5ufloat: {
 			gl: 35901,
-			r: rme
+			r: ime
 		},
 		rg11b10ufloat: {
 			gl: 35898,
@@ -26676,7 +26676,7 @@ var nS, rS, iS, aS, Zpe, Qpe, $pe, eme, tme, nme, oS, sS, cS, lS, uS, dS, fS, rm
 		rg32float: {
 			gl: 33328,
 			rb: !0,
-			r: fS
+			r: dS
 		},
 		rgba16uint: {
 			gl: 36214,
@@ -26688,21 +26688,21 @@ var nS, rS, iS, aS, Zpe, Qpe, $pe, eme, tme, nme, oS, sS, cS, lS, uS, dS, fS, rm
 		},
 		rgba16float: {
 			gl: 34842,
-			r: dS
+			r: uS
 		},
 		rgba16unorm: {
 			gl: 32859,
 			rb: !0,
-			r: lS
+			r: cS
 		},
 		rgba16snorm: {
 			gl: 36763,
-			r: uS
+			r: lS
 		},
 		"rgb32float-webgl": {
 			gl: 34837,
-			x: sS,
-			r: fS,
+			x: oS,
+			r: dS,
 			dataFormat: 6407,
 			types: [5126]
 		},
@@ -26717,7 +26717,7 @@ var nS, rS, iS, aS, Zpe, Qpe, $pe, eme, tme, nme, oS, sS, cS, lS, uS, dS, fS, rm
 		rgba32float: {
 			gl: 34836,
 			rb: !0,
-			r: fS
+			r: dS
 		},
 		stencil8: {
 			gl: 36168,
@@ -26755,67 +26755,67 @@ var nS, rS, iS, aS, Zpe, Qpe, $pe, eme, tme, nme, oS, sS, cS, lS, uS, dS, fS, rm
 		},
 		"bc1-rgb-unorm-webgl": {
 			gl: 33776,
-			x: nS
+			x: tS
 		},
 		"bc1-rgb-unorm-srgb-webgl": {
 			gl: 35916,
-			x: rS
+			x: nS
 		},
 		"bc1-rgba-unorm": {
 			gl: 33777,
-			x: nS
+			x: tS
 		},
 		"bc1-rgba-unorm-srgb": {
 			gl: 35916,
-			x: rS
+			x: nS
 		},
 		"bc2-rgba-unorm": {
 			gl: 33778,
-			x: nS
+			x: tS
 		},
 		"bc2-rgba-unorm-srgb": {
 			gl: 35918,
-			x: rS
+			x: nS
 		},
 		"bc3-rgba-unorm": {
 			gl: 33779,
-			x: nS
+			x: tS
 		},
 		"bc3-rgba-unorm-srgb": {
 			gl: 35919,
-			x: rS
+			x: nS
 		},
 		"bc4-r-unorm": {
 			gl: 36283,
-			x: iS
+			x: rS
 		},
 		"bc4-r-snorm": {
 			gl: 36284,
-			x: iS
+			x: rS
 		},
 		"bc5-rg-unorm": {
 			gl: 36285,
-			x: iS
+			x: rS
 		},
 		"bc5-rg-snorm": {
 			gl: 36286,
-			x: iS
+			x: rS
 		},
 		"bc6h-rgb-ufloat": {
 			gl: 36495,
-			x: aS
+			x: iS
 		},
 		"bc6h-rgb-float": {
 			gl: 36494,
-			x: aS
+			x: iS
 		},
 		"bc7-rgba-unorm": {
 			gl: 36492,
-			x: aS
+			x: iS
 		},
 		"bc7-rgba-unorm-srgb": {
 			gl: 36493,
-			x: aS
+			x: iS
 		},
 		"etc2-rgb8unorm": { gl: 37492 },
 		"etc2-rgb8unorm-srgb": { gl: 37494 },
@@ -26864,8 +26864,8 @@ var nS, rS, iS, aS, Zpe, Qpe, $pe, eme, tme, nme, oS, sS, cS, lS, uS, dS, fS, rm
 		"atc-rgba-unorm-webgl": { gl: 35986 },
 		"atc-rgbai-unorm-webgl": { gl: 34798 }
 	};
-})), gS, ime, ame = o((() => {
-	Qp(), tS(), hS(), gS = {
+})), hS, ame, ome = o((() => {
+	Qp(), eS(), mS(), hS = {
 		"depth-clip-control": "EXT_depth_clamp",
 		"timestamp-query": "EXT_disjoint_timer_query_webgl2",
 		"compilation-status-async-webgl": "KHR_parallel_shader_compile",
@@ -26875,12 +26875,12 @@ var nS, rS, iS, aS, Zpe, Qpe, $pe, eme, tme, nme, oS, sS, cS, lS, uS, dS, fS, rm
 		"shader-clip-cull-distance-webgl": "WEBGL_clip_cull_distance",
 		"shader-noperspective-interpolation-webgl": "NV_shader_noperspective_interpolation",
 		"shader-conservative-depth-webgl": "EXT_conservative_depth"
-	}, ime = class extends Of {
+	}, ame = class extends Of {
 		gl;
 		extensions;
 		testedFeatures = /* @__PURE__ */ new Set();
 		constructor(e, t, n) {
-			super([], n), this.gl = e, this.extensions = t, eS(e, "EXT_color_buffer_float", t);
+			super([], n), this.gl = e, this.extensions = t, $x(e, "EXT_color_buffer_float", t);
 		}
 		*[Symbol.iterator]() {
 			let e = this.getFeatures();
@@ -26888,22 +26888,22 @@ var nS, rS, iS, aS, Zpe, Qpe, $pe, eme, tme, nme, oS, sS, cS, lS, uS, dS, fS, rm
 			return [];
 		}
 		has(e) {
-			return !this.disabledFeatures?.[e] && (this.testedFeatures.has(e) || (this.testedFeatures.add(e), Hpe(e) && Upe(this.gl, e, this.extensions) && this.features.add(e), this.getWebGLFeature(e) && this.features.add(e)), this.features.has(e));
+			return !this.disabledFeatures?.[e] && (this.testedFeatures.has(e) || (this.testedFeatures.add(e), Upe(e) && Wpe(this.gl, e, this.extensions) && this.features.add(e), this.getWebGLFeature(e) && this.features.add(e)), this.features.has(e));
 		}
 		initializeFeatures() {
 			let e = this.getFeatures().filter((e) => e !== "polygon-mode-webgl");
 			for (let t of e) this.has(t);
 		}
 		getFeatures() {
-			return [...Object.keys(gS), ...Object.keys(pS)];
+			return [...Object.keys(hS), ...Object.keys(fS)];
 		}
 		getWebGLFeature(e) {
-			let t = gS[e];
-			return typeof t == "string" ? !!eS(this.gl, t, this.extensions) : typeof t == "function" ? t(this.gl) : !!t;
+			let t = hS[e];
+			return typeof t == "string" ? !!$x(this.gl, t, this.extensions) : typeof t == "function" ? t(this.gl) : !!t;
 		}
 	};
-})), ome, sme = o((() => {
-	Qp(), ome = class extends Df {
+})), sme, cme = o((() => {
+	Qp(), sme = class extends Df {
 		get maxTextureDimension1D() {
 			return 0;
 		}
@@ -27021,10 +27021,10 @@ var nS, rS, iS, aS, Zpe, Qpe, $pe, eme, tme, nme, oS, sS, cS, lS, uS, dS, fS, rm
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/resources/webgl-framebuffer.js
-function cme(e) {
+function lme(e) {
 	return e < 34069 ? e + 34069 : e;
 }
-function lme(e) {
+function ume(e) {
 	switch (e) {
 		case 36053: return "success";
 		case 36054: return "Mismatched attachments";
@@ -27035,8 +27035,8 @@ function lme(e) {
 		default: return `${e}`;
 	}
 }
-var _S, vS = o((() => {
-	Qp(), hS(), _S = class extends Zf {
+var gS, _S = o((() => {
+	Qp(), mS(), gS = class extends Zf {
 		device;
 		gl;
 		handle;
@@ -27060,12 +27060,12 @@ var _S, vS = o((() => {
 				}
 			}
 			if (this.depthStencilAttachment) {
-				let e = Jpe(this.depthStencilAttachment.props.format);
+				let e = Ype(this.depthStencilAttachment.props.format);
 				this._attachTextureView(e, this.depthStencilAttachment);
 			}
 			if (this.device.props.debug) {
 				let e = this.gl.checkFramebufferStatus(36160);
-				if (e !== 36053) throw Error(`Framebuffer ${lme(e)}`);
+				if (e !== 36053) throw Error(`Framebuffer ${ume(e)}`);
 			}
 			this.gl.bindFramebuffer(36160, e);
 		}
@@ -27077,7 +27077,7 @@ var _S, vS = o((() => {
 					n.framebufferTextureLayer(36160, e, r.handle, i, a);
 					break;
 				case 34067:
-					let t = cme(a);
+					let t = lme(a);
 					n.framebufferTexture2D(36160, e, t, r.handle, i);
 					break;
 				case 3553:
@@ -27091,8 +27091,8 @@ var _S, vS = o((() => {
 			this.handle === null ? (this.width = e, this.height = t) : super.resizeAttachments(e, t);
 		}
 	};
-})), ume, dme = o((() => {
-	Qp(), vS(), ume = class extends Rf {
+})), dme, fme = o((() => {
+	Qp(), _S(), dme = class extends Rf {
 		device;
 		handle = null;
 		_framebuffer = null;
@@ -27106,7 +27106,7 @@ var _S, vS = o((() => {
 			(this.drawingBufferWidth !== this._framebuffer?.width || this.drawingBufferHeight !== this._framebuffer?.height) && this._framebuffer?.resize([this.drawingBufferWidth, this.drawingBufferHeight]);
 		}
 		_getCurrentFramebuffer() {
-			return this._framebuffer ||= new _S(this.device, {
+			return this._framebuffer ||= new gS(this.device, {
 				id: "canvas-context-framebuffer",
 				handle: null,
 				width: this.drawingBufferWidth,
@@ -27114,8 +27114,8 @@ var _S, vS = o((() => {
 			}), this._framebuffer;
 		}
 	};
-})), fme, pme = o((() => {
-	Qp(), fme = class extends zf {
+})), pme, mme = o((() => {
+	Qp(), pme = class extends zf {
 		device;
 		handle = null;
 		context2d;
@@ -27147,22 +27147,22 @@ var _S, vS = o((() => {
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/utils/uid.js
-function mme(e = "id") {
-	return yS[e] = yS[e] || 1, `${e}-${yS[e]++}`;
+function hme(e = "id") {
+	return vS[e] = vS[e] || 1, `${e}-${vS[e]++}`;
 }
-var yS, hme = o((() => {
-	yS = {};
+var vS, gme = o((() => {
+	vS = {};
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/resources/webgl-buffer.js
-function gme(e) {
+function _me(e) {
 	return e & Dd.INDEX ? 34963 : e & Dd.VERTEX ? 34962 : e & Dd.UNIFORM ? 35345 : 34962;
 }
-function _me(e) {
+function vme(e) {
 	return e & Dd.INDEX || e & Dd.VERTEX ? 35044 : e & Dd.UNIFORM ? 35048 : 35044;
 }
-var bS, xS = o((() => {
-	Qp(), bS = class extends Dd {
+var yS, bS = o((() => {
+	Qp(), yS = class extends Dd {
 		device;
 		gl;
 		handle;
@@ -27177,7 +27177,7 @@ var bS, xS = o((() => {
 			this.handle = n || this.gl.createBuffer(), e._setWebGLDebugMetadata(this.handle, this, { spector: {
 				...this.props,
 				data: typeof this.props.data
-			} }), this.glTarget = gme(this.props.usage), this.glUsage = _me(this.props.usage), this.glIndexType = this.props.indexType === "uint32" ? 5125 : 5123, t.data ? this._initWithData(t.data, t.byteOffset, t.byteLength) : this._initWithByteLength(t.byteLength || 0);
+			} }), this.glTarget = _me(this.props.usage), this.glUsage = vme(this.props.usage), this.glIndexType = this.props.indexType === "uint32" ? 5125 : 5123, t.data ? this._initWithData(t.data, t.byteOffset, t.byteLength) : this._initWithByteLength(t.byteLength || 0);
 		}
 		destroy() {
 			!this.destroyed && this.handle && (this.removeStats(), this.props.handle ? this.trackDeallocatedReferencedMemory("Buffer") : (this.trackDeallocatedMemory(), this.gl.deleteBuffer(this.handle)), this.destroyed = !0, this.handle = null);
@@ -27215,7 +27215,7 @@ var bS, xS = o((() => {
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/helpers/parse-shader-compiler-log.js
-function vme(e) {
+function yme(e) {
 	let t = e.split(/\r?\n/), n = [];
 	for (let e of t) {
 		if (e.length <= 1) continue;
@@ -27225,7 +27225,7 @@ function vme(e) {
 			if (!e || !a) {
 				n.push({
 					message: t,
-					type: SS(i || "info"),
+					type: xS(i || "info"),
 					lineNum: 0,
 					linePos: 0
 				});
@@ -27233,7 +27233,7 @@ function vme(e) {
 			}
 			n.push({
 				message: a.trim(),
-				type: SS(e),
+				type: xS(e),
 				lineNum: 0,
 				linePos: 0
 			});
@@ -27243,7 +27243,7 @@ function vme(e) {
 		if (!a || !o || !s) {
 			n.push({
 				message: r.slice(1).join(":").trim() || t,
-				type: SS(i || "info"),
+				type: xS(i || "info"),
 				lineNum: 0,
 				linePos: 0
 			});
@@ -27254,14 +27254,14 @@ function vme(e) {
 		let u = parseInt(o, 10);
 		Number.isNaN(u) && (u = 0), n.push({
 			message: c.join(":").trim(),
-			type: SS(a),
+			type: xS(a),
 			lineNum: l,
 			linePos: u
 		});
 	}
 	return n;
 }
-function SS(e) {
+function xS(e) {
 	let t = [
 		"warning",
 		"error",
@@ -27269,14 +27269,14 @@ function SS(e) {
 	], n = e.toLowerCase();
 	return t.includes(n) ? n : "info";
 }
-var yme = o((() => {}));
+var bme = o((() => {}));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/resources/webgl-shader.js
-function bme(e) {
+function xme(e) {
 	return e.split(/\r?\n/).find((e) => e.trim())?.trim();
 }
-var xme, Sme = o((() => {
-	Qp(), yme(), xme = class extends Yf {
+var Sme, Cme = o((() => {
+	Qp(), bme(), Sme = class extends Yf {
 		device;
 		handle;
 		_compilationInfoLog = "";
@@ -27309,7 +27309,7 @@ var xme, Sme = o((() => {
 		}
 		getCompilationInfoSync() {
 			let e = this._getCompilationInfoLog();
-			return e ? vme(e) : [];
+			return e ? yme(e) : [];
 		}
 		getTranslatedSource() {
 			return this.device.getExtension("WEBGL_debug_shaders").WEBGL_debug_shaders?.getTranslatedShaderSource(this.handle) || null;
@@ -27341,7 +27341,7 @@ var xme, Sme = o((() => {
 			this.compilationStatus = this.device.gl.getShaderParameter(this.handle, 35713) ? "success" : "error", this.compilationStatus === "error" && this._getCompilationInfoLog();
 		}
 		_getCompilationErrorMessage(e) {
-			let t = `${this.props.stage} shader ${this.props.id}`, n = bme(this._getCompilationInfoLog()), r = this.getCompilationInfoSync(), i = r.find((e) => e.type === "error" && e.message.trim()) || r.find((e) => e.message.trim()) || r.find((e) => e.type === "error") || r[0];
+			let t = `${this.props.stage} shader ${this.props.id}`, n = xme(this._getCompilationInfoLog()), r = this.getCompilationInfoSync(), i = r.find((e) => e.type === "error" && e.message.trim()) || r.find((e) => e.message.trim()) || r.find((e) => e.type === "error") || r[0];
 			if (!i) return n ? `GLSL compilation errors in ${t}: ${n}` : `GLSL compilation errors in ${t}: WebGL did not provide a shader compiler log`;
 			let a = i.lineNum ? e.split(/\r?\n/)[i.lineNum - 1]?.trim() : void 0, o = i.lineNum ? ` line ${i.lineNum}` : "", s = a ? `\nSource: ${a}` : "";
 			return `GLSL compilation errors in ${t}:${o}: ${i.message.trim() || n || "WebGL did not provide a shader compiler log"}${s}`;
@@ -27354,17 +27354,17 @@ var xme, Sme = o((() => {
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/converters/device-parameters.js
-function Cme(e, t, n, r) {
-	if (Ome(t)) return r(e);
+function wme(e, t, n, r) {
+	if (kme(t)) return r(e);
 	let i = e;
 	i.pushState();
 	try {
-		return wme(e, t), Yx(i.gl, n), r(e);
+		return Tme(e, t), Jx(i.gl, n), r(e);
 	} finally {
 		i.popState();
 	}
 }
-function wme(e, t) {
+function Tme(e, t) {
 	let n = e, { gl: r } = n;
 	if (t.cullMode) switch (t.cullMode) {
 		case "none":
@@ -27375,11 +27375,11 @@ function wme(e, t) {
 			break;
 		case "back": r.enable(2884), r.cullFace(1029);
 	}
-	if (t.frontFace && r.frontFace(ES("frontFace", t.frontFace, {
+	if (t.frontFace && r.frontFace(TS("frontFace", t.frontFace, {
 		ccw: 2305,
 		cw: 2304
 	})), t.unclippedDepth && e.features.has("depth-clip-control") && r.enable(34383), t.depthBias !== void 0 && (r.enable(32823), r.polygonOffset(t.depthBias, t.depthBiasSlopeScale || 0)), t.provokingVertex && e.features.has("provoking-vertex-webgl")) {
-		let e = n.getExtension("WEBGL_provoking_vertex").WEBGL_provoking_vertex, r = ES("provokingVertex", t.provokingVertex, {
+		let e = n.getExtension("WEBGL_provoking_vertex").WEBGL_provoking_vertex, r = TS("provokingVertex", t.provokingVertex, {
 			first: 36429,
 			last: 36430
 		});
@@ -27387,7 +27387,7 @@ function wme(e, t) {
 	}
 	if ((t.polygonMode || t.polygonOffsetLine) && e.features.has("polygon-mode-webgl")) {
 		if (t.polygonMode) {
-			let e = n.getExtension("WEBGL_polygon_mode").WEBGL_polygon_mode, r = ES("polygonMode", t.polygonMode, {
+			let e = n.getExtension("WEBGL_polygon_mode").WEBGL_polygon_mode, r = TS("polygonMode", t.polygonMode, {
 				fill: 6914,
 				line: 6913
 			});
@@ -27395,16 +27395,16 @@ function wme(e, t) {
 		}
 		t.polygonOffsetLine && r.enable(10754);
 	}
-	if (e.features.has("shader-clip-cull-distance-webgl") && (t.clipDistance0 && r.enable(12288), t.clipDistance1 && r.enable(12289), t.clipDistance2 && r.enable(12290), t.clipDistance3 && r.enable(12291), t.clipDistance4 && r.enable(12292), t.clipDistance5 && r.enable(12293), t.clipDistance6 && r.enable(12294), t.clipDistance7 && r.enable(12295)), t.depthWriteEnabled !== void 0 && r.depthMask(Dme("depthWriteEnabled", t.depthWriteEnabled)), t.depthCompare && (t.depthCompare === "always" ? r.disable(2929) : r.enable(2929), r.depthFunc(CS("depthCompare", t.depthCompare))), t.clearDepth !== void 0 && r.clearDepth(t.clearDepth), t.stencilWriteMask) {
+	if (e.features.has("shader-clip-cull-distance-webgl") && (t.clipDistance0 && r.enable(12288), t.clipDistance1 && r.enable(12289), t.clipDistance2 && r.enable(12290), t.clipDistance3 && r.enable(12291), t.clipDistance4 && r.enable(12292), t.clipDistance5 && r.enable(12293), t.clipDistance6 && r.enable(12294), t.clipDistance7 && r.enable(12295)), t.depthWriteEnabled !== void 0 && r.depthMask(Ome("depthWriteEnabled", t.depthWriteEnabled)), t.depthCompare && (t.depthCompare === "always" ? r.disable(2929) : r.enable(2929), r.depthFunc(SS("depthCompare", t.depthCompare))), t.clearDepth !== void 0 && r.clearDepth(t.clearDepth), t.stencilWriteMask) {
 		let e = t.stencilWriteMask;
 		r.stencilMaskSeparate(1028, e), r.stencilMaskSeparate(1029, e);
 	}
 	if (t.stencilReadMask && W.warn("stencilReadMask not supported under WebGL"), t.stencilCompare) {
-		let e = t.stencilReadMask || 4294967295, n = CS("depthCompare", t.stencilCompare);
+		let e = t.stencilReadMask || 4294967295, n = SS("depthCompare", t.stencilCompare);
 		t.stencilCompare === "always" ? r.disable(2960) : r.enable(2960), r.stencilFuncSeparate(1028, n, 0, e), r.stencilFuncSeparate(1029, n, 0, e);
 	}
 	if (t.stencilPassOperation && t.stencilFailOperation && t.stencilDepthFailOperation) {
-		let e = wS("stencilPassOperation", t.stencilPassOperation), n = wS("stencilFailOperation", t.stencilFailOperation), i = wS("stencilDepthFailOperation", t.stencilDepthFailOperation);
+		let e = CS("stencilPassOperation", t.stencilPassOperation), n = CS("stencilFailOperation", t.stencilFailOperation), i = CS("stencilDepthFailOperation", t.stencilDepthFailOperation);
 		r.stencilOpSeparate(1028, n, i, e), r.stencilOpSeparate(1029, n, i, e);
 	}
 	switch (t.blend) {
@@ -27414,14 +27414,14 @@ function wme(e, t) {
 		case !1: r.disable(3042);
 	}
 	if (t.blendColorOperation || t.blendAlphaOperation) {
-		let e = Tme("blendColorOperation", t.blendColorOperation || "add"), n = Tme("blendAlphaOperation", t.blendAlphaOperation || "add");
+		let e = Eme("blendColorOperation", t.blendColorOperation || "add"), n = Eme("blendAlphaOperation", t.blendAlphaOperation || "add");
 		r.blendEquationSeparate(e, n);
-		let i = TS("blendColorSrcFactor", t.blendColorSrcFactor || "one"), a = TS("blendColorDstFactor", t.blendColorDstFactor || "zero"), o = TS("blendAlphaSrcFactor", t.blendAlphaSrcFactor || "one"), s = TS("blendAlphaDstFactor", t.blendAlphaDstFactor || "zero");
+		let i = wS("blendColorSrcFactor", t.blendColorSrcFactor || "one"), a = wS("blendColorDstFactor", t.blendColorDstFactor || "zero"), o = wS("blendAlphaSrcFactor", t.blendAlphaSrcFactor || "one"), s = wS("blendAlphaDstFactor", t.blendAlphaDstFactor || "zero");
 		r.blendFuncSeparate(i, a, o, s);
 	}
 }
-function CS(e, t) {
-	return ES(e, t, {
+function SS(e, t) {
+	return TS(e, t, {
 		never: 512,
 		less: 513,
 		equal: 514,
@@ -27432,8 +27432,8 @@ function CS(e, t) {
 		always: 519
 	});
 }
-function wS(e, t) {
-	return ES(e, t, {
+function CS(e, t) {
+	return TS(e, t, {
 		keep: 7680,
 		zero: 0,
 		replace: 7681,
@@ -27444,8 +27444,8 @@ function wS(e, t) {
 		"decrement-wrap": 34056
 	});
 }
-function Tme(e, t) {
-	return ES(e, t, {
+function Eme(e, t) {
+	return TS(e, t, {
 		add: 32774,
 		subtract: 32778,
 		"reverse-subtract": 32779,
@@ -27453,8 +27453,8 @@ function Tme(e, t) {
 		max: 32776
 	});
 }
-function TS(e, t, n = "color") {
-	return ES(e, t, {
+function wS(e, t, n = "color") {
+	return TS(e, t, {
 		one: 1,
 		zero: 0,
 		src: 768,
@@ -27474,17 +27474,17 @@ function TS(e, t, n = "color") {
 		"one-minus-src1-alpha": 771
 	});
 }
-function Eme(e, t) {
+function Dme(e, t) {
 	return `Illegal parameter ${t} for ${e}`;
 }
-function ES(e, t, n) {
-	if (!(t in n)) throw Error(Eme(e, t));
+function TS(e, t, n) {
+	if (!(t in n)) throw Error(Dme(e, t));
 	return n[t];
 }
-function Dme(e, t) {
+function Ome(e, t) {
 	return t;
 }
-function Ome(e) {
+function kme(e) {
 	let t = !0;
 	for (let n in e) {
 		t = !1;
@@ -27492,32 +27492,32 @@ function Ome(e) {
 	}
 	return t;
 }
-var DS = o((() => {
-	Qp(), Xx();
+var ES = o((() => {
+	Qp(), Yx();
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/converters/sampler-parameters.js
-function kme(e) {
+function Ame(e) {
 	let t = {};
-	return e.addressModeU && (t[10242] = OS(e.addressModeU)), e.addressModeV && (t[10243] = OS(e.addressModeV)), e.addressModeW && (t[32882] = OS(e.addressModeW)), e.magFilter && (t[10240] = kS(e.magFilter)), (e.minFilter || e.mipmapFilter) && (t[10241] = Ame(e.minFilter || "linear", e.mipmapFilter)), e.lodMinClamp !== void 0 && (t[33082] = e.lodMinClamp), e.lodMaxClamp !== void 0 && (t[33083] = e.lodMaxClamp), e.type === "comparison-sampler" && (t[34892] = 34894), e.compare && (t[34893] = CS("compare", e.compare)), e.maxAnisotropy && (t[34046] = e.maxAnisotropy), t;
+	return e.addressModeU && (t[10242] = DS(e.addressModeU)), e.addressModeV && (t[10243] = DS(e.addressModeV)), e.addressModeW && (t[32882] = DS(e.addressModeW)), e.magFilter && (t[10240] = OS(e.magFilter)), (e.minFilter || e.mipmapFilter) && (t[10241] = jme(e.minFilter || "linear", e.mipmapFilter)), e.lodMinClamp !== void 0 && (t[33082] = e.lodMinClamp), e.lodMaxClamp !== void 0 && (t[33083] = e.lodMaxClamp), e.type === "comparison-sampler" && (t[34892] = 34894), e.compare && (t[34893] = SS("compare", e.compare)), e.maxAnisotropy && (t[34046] = e.maxAnisotropy), t;
 }
-function OS(e) {
+function DS(e) {
 	switch (e) {
 		case "clamp-to-edge": return 33071;
 		case "repeat": return 10497;
 		case "mirror-repeat": return 33648;
 	}
 }
-function kS(e) {
+function OS(e) {
 	switch (e) {
 		case "nearest": return 9728;
 		case "linear": return 9729;
 	}
 }
-function Ame(e, t = "none") {
-	if (!t) return kS(e);
+function jme(e, t = "none") {
+	if (!t) return OS(e);
 	switch (t) {
-		case "none": return kS(e);
+		case "none": return OS(e);
 		case "nearest":
 			switch (e) {
 				case "nearest": return 9984;
@@ -27530,15 +27530,15 @@ function Ame(e, t = "none") {
 		}
 	}
 }
-var jme = o((() => {
-	DS();
-})), Mme, Nme = o((() => {
-	Qp(), jme(), Mme = class extends Bf {
+var Mme = o((() => {
+	ES();
+})), Nme, Pme = o((() => {
+	Qp(), Mme(), Nme = class extends Bf {
 		device;
 		handle;
 		parameters;
 		constructor(e, t) {
-			super(e, t), this.device = e, this.parameters = kme(t), this.handle = t.handle || this.device.gl.createSampler(), this._setSamplerParameters(this.parameters);
+			super(e, t), this.device = e, this.parameters = Ame(t), this.handle = t.handle || this.device.gl.createSampler(), this._setSamplerParameters(this.parameters);
 		}
 		destroy() {
 			this.handle &&= (this.device.gl.deleteSampler(this.handle), void 0);
@@ -27562,10 +27562,10 @@ var jme = o((() => {
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/context/state-tracker/with-parameters.js
-function AS(e, t, n) {
-	if (Pme(t)) return n(e);
-	let { nocatch: r = !0 } = t, i = Zx.get(e);
-	i.push(), Yx(e, t);
+function kS(e, t, n) {
+	if (Fme(t)) return n(e);
+	let { nocatch: r = !0 } = t, i = Xx.get(e);
+	i.push(), Jx(e, t);
 	let a;
 	if (r) a = n(e), i.pop();
 	else try {
@@ -27575,14 +27575,14 @@ function AS(e, t, n) {
 	}
 	return a;
 }
-function Pme(e) {
+function Fme(e) {
 	for (let t in e) return !1;
 	return !0;
 }
-var jS = o((() => {
-	Xx(), Qx();
-})), MS, Fme = o((() => {
-	Qp(), MS = class extends Gf {
+var AS = o((() => {
+	Yx(), Zx();
+})), jS, Ime = o((() => {
+	Qp(), jS = class extends Gf {
 		device;
 		gl;
 		handle;
@@ -27597,11 +27597,11 @@ var jS = o((() => {
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/converters/shader-formats.js
-function Ime(e) {
-	return Lme[e];
+function Lme(e) {
+	return Rme[e];
 }
-var Lme, Rme = o((() => {
-	Lme = {
+var Rme, zme = o((() => {
+	Rme = {
 		5124: "sint32",
 		5125: "uint32",
 		5122: "sint16",
@@ -27622,14 +27622,14 @@ var Lme, Rme = o((() => {
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/resources/webgl-texture.js
-function zme(e, t = 0) {
+function Bme(e, t = 0) {
 	return t ? new e.constructor(e.buffer, e.byteOffset + t, (e.byteLength - t) / e.BYTES_PER_ELEMENT) : e;
 }
-function Bme(e, t) {
+function Vme(e, t) {
 	if (t % e.BYTES_PER_ELEMENT !== 0) throw Error(`Texture byteOffset ${t} must align to typed array element size ${e.BYTES_PER_ELEMENT}`);
 	return t / e.BYTES_PER_ELEMENT;
 }
-function Vme(e) {
+function Hme(e) {
 	switch (e) {
 		case "1d": break;
 		case "2d": return 3553;
@@ -27639,11 +27639,11 @@ function Vme(e) {
 	}
 	throw Error(e);
 }
-function NS(e, t, n) {
+function MS(e, t, n) {
 	return t === "cube" ? 34069 + n : e;
 }
-var PS, FS = o((() => {
-	Qp(), hS(), jme(), jS(), Fme(), Rme(), PS = class extends Uf {
+var NS, PS = o((() => {
+	Qp(), mS(), Mme(), AS(), Ime(), zme(), NS = class extends Uf {
 		device;
 		gl;
 		handle;
@@ -27659,8 +27659,8 @@ var PS, FS = o((() => {
 		_framebufferAttachmentKey = null;
 		constructor(e, t) {
 			super(e, t, { byteAlignment: 1 }), this.device = e, this.gl = this.device.gl;
-			let n = qpe(this.props.format);
-			if (this.glTarget = Vme(this.props.dimension), this.glInternalFormat = n.internalFormat, this.glFormat = n.format, this.glType = n.type, this.compressed = n.compressed, this.isHandleBorrowed && this.props.handle === void 0) throw Error("Borrowed WebGL textures require a texture handle");
+			let n = Jpe(this.props.format);
+			if (this.glTarget = Hme(this.props.dimension), this.glInternalFormat = n.internalFormat, this.glFormat = n.format, this.glType = n.type, this.compressed = n.compressed, this.isHandleBorrowed && this.props.handle === void 0) throw Error("Borrowed WebGL textures require a texture handle");
 			if (this.handle = this.props.handle || this.gl.createTexture(), this.device._setWebGLDebugMetadata(this.handle, this, { spector: this.props }), !this.isHandleBorrowed) {
 				this.gl.bindTexture(this.glTarget, this.handle);
 				let { dimension: e, width: n, height: r, depth: i, mipLevels: a, glTarget: o, glInternalFormat: s } = this;
@@ -27677,7 +27677,7 @@ var PS, FS = o((() => {
 				}
 				this.gl.bindTexture(this.glTarget, null), this._initializeData(t.data);
 			}
-			this.ownsHandle ? this.trackAllocatedMemory(this.getAllocatedByteLength(), "Texture") : this.trackReferencedMemory(this.getAllocatedByteLength(), "Texture"), this.isHandleBorrowed || this.setSampler(this.props.sampler), this.view = new MS(this.device, {
+			this.ownsHandle ? this.trackAllocatedMemory(this.getAllocatedByteLength(), "Texture") : this.trackReferencedMemory(this.getAllocatedByteLength(), "Texture"), this.isHandleBorrowed || this.setSampler(this.props.sampler), this.view = new jS(this.device, {
 				...this.props,
 				texture: this
 			}), Object.seal(this);
@@ -27686,7 +27686,7 @@ var PS, FS = o((() => {
 			this.handle && (this._framebuffer?.destroy(), this._framebuffer = null, this._framebufferAttachmentKey = null, this.removeStats(), this.ownsHandle ? (this.gl.deleteTexture(this.handle), this.trackDeallocatedMemory("Texture")) : this.trackDeallocatedReferencedMemory("Texture"), this.destroyed = !0);
 		}
 		createView(e) {
-			return new MS(this.device, {
+			return new jS(this.device, {
 				...e,
 				texture: this
 			});
@@ -27697,15 +27697,15 @@ var PS, FS = o((() => {
 		}
 		setSampler(e = {}) {
 			this._assertWritable("set sampler parameters on"), super.setSampler(e);
-			let t = kme(this.sampler.props);
+			let t = Ame(this.sampler.props);
 			this._setSamplerParameters(t);
 		}
 		copyExternalImage(e) {
 			this._assertWritable("copy external image data into");
 			let t = this._normalizeCopyExternalImageOptions(e);
 			if (t.sourceX || t.sourceY) throw Error("WebGL does not support sourceX/sourceY)");
-			let { glFormat: n, glType: r } = this, { image: i, depth: a, mipLevel: o, x: s, y: c, z: l, width: u, height: d } = t, f = NS(this.glTarget, this.dimension, l), p = t.flipY ? { 37440: !0 } : {};
-			return this.gl.bindTexture(this.glTarget, this.handle), AS(this.gl, p, () => {
+			let { glFormat: n, glType: r } = this, { image: i, depth: a, mipLevel: o, x: s, y: c, z: l, width: u, height: d } = t, f = MS(this.glTarget, this.dimension, l), p = t.flipY ? { 37440: !0 } : {};
+			return this.gl.bindTexture(this.glTarget, this.handle), kS(this.gl, p, () => {
 				switch (this.dimension) {
 					case "2d":
 					case "cube":
@@ -27721,11 +27721,11 @@ var PS, FS = o((() => {
 		}
 		copyElementImage(e) {
 			this._assertWritable("copy element image data into");
-			let t = this._normalizeCopyElementImageOptions(e), { glFormat: n } = this, { element: r, depth: i, mipLevel: a, sourceX: o, sourceY: s, sourceWidth: c, sourceHeight: l, x: u, y: d, z: f, width: p, height: m } = t, h = NS(this.glTarget, this.dimension, f), g = t.flipY ? { 37440: !0 } : {}, _ = this.gl;
+			let t = this._normalizeCopyElementImageOptions(e), { glFormat: n } = this, { element: r, depth: i, mipLevel: a, sourceX: o, sourceY: s, sourceWidth: c, sourceHeight: l, x: u, y: d, z: f, width: p, height: m } = t, h = MS(this.glTarget, this.dimension, f), g = t.flipY ? { 37440: !0 } : {}, _ = this.gl;
 			if (i !== 1 || this.dimension !== "2d" && this.dimension !== "cube") throw Error(`${this} copyElementImage only supports 2d and cube textures on WebGL`);
 			if (a !== 0 || u !== 0 || d !== 0) throw Error(`${this} copyElementImage only supports full base-level uploads on WebGL`);
 			if (typeof _.texElementImage2D != "function") throw Error(`${this} copyElementImage is not supported by this WebGL implementation`);
-			return this.gl.bindTexture(this.glTarget, this.handle), AS(this.gl, g, () => {
+			return this.gl.bindTexture(this.glTarget, this.handle), kS(this.gl, g, () => {
 				_.texElementImage2D?.(h, n, r, {
 					sx: o,
 					sy: s,
@@ -27762,14 +27762,14 @@ var PS, FS = o((() => {
 		}
 		writeBuffer(e, t = {}) {
 			this._assertWritable("write buffer data into");
-			let n = this._normalizeTextureWriteOptions(t), { width: r, height: i, depthOrArrayLayers: a, mipLevel: o, byteOffset: s, x: c, y: l, z: u } = n, { glFormat: d, glType: f, compressed: p } = this, m = NS(this.glTarget, this.dimension, u);
+			let n = this._normalizeTextureWriteOptions(t), { width: r, height: i, depthOrArrayLayers: a, mipLevel: o, byteOffset: s, x: c, y: l, z: u } = n, { glFormat: d, glType: f, compressed: p } = this, m = MS(this.glTarget, this.dimension, u);
 			if (p) throw Error("writeBuffer for compressed textures is not implemented in WebGL");
 			let { bytesPerPixel: h } = this.device.getTextureFormatInfo(this.format), g = h ? n.bytesPerRow / h : void 0, _ = {
 				3317: this.byteAlignment,
 				...g === void 0 ? {} : { 3314: g },
 				32878: n.rowsPerImage
 			};
-			this.gl.bindTexture(this.glTarget, this.handle), this.gl.bindBuffer(35052, e.handle), AS(this.gl, _, () => {
+			this.gl.bindTexture(this.glTarget, this.handle), this.gl.bindBuffer(35052, e.handle), kS(this.gl, _, () => {
 				switch (this.dimension) {
 					case "2d":
 					case "cube":
@@ -27782,7 +27782,7 @@ var PS, FS = o((() => {
 		}
 		writeData(e, t = {}) {
 			this._assertWritable("write data into");
-			let n = this._normalizeTextureWriteOptions(t), r = ArrayBuffer.isView(e) ? e : new Uint8Array(e), { width: i, height: a, depthOrArrayLayers: o, mipLevel: s, x: c, y: l, z: u, byteOffset: d } = n, { glFormat: f, glType: p, compressed: m } = this, h = NS(this.glTarget, this.dimension, u), g;
+			let n = this._normalizeTextureWriteOptions(t), r = ArrayBuffer.isView(e) ? e : new Uint8Array(e), { width: i, height: a, depthOrArrayLayers: o, mipLevel: s, x: c, y: l, z: u, byteOffset: d } = n, { glFormat: f, glType: p, compressed: m } = this, h = MS(this.glTarget, this.dimension, u), g;
 			if (!m) {
 				let { bytesPerPixel: e } = this.device.getTextureFormatInfo(this.format);
 				e && (g = n.bytesPerRow / e);
@@ -27791,8 +27791,8 @@ var PS, FS = o((() => {
 				3317: this.byteAlignment,
 				...g === void 0 ? {} : { 3314: g },
 				32878: n.rowsPerImage
-			}, v = Bme(r, d), y = m ? zme(r, d) : r, b = this._getMipLevelSize(s), x = c === 0 && l === 0 && u === 0 && i === b.width && a === b.height && o === b.depthOrArrayLayers;
-			this.gl.bindTexture(this.glTarget, this.handle), this.gl.bindBuffer(35052, null), AS(this.gl, _, () => {
+			}, v = Vme(r, d), y = m ? Bme(r, d) : r, b = this._getMipLevelSize(s), x = c === 0 && l === 0 && u === 0 && i === b.width && a === b.height && o === b.depthOrArrayLayers;
+			this.gl.bindTexture(this.glTarget, this.handle), this.gl.bindBuffer(35052, null), kS(this.gl, _, () => {
 				switch (this.dimension) {
 					case "2d":
 					case "cube":
@@ -27815,7 +27815,7 @@ var PS, FS = o((() => {
 			}), this._framebuffer;
 		}
 		readDataSyncWebGL(e = {}) {
-			let t = this._getSupportedColorReadOptions(e), n = this.computeMemoryLayout(t), r = Pd(Ime(this.glType)), i = new r(n.byteLength / r.BYTES_PER_ELEMENT);
+			let t = this._getSupportedColorReadOptions(e), n = this.computeMemoryLayout(t), r = Pd(Lme(this.glType)), i = new r(n.byteLength / r.BYTES_PER_ELEMENT);
 			return this._readColorTextureLayers(t, n, (e) => {
 				let a = new r(i.buffer, i.byteOffset + e, n.bytesPerImage / r.BYTES_PER_ELEMENT);
 				this.gl.readPixels(t.x, t.y, t.width, t.height, this.glFormat, this.glType, a);
@@ -27827,7 +27827,7 @@ var PS, FS = o((() => {
 				...i === e.width ? {} : { 3330: i }
 			}, o = this.gl.getParameter(3074), s = this.gl.bindFramebuffer(36160, r.handle);
 			try {
-				this.gl.readBuffer(36064), AS(this.gl, a, () => {
+				this.gl.readBuffer(36064), kS(this.gl, a, () => {
 					for (let i = 0; i < e.depthOrArrayLayers; i++) this._attachReadSubresource(r, e.mipLevel, e.z + i), n(i * t.bytesPerImage);
 				});
 			} finally {
@@ -27842,7 +27842,7 @@ var PS, FS = o((() => {
 						this.gl.framebufferTexture2D(36160, 36064, 3553, this.handle, t);
 						break;
 					case "cube":
-						this.gl.framebufferTexture2D(36160, 36064, NS(this.glTarget, this.dimension, n), this.handle, t);
+						this.gl.framebufferTexture2D(36160, 36064, MS(this.glTarget, this.dimension, n), this.handle, t);
 						break;
 					case "2d-array":
 					case "3d":
@@ -27911,7 +27911,7 @@ var PS, FS = o((() => {
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/helpers/set-uniform.js
-function Hme(e, t, n, r) {
+function Ume(e, t, n, r) {
 	let i = e, a = r;
 	a === !0 && (a = 1), a === !1 && (a = 0);
 	let o = typeof a == "number" ? [a] : a;
@@ -27961,23 +27961,23 @@ function Hme(e, t, n, r) {
 	}
 	throw Error("Illegal uniform");
 }
-var Ume = o((() => {}));
+var Wme = o((() => {}));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/converters/webgl-shadertypes.js
-function Wme(e) {
+function Gme(e) {
+	return Yme[e];
+}
+function FS(e) {
 	return Jme[e];
 }
-function IS(e) {
-	return qme[e];
-}
-function Gme(e) {
-	return !!LS[e];
-}
 function Kme(e) {
-	return LS[e];
+	return !!IS[e];
 }
-var qme, LS, Jme, RS = o((() => {
-	qme = {
+function qme(e) {
+	return IS[e];
+}
+var Jme, IS, Yme, LS = o((() => {
+	Jme = {
 		5126: "f32",
 		35664: "vec2<f32>",
 		35665: "vec3<f32>",
@@ -28003,7 +28003,7 @@ var qme, LS, Jme, RS = o((() => {
 		35689: "mat4x2<f32>",
 		35690: "mat4x3<f32>",
 		35676: "mat4x4<f32>"
-	}, LS = {
+	}, IS = {
 		35678: {
 			viewDimension: "2d",
 			sampleType: "float"
@@ -28064,7 +28064,7 @@ var qme, LS, Jme, RS = o((() => {
 			viewDimension: "2d-array",
 			sampleType: "uint"
 		}
-	}, Jme = {
+	}, Yme = {
 		uint8: 5121,
 		sint8: 5120,
 		unorm8: 5121,
@@ -28081,13 +28081,13 @@ var qme, LS, Jme, RS = o((() => {
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/helpers/get-shader-layout-from-glsl.js
-function Yme(e, t, n = {}) {
+function Xme(e, t, n = {}) {
 	let r = {
 		attributes: [],
 		bindings: []
 	};
-	r.attributes = Xme(e, t);
-	let i = $me(e, t, n);
+	r.attributes = Zme(e, t);
+	let i = ehe(e, t, n);
 	for (let e of i) {
 		let t = e.uniforms.map((e) => ({
 			name: e.name,
@@ -28106,9 +28106,9 @@ function Yme(e, t, n = {}) {
 			uniforms: t
 		});
 	}
-	let a = Qme(e, t), o = 0;
-	for (let e of a) if (Gme(e.type)) {
-		let { viewDimension: t, sampleType: n } = Kme(e.type);
+	let a = $me(e, t), o = 0;
+	for (let e of a) if (Kme(e.type)) {
+		let { viewDimension: t, sampleType: n } = qme(e.type);
 		r.bindings.push({
 			type: "texture",
 			name: e.name,
@@ -28119,17 +28119,17 @@ function Yme(e, t, n = {}) {
 		}), e.textureUnit = o, o += 1;
 	}
 	a.length && (r.uniforms = a);
-	let s = Zme(e, t);
+	let s = Qme(e, t);
 	return s?.length && (r.varyings = s), r;
 }
-function Xme(e, t) {
+function Zme(e, t) {
 	let n = [], r = e.getProgramParameter(t, 35721);
 	for (let i = 0; i < r; i++) {
 		let r = e.getActiveAttrib(t, i);
 		if (!r) throw Error("activeInfo");
 		let { name: a, type: o } = r, s = e.getAttribLocation(t, a);
 		if (s >= 0) {
-			let e = IS(o), t = /instance/i.test(a) ? "instance" : "vertex";
+			let e = FS(o), t = /instance/i.test(a) ? "instance" : "vertex";
 			n.push({
 				name: a,
 				location: s,
@@ -28140,12 +28140,12 @@ function Xme(e, t) {
 	}
 	return n.sort((e, t) => e.location - t.location), n;
 }
-function Zme(e, t) {
+function Qme(e, t) {
 	let n = [], r = e.getProgramParameter(t, 35971);
 	for (let i = 0; i < r; i++) {
 		let r = e.getTransformFeedbackVarying(t, i);
 		if (!r) throw Error("activeInfo");
-		let { name: a, type: o, size: s } = r, { type: c, components: l } = hp(IS(o));
+		let { name: a, type: o, size: s } = r, { type: c, components: l } = hp(FS(o));
 		n.push({
 			location: i,
 			name: a,
@@ -28155,12 +28155,12 @@ function Zme(e, t) {
 	}
 	return n.sort((e, t) => e.location - t.location), n;
 }
-function Qme(e, t) {
+function $me(e, t) {
 	let n = [], r = e.getProgramParameter(t, 35718);
 	for (let i = 0; i < r; i++) {
 		let r = e.getActiveUniform(t, i);
 		if (!r) throw Error("activeInfo");
-		let { name: a, size: o, type: s } = r, { name: c, isArray: l } = che(a), u = e.getUniformLocation(t, c), d = {
+		let { name: a, size: o, type: s } = r, { name: c, isArray: l } = lhe(a), u = e.getUniformLocation(t, c), d = {
 			location: u,
 			name: c,
 			size: o,
@@ -28180,12 +28180,12 @@ function Qme(e, t) {
 	}
 	return n;
 }
-function $me(e, t, n) {
-	let r = [], i = the(e, t, n);
+function ehe(e, t, n) {
+	let r = [], i = nhe(e, t, n);
 	for (let [n, a] of i) {
 		r.push(a);
 		try {
-			ehe(rhe(e, t, n, a.name), a);
+			the(ihe(e, t, n, a.name), a);
 		} catch (e) {
 			let t = e instanceof Error ? e.message : String(e);
 			W.once(0, `WebGL uniform block reflection failed for "${a.name}"; using supplied std140 metadata. ${t}`)();
@@ -28193,23 +28193,23 @@ function $me(e, t, n) {
 	}
 	let a = e.getProgramParameter(t, 35382);
 	if (!Number.isInteger(a) || a < 0) throw Error(`Failed to reflect WebGL uniform blocks: ACTIVE_UNIFORM_BLOCKS returned ${String(a)}`);
-	for (let n = 0; n < a; n++) i.has(n) || r.push(rhe(e, t, n));
+	for (let n = 0; n < a; n++) i.has(n) || r.push(ihe(e, t, n));
 	return r.sort((e, t) => e.location - t.location), r;
 }
-function ehe(e, t) {
+function the(e, t) {
 	for (let n of e.uniforms) {
 		let e = t.uniforms.find((e) => n.name === e.name || n.name.endsWith(`.${e.name}`));
 		if (!e) throw Error(`Failed to validate WebGL uniform block "${t.name}": reflected unexpected member "${n.name}"`);
 		if (n.format !== e.format || n.arrayLength !== e.arrayLength || n.byteOffset !== e.byteOffset || n.byteStride !== e.byteStride) throw Error(`Failed to validate WebGL uniform block "${t.name}": reflected layout for "${n.name}" does not match supplied std140 metadata`);
 	}
 }
-function the(e, t, n) {
+function nhe(e, t, n) {
 	let r = /* @__PURE__ */ new Map();
-	for (let e of n.uniformBlockLayouts || []) r.set(e.name, ahe(e));
-	for (let e of n.shaderLayout?.bindings || []) she(e) && r.set(e.name, e);
+	for (let e of n.uniformBlockLayouts || []) r.set(e.name, ohe(e));
+	for (let e of n.shaderLayout?.bindings || []) che(e) && r.set(e.name, e);
 	let i = /* @__PURE__ */ new Map();
 	for (let n of r.values()) {
-		let r = nhe(e, t, n.name);
+		let r = rhe(e, t, n.name);
 		if (!r) continue;
 		let { blockIndex: a, blockName: o } = r;
 		if (i.has(a)) throw Error(`Multiple supplied uniform block layouts resolve to active WebGL block "${o}"`);
@@ -28225,7 +28225,7 @@ function the(e, t, n) {
 	}
 	return i;
 }
-function nhe(e, t, n) {
+function rhe(e, t, n) {
 	let r = n.endsWith("Uniforms") ? [n, n.slice(0, -8)] : [n, `${n}Uniforms`];
 	for (let n of r) {
 		let r = e.getUniformBlockIndex(t, n);
@@ -28239,23 +28239,23 @@ function nhe(e, t, n) {
 	}
 	return null;
 }
-function rhe(e, t, n, r) {
+function ihe(e, t, n, r) {
 	let i = r || e.getActiveUniformBlockName(t, n);
 	if (!i) throw Error(`Failed to reflect WebGL uniform block at index ${n}: missing block name`);
 	let a = (r, a) => {
 		let o = e.getActiveUniformBlockParameter(t, n, r);
 		if (o == null) throw Error(`Failed to reflect WebGL uniform block "${i}": ${a} returned null`);
 		return o;
-	}, o = BS(a(35391, "UNIFORM_BLOCK_BINDING"), i, "UNIFORM_BLOCK_BINDING", 0), s = BS(a(35392, "UNIFORM_BLOCK_DATA_SIZE"), i, "UNIFORM_BLOCK_DATA_SIZE", 0), c = BS(a(35394, "UNIFORM_BLOCK_ACTIVE_UNIFORMS"), i, "UNIFORM_BLOCK_ACTIVE_UNIFORMS", 0), l = ihe(a(35395, "UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES"), i, "UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES", c), u = zS(e, t, l, 35383, "UNIFORM_TYPE", i, c), d = zS(e, t, l, 35384, "UNIFORM_SIZE", i, c), f = zS(e, t, l, 35386, "UNIFORM_BLOCK_INDEX", i, c), p = zS(e, t, l, 35387, "UNIFORM_OFFSET", i, c), m = zS(e, t, l, 35388, "UNIFORM_ARRAY_STRIDE", i, c), h = [];
+	}, o = zS(a(35391, "UNIFORM_BLOCK_BINDING"), i, "UNIFORM_BLOCK_BINDING", 0), s = zS(a(35392, "UNIFORM_BLOCK_DATA_SIZE"), i, "UNIFORM_BLOCK_DATA_SIZE", 0), c = zS(a(35394, "UNIFORM_BLOCK_ACTIVE_UNIFORMS"), i, "UNIFORM_BLOCK_ACTIVE_UNIFORMS", 0), l = ahe(a(35395, "UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES"), i, "UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES", c), u = RS(e, t, l, 35383, "UNIFORM_TYPE", i, c), d = RS(e, t, l, 35384, "UNIFORM_SIZE", i, c), f = RS(e, t, l, 35386, "UNIFORM_BLOCK_INDEX", i, c), p = RS(e, t, l, 35387, "UNIFORM_OFFSET", i, c), m = RS(e, t, l, 35388, "UNIFORM_ARRAY_STRIDE", i, c), h = [];
 	for (let r = 0; r < c; r++) {
 		if (f[r] !== n) throw Error(`Failed to reflect WebGL uniform block "${i}": active uniform index ${l[r]} belongs to block ${f[r]}, expected ${n}`);
 		let a = l[r], o = e.getActiveUniform(t, a);
 		if (!o) throw Error(`Failed to reflect WebGL uniform block "${i}": getActiveUniform(${a}) returned null`);
-		let s = BS(u[r], i, `UNIFORM_TYPE[${r}]`, 1), c = BS(d[r], i, `UNIFORM_SIZE[${r}]`, 1), g = BS(p[r], i, `UNIFORM_OFFSET[${r}]`, 0), _ = BS(m[r], i, `UNIFORM_ARRAY_STRIDE[${r}]`, 0);
+		let s = zS(u[r], i, `UNIFORM_TYPE[${r}]`, 1), c = zS(d[r], i, `UNIFORM_SIZE[${r}]`, 1), g = zS(p[r], i, `UNIFORM_OFFSET[${r}]`, 0), _ = zS(m[r], i, `UNIFORM_ARRAY_STRIDE[${r}]`, 0);
 		if (o.type !== s || o.size !== c) throw Error(`Failed to reflect WebGL uniform block "${i}": getActiveUniform(${a}) disagrees with getActiveUniforms`);
 		h.push({
 			name: o.name,
-			format: IS(s),
+			format: FS(s),
 			arrayLength: c,
 			byteOffset: g,
 			byteStride: _
@@ -28276,23 +28276,23 @@ function rhe(e, t, n, r) {
 	}
 	return g;
 }
-function zS(e, t, n, r, i, a, o) {
+function RS(e, t, n, r, i, a, o) {
 	let s = e.getActiveUniforms(t, n, r);
 	if (s === null) throw Error(`Failed to reflect WebGL uniform block "${a}": ${i} returned null`);
-	return ihe(s, a, i, o);
+	return ahe(s, a, i, o);
 }
-function ihe(e, t, n, r) {
+function ahe(e, t, n, r) {
 	if (!Array.isArray(e) && !ArrayBuffer.isView(e)) throw Error(`Failed to reflect WebGL uniform block "${t}": ${n} returned a non-array value`);
 	let i = Array.from(e);
 	if (i.length !== r || i.some((e) => !Number.isInteger(e))) throw Error(`Failed to reflect WebGL uniform block "${t}": ${n} returned ${i.length} invalid values, expected ${r}`);
 	return i;
 }
-function BS(e, t, n, r) {
+function zS(e, t, n, r) {
 	if (!Number.isInteger(e) || e < r) throw Error(`Failed to reflect WebGL uniform block "${t}": ${n} returned ${String(e)}`);
 	return e;
 }
-function ahe(e) {
-	let t = Ep(e.uniformTypes, { layout: "std140" }), n = ohe(e.uniformTypes, t.fields);
+function ohe(e) {
+	let t = Ep(e.uniformTypes, { layout: "std140" }), n = she(e.uniformTypes, t.fields);
 	return {
 		type: "uniform",
 		name: e.name,
@@ -28302,7 +28302,7 @@ function ahe(e) {
 		uniforms: n
 	};
 }
-function ohe(e, t) {
+function she(e, t) {
 	let n = [], r = (e, a) => {
 		if (typeof a == "string") {
 			let r = t[e];
@@ -28346,10 +28346,10 @@ function ohe(e, t) {
 	for (let [t, n] of Object.entries(e)) r(t, n);
 	return n;
 }
-function she(e) {
+function che(e) {
 	return e.type === "uniform" && Number.isInteger(e.minBindingSize) && e.minBindingSize >= 0 && Array.isArray(e.uniforms) && e.uniforms.every((e) => typeof e.name == "string" && typeof e.format == "string" && Number.isInteger(e.arrayLength) && e.arrayLength > 0 && Number.isInteger(e.byteOffset) && e.byteOffset >= 0 && Number.isInteger(e.byteStride) && e.byteStride >= 0);
 }
-function che(e) {
+function lhe(e) {
 	if (e[e.length - 1] !== "]") return {
 		name: e,
 		length: 1,
@@ -28362,12 +28362,12 @@ function che(e) {
 		isArray: !!t?.[2]
 	};
 }
-var lhe = o((() => {
-	Qp(), RS();
+var uhe = o((() => {
+	Qp(), LS();
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/resources/webgl-render-pipeline.js
-function uhe(e, t) {
+function dhe(e, t) {
 	let n = {
 		...e,
 		attributes: e.attributes.map((e) => ({ ...e })),
@@ -28378,19 +28378,19 @@ function uhe(e, t) {
 		t ? (t.type = e.type || t.type, t.stepMode = e.stepMode || t.stepMode) : W.warn(`shader layout attribute ${e.name} not present in shader`);
 	}
 	for (let e of t?.bindings || []) {
-		let t = dhe(n, e.name);
+		let t = fhe(n, e.name);
 		t ? Object.assign(t, e) : W.warn(`shader layout binding ${e.name} not present in shader`);
 	}
 	return n;
 }
-function dhe(e, t) {
+function fhe(e, t) {
 	return e.bindings.find((e) => e.name === t || e.name === `${t}Uniforms` || `${e.name}Uniforms` === t);
 }
-function fhe(e, t) {
+function phe(e, t) {
 	return e[t] || e[`${t}Uniforms`] || e[t.replace(/Uniforms$/, "")];
 }
-var phe, mhe = o((() => {
-	Qp(), Ume(), xS(), vS(), FS(), Fme(), lhe(), phe = class extends Qf {
+var mhe, hhe = o((() => {
+	Qp(), Wme(), bS(), _S(), PS(), Ime(), uhe(), mhe = class extends Qf {
 		device;
 		handle;
 		vs;
@@ -28407,10 +28407,10 @@ var phe, mhe = o((() => {
 		constructor(e, t) {
 			super(e, t), this.device = e;
 			let n = this.sharedRenderPipeline || this.device._createSharedRenderPipelineWebGL(t);
-			this.sharedRenderPipeline = n, this.handle = n.handle, this.vs = n.vs, this.fs = n.fs, this.linkStatus = n.linkStatus, this.introspectedLayout = Yme(this.device.gl, this.handle, {
+			this.sharedRenderPipeline = n, this.handle = n.handle, this.vs = n.vs, this.fs = n.fs, this.linkStatus = n.linkStatus, this.introspectedLayout = Xme(this.device.gl, this.handle, {
 				uniformBlockLayouts: t._uniformBlockLayouts,
 				shaderLayout: t.shaderLayout
-			}), this.device._setWebGLDebugMetadata(this.handle, this, { spector: { id: this.props.id } }), this.shaderLayout = t.shaderLayout ? uhe(this.introspectedLayout, t.shaderLayout) : this.introspectedLayout;
+			}), this.device._setWebGLDebugMetadata(this.handle, this, { spector: { id: this.props.id } }), this.shaderLayout = t.shaderLayout ? dhe(this.introspectedLayout, t.shaderLayout) : this.introspectedLayout;
 		}
 		destroy() {
 			this.destroyed || (this.sharedRenderPipeline && !this.props._sharedRenderPipeline && this.sharedRenderPipeline.destroy(), this.destroyResource());
@@ -28418,14 +28418,14 @@ var phe, mhe = o((() => {
 		setBindings(e, t) {
 			let n = sp(op(this.shaderLayout, e));
 			for (let [e, r] of Object.entries(n)) {
-				let n = dhe(this.shaderLayout, e);
+				let n = fhe(this.shaderLayout, e);
 				if (n) {
 					switch (r || W.warn(`Unsetting binding "${e}" in render pipeline "${this.id}"`)(), n.type) {
 						case "uniform":
-							if (!(r instanceof bS) && !(r.buffer instanceof bS)) throw Error("buffer value");
+							if (!(r instanceof yS) && !(r.buffer instanceof yS)) throw Error("buffer value");
 							break;
 						case "texture":
-							if (!(r instanceof MS || r instanceof PS || r instanceof _S)) throw Error(`${this} Bad texture binding for ${e}`);
+							if (!(r instanceof jS || r instanceof NS || r instanceof gS)) throw Error(`${this} Bad texture binding for ${e}`);
 							break;
 						case "sampler":
 							W.warn(`Ignoring sampler ${e}`)();
@@ -28458,7 +28458,7 @@ var phe, mhe = o((() => {
 		}
 		_areTexturesRenderable(e) {
 			let t = !0;
-			for (let n of this.shaderLayout.bindings) fhe(e, n.name) || (W.warn(`Binding ${n.name} not found in ${this.id}`)(), t = !1);
+			for (let n of this.shaderLayout.bindings) phe(e, n.name) || (W.warn(`Binding ${n.name} not found in ${this.id}`)(), t = !1);
 			return t;
 		}
 		_applyBindings(e, t) {
@@ -28467,13 +28467,13 @@ var phe, mhe = o((() => {
 			n.useProgram(this.handle);
 			let r = 0, i = 0;
 			for (let t of this.shaderLayout.bindings) {
-				let a = fhe(e, t.name);
+				let a = phe(e, t.name);
 				if (!a) throw Error(`No value for binding ${t.name} in ${this.id}`);
 				switch (t.type) {
 					case "uniform":
 						let { name: e } = t, o = n.getUniformBlockIndex(this.handle, e);
 						if (o === 4294967295) throw Error(`Invalid uniform block name ${e}`);
-						if (n.uniformBlockBinding(this.handle, o, i), a instanceof bS) n.bindBufferBase(35345, i, a.handle);
+						if (n.uniformBlockBinding(this.handle, o, i), a instanceof yS) n.bindBufferBase(35345, i, a.handle);
 						else {
 							let e = a;
 							n.bindBufferRange(35345, i, e.buffer.handle, e.offset || 0, e.size || e.buffer.byteLength - (e.offset || 0));
@@ -28481,11 +28481,11 @@ var phe, mhe = o((() => {
 						i += 1;
 						break;
 					case "texture":
-						if (!(a instanceof MS || a instanceof PS || a instanceof _S)) throw Error("texture");
+						if (!(a instanceof jS || a instanceof NS || a instanceof gS)) throw Error("texture");
 						let s;
-						if (a instanceof MS) s = a.texture;
-						else if (a instanceof PS) s = a;
-						else if (a instanceof _S && a.colorAttachments[0] instanceof MS) W.warn("Passing framebuffer in texture binding may be deprecated. Use fbo.colorAttachments[0] instead")(), s = a.colorAttachments[0].texture;
+						if (a instanceof jS) s = a.texture;
+						else if (a instanceof NS) s = a;
+						else if (a instanceof gS && a.colorAttachments[0] instanceof jS) W.warn("Passing framebuffer in texture binding may be deprecated. Use fbo.colorAttachments[0] instead")(), s = a.colorAttachments[0].texture;
 						else throw Error("No texture");
 						n.activeTexture(33984 + r), n.bindTexture(s.glTarget, s.handle), r += 1;
 						break;
@@ -28498,15 +28498,15 @@ var phe, mhe = o((() => {
 		_applyUniforms(e) {
 			for (let t of this.shaderLayout.uniforms || []) {
 				let { name: n, location: r, type: i, textureUnit: a } = t, o = e[n] ?? a;
-				o !== void 0 && Hme(this.device.gl, r, i, o);
+				o !== void 0 && Ume(this.device.gl, r, i, o);
 			}
 		}
 		_syncLinkStatus() {
 			this.linkStatus = this.sharedRenderPipeline.linkStatus;
 		}
 	};
-})), VS, hhe, ghe = o((() => {
-	Qp(), RS(), VS = 4, hhe = class extends ep {
+})), BS, ghe, _he = o((() => {
+	Qp(), LS(), BS = 4, ghe = class extends ep {
 		device;
 		handle;
 		vs;
@@ -28520,7 +28520,7 @@ var phe, mhe = o((() => {
 		}
 		async _linkShaders() {
 			let { gl: e } = this.device;
-			if (e.attachShader(this.handle, this.vs.handle), e.attachShader(this.handle, this.fs.handle), W.time(VS, `linkProgram for ${this.id}`)(), e.linkProgram(this.handle), W.timeEnd(VS, `linkProgram for ${this.id}`)(), !this.device.features.has("compilation-status-async-webgl")) {
+			if (e.attachShader(this.handle, this.vs.handle), e.attachShader(this.handle, this.fs.handle), W.time(BS, `linkProgram for ${this.id}`)(), e.linkProgram(this.handle), W.timeEnd(BS, `linkProgram for ${this.id}`)(), !this.device.features.has("compilation-status-async-webgl")) {
 				let e = this._getLinkStatus();
 				this._reportLinkStatus(e);
 				return;
@@ -28556,7 +28556,7 @@ var phe, mhe = o((() => {
 			let t = 0, n = e.getProgramParameter(this.handle, 35718);
 			for (let r = 0; r < n; r++) {
 				let n = e.getActiveUniform(this.handle, r);
-				if (n && Gme(n.type)) {
+				if (n && Kme(n.type)) {
 					let r = n.name.endsWith("[0]"), i = r ? n.name.slice(0, -3) : n.name, a = e.getUniformLocation(this.handle, i);
 					a !== null && (t = this._assignSamplerUniform(a, n, r, t));
 				}
@@ -28586,11 +28586,11 @@ var phe, mhe = o((() => {
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/resources/webgl-command-buffer.js
-function _he(e, t) {
+function vhe(e, t) {
 	let n = t.sourceBuffer, r = t.destinationBuffer;
 	e.gl.bindBuffer(36662, n.handle), e.gl.bindBuffer(36663, r.handle), e.gl.copyBufferSubData(36662, 36663, t.sourceOffset ?? 0, t.destinationOffset ?? 0, t.size), e.gl.bindBuffer(36662, null), e.gl.bindBuffer(36663, null);
 }
-function vhe(e, t) {
+function yhe(e, t) {
 	let { sourceBuffer: n, byteOffset: r = 0, destinationTexture: i, mipLevel: a = 0, origin: o = [
 		0,
 		0,
@@ -28610,7 +28610,7 @@ function vhe(e, t) {
 		depthOrArrayLayers: u[2]
 	});
 }
-function yhe(e, t) {
+function bhe(e, t) {
 	let { sourceTexture: n, mipLevel: r = 0, aspect: i = "all", width: a = t.sourceTexture.width, height: o = t.sourceTexture.height, depthOrArrayLayers: s, origin: c = [
 		0,
 		0,
@@ -28632,21 +28632,21 @@ function yhe(e, t) {
 	}
 	if (i !== "all") throw Error("aspect not supported in WebGL");
 	if (r !== 0 || s !== void 0 || d || f) throw Error("not implemented");
-	let { framebuffer: p, destroyFramebuffer: m } = xhe(n), h;
+	let { framebuffer: p, destroyFramebuffer: m } = She(n), h;
 	try {
-		let t = l, n = a || p.width, r = o || p.height, i = qpe(Mf(p.colorAttachments[0]).texture.props.format), s = i.format, d = i.type;
+		let t = l, n = a || p.width, r = o || p.height, i = Jpe(Mf(p.colorAttachments[0]).texture.props.format), s = i.format, d = i.type;
 		e.gl.bindBuffer(35051, t.handle), h = e.gl.bindFramebuffer(36160, p.handle), e.gl.readPixels(c[0], c[1], n, r, s, d, u);
 	} finally {
 		e.gl.bindBuffer(35051, null), h !== void 0 && e.gl.bindFramebuffer(36160, h), m && p.destroy();
 	}
 }
-function bhe(e, t) {
+function xhe(e, t) {
 	let { sourceTexture: n, destinationMipLevel: r = 0, origin: i = [0, 0], destinationOrigin: a = [
 		0,
 		0,
 		0
-	], destinationTexture: o } = t, { width: s = t.destinationTexture.width, height: c = t.destinationTexture.height } = t, { framebuffer: l, destroyFramebuffer: u } = xhe(n), [d = 0, f = 0] = i, [p, m, h] = a, g = e.gl.bindFramebuffer(36160, l.handle), _, v;
-	if (o instanceof PS) _ = o, s = Number.isFinite(s) ? s : _.width, c = Number.isFinite(c) ? c : _.height, _._bind(0), v = _.glTarget;
+	], destinationTexture: o } = t, { width: s = t.destinationTexture.width, height: c = t.destinationTexture.height } = t, { framebuffer: l, destroyFramebuffer: u } = She(n), [d = 0, f = 0] = i, [p, m, h] = a, g = e.gl.bindFramebuffer(36160, l.handle), _, v;
+	if (o instanceof NS) _ = o, s = Number.isFinite(s) ? s : _.width, c = Number.isFinite(c) ? c : _.height, _._bind(0), v = _.glTarget;
 	else throw Error("invalid destination");
 	switch (v) {
 		case 3553:
@@ -28658,7 +28658,7 @@ function bhe(e, t) {
 	}
 	_ && _._unbind(), e.gl.bindFramebuffer(36160, g), u && l.destroy();
 }
-function xhe(e) {
+function She(e) {
 	if (e instanceof Uf) {
 		let { width: t, height: n, id: r } = e;
 		return {
@@ -28676,8 +28676,8 @@ function xhe(e) {
 		destroyFramebuffer: !1
 	};
 }
-var She, Che = o((() => {
-	Qp(), hS(), FS(), She = class extends up {
+var Che, whe = o((() => {
+	Qp(), mS(), PS(), Che = class extends up {
 		device;
 		handle = null;
 		commands = [];
@@ -28687,16 +28687,16 @@ var She, Che = o((() => {
 		_executeCommands(e = this.commands) {
 			for (let t of e) switch (t.name) {
 				case "copy-buffer-to-buffer":
-					_he(this.device, t.options);
-					break;
-				case "copy-buffer-to-texture":
 					vhe(this.device, t.options);
 					break;
-				case "copy-texture-to-buffer":
+				case "copy-buffer-to-texture":
 					yhe(this.device, t.options);
 					break;
-				case "copy-texture-to-texture":
+				case "copy-texture-to-buffer":
 					bhe(this.device, t.options);
+					break;
+				case "copy-texture-to-texture":
+					xhe(this.device, t.options);
 					break;
 				default: throw Error(t.name);
 			}
@@ -28705,7 +28705,7 @@ var She, Che = o((() => {
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/helpers/webgl-topology-utils.js
-function whe(e) {
+function The(e) {
 	switch (e) {
 		case "point-list": return 0;
 		case "line-list": return 1;
@@ -28715,7 +28715,7 @@ function whe(e) {
 		default: throw Error(e);
 	}
 }
-function The(e) {
+function Ehe(e) {
 	switch (e) {
 		case "point-list": return 0;
 		case "line-list": return 1;
@@ -28725,13 +28725,13 @@ function The(e) {
 		default: throw Error(e);
 	}
 }
-var Ehe = o((() => {})), Dhe, Ohe, khe = o((() => {
-	Qp(), jS(), Xx(), Ehe(), DS(), Dhe = [
+var Dhe = o((() => {})), Ohe, khe, Ahe = o((() => {
+	Qp(), AS(), Yx(), Dhe(), ES(), Ohe = [
 		1,
 		2,
 		4,
 		8
-	], Ohe = class extends cp {
+	], khe = class extends cp {
 		device;
 		handle = null;
 		glParameters = {};
@@ -28783,7 +28783,7 @@ var Ehe = o((() => {})), Dhe, Ohe, khe = o((() => {
 		}
 		setParameters(e = {}) {
 			let t = { ...this.glParameters };
-			t.framebuffer = this.props.framebuffer || null, this.props.depthReadOnly && (t.depthMask = !this.props.depthReadOnly), t.stencilMask = +!this.props.stencilReadOnly, t[35977] = this.props.discard, e.viewport && (e.viewport.length >= 6 ? (t.viewport = e.viewport.slice(0, 4), t.depthRange = [e.viewport[4], e.viewport[5]]) : t.viewport = e.viewport), e.scissorRect && (t.scissorTest = !0, t.scissor = e.scissorRect), e.blendConstant && (t.blendColor = e.blendConstant), e.stencilReference !== void 0 && (t[2967] = e.stencilReference, t[36003] = e.stencilReference), "colorMask" in e && (t.colorMask = Dhe.map((t) => !!(t & e.colorMask))), this.glParameters = t, Yx(this.device.gl, t);
+			t.framebuffer = this.props.framebuffer || null, this.props.depthReadOnly && (t.depthMask = !this.props.depthReadOnly), t.stencilMask = +!this.props.stencilReadOnly, t[35977] = this.props.discard, e.viewport && (e.viewport.length >= 6 ? (t.viewport = e.viewport.slice(0, 4), t.depthRange = [e.viewport[4], e.viewport[5]]) : t.viewport = e.viewport), e.scissorRect && (t.scissorTest = !0, t.scissor = e.scissorRect), e.blendConstant && (t.blendColor = e.blendConstant), e.stencilReference !== void 0 && (t[2967] = e.stencilReference, t[36003] = e.stencilReference), "colorMask" in e && (t.colorMask = Ohe.map((t) => !!(t & e.colorMask))), this.glParameters = t, Jx(this.device.gl, t);
 		}
 		setPipeline(e) {
 			this.pipeline = e;
@@ -28801,12 +28801,12 @@ var Ehe = o((() => {})), Dhe, Ohe, khe = o((() => {
 			if (!n) throw Error("RenderPass.setVertexArray() must be called before draw()");
 			if (t.shaderLayout.bindings.length > 0 && this.bindingsPipeline !== t) throw Error("RenderPass.setBindings() must be called after setPipeline() before draw()");
 			t._syncLinkStatus();
-			let { parameters: r = t.props.parameters, topology: i = t.props.topology, vertexCount: a, indexCount: o, instanceCount: s, isInstanced: c = !1, firstVertex: l = 0, transformFeedback: u, uniforms: d = t.uniforms } = e, f = whe(i), p = !!n.indexBuffer, m = n.indexBuffer?.glIndexType, h = o ?? a ?? 0;
+			let { parameters: r = t.props.parameters, topology: i = t.props.topology, vertexCount: a, indexCount: o, instanceCount: s, isInstanced: c = !1, firstVertex: l = 0, transformFeedback: u, uniforms: d = t.uniforms } = e, f = The(i), p = !!n.indexBuffer, m = n.indexBuffer?.glIndexType, h = o ?? a ?? 0;
 			if (t.linkStatus !== "success") return W.info(2, `RenderPipeline:${t.id}.draw() aborted - waiting for shader linking`)(), !1;
 			if (!t._areTexturesRenderable(this.bindings)) return W.info(2, `RenderPipeline:${t.id}.draw() aborted - textures not yet loaded`)(), !1;
 			this.device.gl.useProgram(t.handle), n.bindBeforeRender(this);
 			let g = u;
-			return g && g.begin(t.props.topology), t._applyBindings(this.bindings, { disableWarnings: t.props.disableWarnings }), t._applyUniforms(d), Cme(this.device, r, this.glParameters, () => {
+			return g && g.begin(t.props.topology), t._applyBindings(this.bindings, { disableWarnings: t.props.disableWarnings }), t._applyUniforms(d), wme(this.device, r, this.glParameters, () => {
 				p && c ? this.device.gl.drawElementsInstanced(f, h, m, l, s || 0) : p ? this.device.gl.drawElements(f, h, m, l) : c ? this.device.gl.drawArraysInstanced(f, l, a || 0, s || 0) : this.device.gl.drawArrays(f, l, a || 0), g && g.end();
 			}), n.unbindAfterRender(this), !0;
 		}
@@ -28826,7 +28826,7 @@ var Ehe = o((() => {})), Dhe, Ohe, khe = o((() => {
 			let e = { ...this.glParameters }, t = 0;
 			this.props.clearColors && this.props.clearColors.forEach((e, t) => {
 				e && this.clearColorBuffer(t, e);
-			}), this.props.clearColor !== !1 && this.props.clearColors === void 0 && (t |= 16384, e.clearColor = this.props.clearColor), this.props.clearDepth !== !1 && (t |= 256, e.clearDepth = this.props.clearDepth), this.props.clearStencil !== !1 && (t |= 1024, e.clearStencil = this.props.clearStencil), t !== 0 && AS(this.device.gl, e, () => {
+			}), this.props.clearColor !== !1 && this.props.clearColors === void 0 && (t |= 16384, e.clearColor = this.props.clearColor), this.props.clearDepth !== !1 && (t |= 256, e.clearDepth = this.props.clearDepth), this.props.clearStencil !== !1 && (t |= 1024, e.clearStencil = this.props.clearStencil), t !== 0 && kS(this.device.gl, e, () => {
 				this.device.gl.clear(t);
 			});
 		}
@@ -28836,7 +28836,7 @@ var Ehe = o((() => {})), Dhe, Ohe, khe = o((() => {
 			0,
 			0
 		]) {
-			AS(this.device.gl, { framebuffer: this.props.framebuffer }, () => {
+			kS(this.device.gl, { framebuffer: this.props.framebuffer }, () => {
 				switch (t.constructor) {
 					case Int8Array:
 					case Int16Array:
@@ -28857,13 +28857,13 @@ var Ehe = o((() => {})), Dhe, Ohe, khe = o((() => {
 			});
 		}
 	};
-})), HS, Ahe = o((() => {
-	Qp(), Che(), khe(), HS = class extends lp {
+})), VS, jhe = o((() => {
+	Qp(), whe(), Ahe(), VS = class extends lp {
 		device;
 		handle = null;
 		commandBuffer;
 		constructor(e, t) {
-			super(e, t), this.device = e, this.commandBuffer = new She(e, {
+			super(e, t), this.device = e, this.commandBuffer = new Che(e, {
 				id: this.id,
 				userData: this.userData
 			});
@@ -28875,7 +28875,7 @@ var Ehe = o((() => {})), Dhe, Ohe, khe = o((() => {
 			return this.destroy(), this.commandBuffer;
 		}
 		beginRenderPass(e = {}) {
-			return new Ohe(this.device, this._applyTimeProfilingToPassProps(e));
+			return new khe(this.device, this._applyTimeProfilingToPassProps(e));
 		}
 		beginComputePass(e = {}) {
 			throw Error("ComputePass not supported in WebGL");
@@ -28917,25 +28917,25 @@ var Ehe = o((() => {})), Dhe, Ohe, khe = o((() => {
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/utils/fill-array.js
-function jhe(e) {
+function Mhe(e) {
 	let { target: t, source: n, start: r = 0, count: i = 1 } = e, a = n.length, o = i * a, s = 0;
 	for (let e = r; s < a; s++) t[e++] = n[s] ?? 0;
 	for (; s < o;) s < o - s ? (t.copyWithin(r + s, r, r + s), s *= 2) : (t.copyWithin(r + s, r, r + o - s), s = o);
 	return e.target;
 }
-var Mhe = o((() => {}));
+var Nhe = o((() => {}));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/resources/webgl-vertex-array.js
-function Nhe(e) {
+function Phe(e) {
 	return Array.isArray(e) ? new Float32Array(e) : e;
 }
-function Phe(e, t) {
+function Fhe(e, t) {
 	if (!e || !t || e.length !== t.length || e.constructor !== t.constructor) return !1;
 	for (let n = 0; n < e.length; ++n) if (e[n] !== t[n]) return !1;
 	return !0;
 }
-var Fhe, Ihe = o((() => {
-	Qp(), k(), Vpe(), Mhe(), Fhe = class e extends dp {
+var Ihe, Lhe = o((() => {
+	Qp(), k(), Hpe(), Nhe(), Ihe = class e extends dp {
 		get [Symbol.toStringTag]() {
 			return "VertexArray";
 		}
@@ -28983,7 +28983,7 @@ var Fhe, Ihe = o((() => {
 		_getAccessor(e) {
 			let t = this.attributeInfosByLocation[e];
 			if (!t) throw Error(`Unknown attribute location ${e}`);
-			let n = Bpe(t.bufferDataType);
+			let n = Vpe(t.bufferDataType);
 			return {
 				size: t.bufferComponents,
 				type: n,
@@ -28999,12 +28999,12 @@ var Fhe, Ihe = o((() => {
 			(n || r) && (t = Number(t), this.device.gl.bindVertexArray(this.handle), n ? this.device.gl.enableVertexAttribArray(t) : this.device.gl.disableVertexAttribArray(t), this.device.gl.bindVertexArray(null));
 		}
 		getConstantBuffer(e, t) {
-			let n = Nhe(t), r = n.byteLength * e, i = n.length * e;
+			let n = Phe(t), r = n.byteLength * e, i = n.length * e;
 			if (this.buffer && r !== this.buffer.byteLength) throw Error(`Buffer size is immutable, byte length ${r} !== ${this.buffer.byteLength}.`);
 			let a = !this.buffer;
-			if (this.buffer = this.buffer || this.device.createBuffer({ byteLength: r }), a ||= !Phe(n, this.bufferValue), a) {
+			if (this.buffer = this.buffer || this.device.createBuffer({ byteLength: r }), a ||= !Fhe(n, this.bufferValue), a) {
 				let e = Lae(t.constructor, i);
-				jhe({
+				Mhe({
 					target: e,
 					source: n,
 					start: 0,
@@ -29017,11 +29017,11 @@ var Fhe, Ihe = o((() => {
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/resources/webgl-transform-feedback.js
-function Lhe(e) {
+function Rhe(e) {
 	return typeof e == "number" ? Number.isInteger(e) : /^\d+$/.test(e);
 }
-var Rhe, zhe = o((() => {
-	Qp(), YS(), Ehe(), Rhe = class extends fp {
+var zhe, Bhe = o((() => {
+	Qp(), YS(), Dhe(), zhe = class extends fp {
 		device;
 		gl;
 		handle;
@@ -29037,7 +29037,7 @@ var Rhe, zhe = o((() => {
 			this.gl.deleteTransformFeedback(this.handle), super.destroy();
 		}
 		begin(e = "point-list") {
-			this.gl.bindTransformFeedback(36386, this.handle), this.bindOnUse && this._bindBuffers(), this.gl.beginTransformFeedback(The(e));
+			this.gl.bindTransformFeedback(36386, this.handle), this.bindOnUse && this._bindBuffers(), this.gl.beginTransformFeedback(Ehe(e));
 		}
 		end() {
 			this.gl.endTransformFeedback(), this.bindOnUse && this._unbindBuffers(), this.gl.bindTransformFeedback(36386, null);
@@ -29056,7 +29056,7 @@ var Rhe, zhe = o((() => {
 			}, this.bindOnUse || this._bindBuffer(n, r, a, i));
 		}
 		getBuffer(e) {
-			if (Lhe(e)) return this.buffers[e] || null;
+			if (Rhe(e)) return this.buffers[e] || null;
 			let t = this._getVaryingIndex(e);
 			return this.buffers[t] ?? null;
 		}
@@ -29069,7 +29069,7 @@ var Rhe, zhe = o((() => {
 			this.bind(null);
 		}
 		_getBufferRange(e) {
-			if (e instanceof bS) return {
+			if (e instanceof yS) return {
 				buffer: e,
 				byteOffset: 0,
 				byteLength: e.byteLength
@@ -29082,7 +29082,7 @@ var Rhe, zhe = o((() => {
 			};
 		}
 		_getVaryingIndex(e) {
-			if (Lhe(e)) return Number(e);
+			if (Rhe(e)) return Number(e);
 			for (let t of this.layout.varyings || []) if (e === t.name) return t.location;
 			return -1;
 		}
@@ -29100,8 +29100,8 @@ var Rhe, zhe = o((() => {
 			!i || r === void 0 ? this.gl.bindBufferBase(35982, e, i) : this.gl.bindBufferRange(35982, e, i, n, r);
 		}
 	};
-})), Bhe, Vhe = o((() => {
-	Qp(), Bhe = class extends pp {
+})), Vhe, Hhe = o((() => {
+	Qp(), Vhe = class extends pp {
 		device;
 		handle;
 		_timestampPairs = [];
@@ -29253,8 +29253,8 @@ var Rhe, zhe = o((() => {
 			cancelAnimationFrame(e);
 		}
 	};
-})), Hhe, Uhe = o((() => {
-	Qp(), Hhe = class extends mp {
+})), Uhe, Whe = o((() => {
+	Qp(), Uhe = class extends mp {
 		device;
 		gl;
 		handle;
@@ -29284,7 +29284,7 @@ var Rhe, zhe = o((() => {
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/helpers/format-utils.js
-function Whe(e) {
+function Ghe(e) {
 	switch (e) {
 		case 6406:
 		case 33326:
@@ -29304,7 +29304,7 @@ function Whe(e) {
 		default: return 0;
 	}
 }
-function Ghe(e) {
+function Khe(e) {
 	switch (e) {
 		case 5121: return 1;
 		case 33635:
@@ -29314,28 +29314,28 @@ function Ghe(e) {
 		default: return 0;
 	}
 }
-var Khe = o((() => {}));
+var qhe = o((() => {}));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/helpers/webgl-texture-utils.js
-function qhe(e, t) {
-	let { sourceX: n = 0, sourceY: r = 0, sourceAttachment: i = 0 } = t || {}, { target: a = null, sourceWidth: o, sourceHeight: s, sourceDepth: c, sourceFormat: l, sourceType: u } = t || {}, { framebuffer: d, deleteFramebuffer: f } = Yhe(e), { gl: p, handle: m } = d;
+function Jhe(e, t) {
+	let { sourceX: n = 0, sourceY: r = 0, sourceAttachment: i = 0 } = t || {}, { target: a = null, sourceWidth: o, sourceHeight: s, sourceDepth: c, sourceFormat: l, sourceType: u } = t || {}, { framebuffer: d, deleteFramebuffer: f } = Xhe(e), { gl: p, handle: m } = d;
 	o ||= d.width, s ||= d.height;
 	let h = d.colorAttachments[i]?.texture;
 	if (!h) throw Error(`Invalid framebuffer attachment ${i}`);
-	c = h?.depth || 1, l ||= h?.glFormat || 6408, u ||= h?.glType || 5121, a = Zhe(a, u, l, o, s, c);
+	c = h?.depth || 1, l ||= h?.glFormat || 6408, u ||= h?.glType || 5121, a = Qhe(a, u, l, o, s, c);
 	let g = Rd.getDataType(a);
-	u ||= Wme(g);
+	u ||= Gme(g);
 	let _ = p.bindFramebuffer(36160, m);
 	return p.readBuffer(36064 + i), p.readPixels(n, r, o, s, l, u, a), p.readBuffer(36064), p.bindFramebuffer(36160, _ || null), f && d.destroy(), a;
 }
-function Jhe(e, t) {
-	let { target: n, sourceX: r = 0, sourceY: i = 0, sourceFormat: a = 6408, targetByteOffset: o = 0 } = t || {}, { sourceWidth: s, sourceHeight: c, sourceType: l } = t || {}, { framebuffer: u, deleteFramebuffer: d } = Yhe(e);
+function Yhe(e, t) {
+	let { target: n, sourceX: r = 0, sourceY: i = 0, sourceFormat: a = 6408, targetByteOffset: o = 0 } = t || {}, { sourceWidth: s, sourceHeight: c, sourceType: l } = t || {}, { framebuffer: u, deleteFramebuffer: d } = Xhe(e);
 	s ||= u.width, c ||= u.height;
 	let f = u;
 	l ||= 5121;
 	let p = n;
 	if (!p) {
-		let e = Whe(a), t = Ghe(l), n = o + s * c * e * t;
+		let e = Ghe(a), t = Khe(l), n = o + s * c * e * t;
 		p = f.device.createBuffer({ byteLength: n });
 	}
 	let m = e.device.createCommandEncoder();
@@ -29348,16 +29348,16 @@ function Jhe(e, t) {
 		byteOffset: o
 	}), m.destroy(), d && u.destroy(), p;
 }
-function Yhe(e) {
+function Xhe(e) {
 	return e instanceof Zf ? {
 		framebuffer: e,
 		deleteFramebuffer: !1
 	} : {
-		framebuffer: Xhe(e),
+		framebuffer: Zhe(e),
 		deleteFramebuffer: !0
 	};
 }
-function Xhe(e, t) {
+function Zhe(e, t) {
 	let { device: n, width: r, height: i, id: a } = e;
 	return n.createFramebuffer({
 		...t,
@@ -29367,18 +29367,18 @@ function Xhe(e, t) {
 		colorAttachments: [e]
 	});
 }
-function Zhe(e, t, n, r, i, a) {
+function Qhe(e, t, n, r, i, a) {
 	if (e) return e;
 	t ||= 5121;
-	let o = Ime(t), s = Rd.getTypedArrayConstructor(o), c = Whe(n);
+	let o = Lme(t), s = Rd.getTypedArrayConstructor(o), c = Ghe(n);
 	return new s(r * i * c);
 }
-var Qhe = o((() => {
-	Qp(), RS(), Khe(), Rme();
+var $he = o((() => {
+	Qp(), LS(), qhe(), zme();
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/constants/webgl-constant-utils.js
-function $he(e) {
+function ege(e) {
 	let t = /* @__PURE__ */ new Map();
 	for (let n in e) {
 		let r = e[n];
@@ -29389,8 +29389,8 @@ function $he(e) {
 	}
 	return t;
 }
-var ege = o((() => {})), tge = /* @__PURE__ */ c({ WebGLDevice: () => US });
-function nge(e, t, n) {
+var tge = o((() => {})), nge = /* @__PURE__ */ c({ WebGLDevice: () => HS });
+function rge(e, t, n) {
 	switch (n.length) {
 		case 1:
 			e.gl.vertexAttrib1fv(t, n);
@@ -29404,19 +29404,19 @@ function nge(e, t, n) {
 		case 4: e.gl.vertexAttrib4fv(t, n);
 	}
 }
-function rge(e, t, n) {
+function ige(e, t, n) {
 	e.gl.vertexAttribI4iv(t, n);
 }
-function ige(e, t, n) {
+function age(e, t, n) {
 	e.gl.vertexAttribI4uiv(t, n);
 }
-function age(e, t) {
+function oge(e, t) {
 	if (!e || !t || e.length !== t.length || e.constructor !== t.constructor) return !1;
 	for (let n = 0; n < e.length; ++n) if (e[n] !== t[n]) return !1;
 	return !0;
 }
-var US, WS = o((() => {
-	Qp(), Qx(), Npe(), jpe(), zpe(), ame(), sme(), dme(), pme(), _pe(), hS(), hme(), xS(), Sme(), Nme(), FS(), vS(), mhe(), ghe(), Ahe(), Ihe(), zhe(), Vhe(), Uhe(), Qhe(), Xx(), jS(), tS(), ege(), US = class e extends kf {
+var HS, US = o((() => {
+	Qp(), Zx(), Ppe(), Mpe(), Bpe(), ome(), cme(), fme(), mme(), vpe(), mS(), gme(), bS(), Cme(), Pme(), PS(), _S(), hhe(), _he(), jhe(), Lhe(), Bhe(), Hhe(), Whe(), $he(), Yx(), AS(), eS(), tge(), HS = class e extends kf {
 		static getDeviceFromContext(e) {
 			return e ? e.luma?.device ?? null : null;
 		}
@@ -29453,18 +29453,18 @@ var US, WS = o((() => {
 		constructor(t) {
 			super({
 				...t,
-				id: t.id || mme("webgl-device")
+				id: t.id || hme("webgl-device")
 			});
 			let n = kf._getCanvasContextProps(t);
 			if (!n) throw Error("WebGLDevice requires props.createCanvasContext to be set");
 			let r = n.canvas?.gl ?? null, i = e.getDeviceFromContext(r);
 			if (i) throw Error(`WebGL context already attached to device ${i.id}`);
-			this.canvasContext = new ume(this, n), this.lost = new Promise((e) => {
+			this.canvasContext = new dme(this, n), this.lost = new Promise((e) => {
 				this._resolveContextLost = e;
 			});
 			let a = { ...t.webgl };
 			n.alphaMode === "premultiplied" && (a.premultipliedAlpha = !0), t.powerPreference !== void 0 && (a.powerPreference = t.powerPreference), t.failIfMajorPerformanceCaveat !== void 0 && (a.failIfMajorPerformanceCaveat = t.failIfMajorPerformanceCaveat);
-			let o = this.props._handle || Mpe(this.canvasContext.canvas, {
+			let o = this.props._handle || Npe(this.canvasContext.canvas, {
 				onContextLost: (e) => this._resolveContextLost?.({
 					reason: "destroyed",
 					message: "Entered sleep mode, or too many apps or browser tabs are using the GPU."
@@ -29478,20 +29478,20 @@ var US, WS = o((() => {
 				if (t._reuseDevices) return W.log(1, `Not creating a new Device, instead returning a reference to Device ${i.id} already attached to WebGL context`, i)(), this.canvasContext.destroy(), i._reused = !0, i;
 				throw Error(`WebGL context already attached to device ${i.id}`);
 			}
-			this.handle = o, this.gl = o, this.spectorJS = gpe({
+			this.handle = o, this.gl = o, this.spectorJS = _pe({
 				...this.props,
 				gl: this.handle
 			});
-			let s = $x(this.handle);
-			s.device = this, s.extensions ||= {}, this.extensions = s.extensions, this.info = Ppe(this.gl, this.extensions), this.limits = new ome(this.gl), this.features = new ime(this.gl, this.extensions, this.props._disabledFeatures), this.props._initializeFeatures && this.features.initializeFeatures(), new Zx(this.gl, { log: (...e) => W.log(1, ...e)() }).trackState(this.gl, { copyState: !1 }), (t.debug || t.debugWebGL) && (this.gl = mpe(this.gl, {
+			let s = Qx(this.handle);
+			s.device = this, s.extensions ||= {}, this.extensions = s.extensions, this.info = Fpe(this.gl, this.extensions), this.limits = new sme(this.gl), this.features = new ame(this.gl, this.extensions, this.props._disabledFeatures), this.props._initializeFeatures && this.features.initializeFeatures(), new Xx(this.gl, { log: (...e) => W.log(1, ...e)() }).trackState(this.gl, { copyState: !1 }), (t.debug || t.debugWebGL) && (this.gl = hpe(this.gl, {
 				debugWebGL: !0,
 				traceWebGL: t.debugWebGL
-			}), W.warn("WebGL debug mode activated. Performance reduced.")()), t.debugWebGL && (W.level = Math.max(W.level, 1)), this.commandEncoder = new HS(this, { id: `${this}-command-encoder` }), this.canvasContext._startObservers();
+			}), W.warn("WebGL debug mode activated. Performance reduced.")()), t.debugWebGL && (W.level = Math.max(W.level, 1)), this.commandEncoder = new VS(this, { id: `${this}-command-encoder` }), this.canvasContext._startObservers();
 		}
 		destroy() {
 			if (!this.props._reuseDevices && !this._reused) {
 				this._isLost = !0, this.commandEncoder?.destroy();
-				let e = $x(this.handle);
+				let e = Qx(this.handle);
 				e.device = null;
 			}
 		}
@@ -29502,44 +29502,44 @@ var US, WS = o((() => {
 			throw Error("WebGL only supports a single canvas");
 		}
 		createPresentationContext(e) {
-			return new fme(this, e || {});
+			return new pme(this, e || {});
 		}
 		createBuffer(e) {
 			let t = this._normalizeBufferProps(e);
-			return new bS(this, t);
+			return new yS(this, t);
 		}
 		createTexture(e) {
-			return new PS(this, e);
+			return new NS(this, e);
 		}
 		createExternalTexture(e) {
 			throw Error("ExternalTexture is not available on WebGL");
 		}
 		createSampler(e) {
-			return new Mme(this, e);
+			return new Nme(this, e);
 		}
 		createShader(e) {
-			return new xme(this, e);
+			return new Sme(this, e);
 		}
 		createFramebuffer(e) {
-			return new _S(this, e);
+			return new gS(this, e);
 		}
 		createVertexArray(e) {
-			return new Fhe(this, e);
+			return new Ihe(this, e);
 		}
 		createTransformFeedback(e) {
-			return new Rhe(this, e);
+			return new zhe(this, e);
 		}
 		createQuerySet(e) {
-			return new Bhe(this, e);
+			return new Vhe(this, e);
 		}
 		createFence() {
-			return new Hhe(this);
+			return new Uhe(this);
 		}
 		createRenderPipeline(e) {
-			return new phe(this, e);
+			return new mhe(this, e);
 		}
 		_createSharedRenderPipelineWebGL(e) {
-			return new hhe(this, e);
+			return new ghe(this, e);
 		}
 		createComputePipeline(e) {
 			throw Error("ComputePipeline not supported in WebGL");
@@ -29548,7 +29548,7 @@ var US, WS = o((() => {
 			throw Error("Render bundles are only supported in WebGPU");
 		}
 		createCommandEncoder(e = {}) {
-			return new HS(this, e);
+			return new VS(this, e);
 		}
 		submit(e) {
 			let t = null;
@@ -29575,25 +29575,25 @@ var US, WS = o((() => {
 			};
 		}
 		readPixelsToArrayWebGL(e, t) {
-			return qhe(e, t);
-		}
-		readPixelsToBufferWebGL(e, t) {
 			return Jhe(e, t);
 		}
+		readPixelsToBufferWebGL(e, t) {
+			return Yhe(e, t);
+		}
 		setParametersWebGL(e) {
-			Yx(this.gl, e);
+			Jx(this.gl, e);
 		}
 		getParametersWebGL(e) {
-			return Spe(this.gl, e);
+			return Cpe(this.gl, e);
 		}
 		withParametersWebGL(e, t) {
-			return AS(this.gl, e, t);
+			return kS(this.gl, e, t);
 		}
 		resetWebGL() {
-			W.warn("WebGLDevice.resetWebGL is deprecated, use only for debugging")(), Cpe(this.gl);
+			W.warn("WebGLDevice.resetWebGL is deprecated, use only for debugging")(), wpe(this.gl);
 		}
 		_getDeviceSpecificTextureFormatCapabilities(e) {
-			return Gpe(this.gl, e, this.extensions);
+			return Kpe(this.gl, e, this.extensions);
 		}
 		loseDevice() {
 			let e = !1, t = this.getExtension("WEBGL_lose_context").WEBGL_lose_context;
@@ -29603,10 +29603,10 @@ var US, WS = o((() => {
 			}), e;
 		}
 		pushState() {
-			Zx.get(this.gl).push();
+			Xx.get(this.gl).push();
 		}
 		popState() {
-			Zx.get(this.gl).pop();
+			Xx.get(this.gl).pop();
 		}
 		getGLKey(e, t) {
 			return this._getGLKeyByValue().get(Number(e)) || (t?.emptyIfUnknown ? "" : String(e));
@@ -29616,27 +29616,27 @@ var US, WS = o((() => {
 			return Object.entries(e).reduce((e, [n, r]) => (e[`${n}:${this.getGLKey(n, t)}`] = `${r}:${this.getGLKey(r, t)}`, e), {});
 		}
 		_getGLKeyByValue() {
-			return this._glKeyByValue ??= $he(this.gl), this._glKeyByValue;
+			return this._glKeyByValue ??= ege(this.gl), this._glKeyByValue;
 		}
 		setConstantAttributeWebGL(e, t) {
 			let n = this.limits.maxVertexAttributes;
 			this._constants = this._constants || Array(n).fill(null);
 			let r = this._constants[e];
-			switch (r && age(r, t) && W.info(1, `setConstantAttributeWebGL(${e}) could have been skipped, value unchanged`)(), this._constants[e] = t, t.constructor) {
+			switch (r && oge(r, t) && W.info(1, `setConstantAttributeWebGL(${e}) could have been skipped, value unchanged`)(), this._constants[e] = t, t.constructor) {
 				case Float32Array:
-					nge(this, e, t);
-					break;
-				case Int32Array:
 					rge(this, e, t);
 					break;
-				case Uint32Array:
+				case Int32Array:
 					ige(this, e, t);
+					break;
+				case Uint32Array:
+					age(this, e, t);
 					break;
 				default: throw Error("constant");
 			}
 		}
 		getExtension(e) {
-			return eS(this.gl, e, this.extensions), this.extensions;
+			return $x(this.gl, e, this.extensions), this.extensions;
 		}
 		_setWebGLDebugMetadata(e, t, n) {
 			e.luma = t, e.__SPECTOR_Metadata = {
@@ -29648,10 +29648,10 @@ var US, WS = o((() => {
 }));
 //#endregion
 //#region node_modules/@luma.gl/webgl/dist/adapter/webgl-adapter.js
-function oge(e) {
+function sge(e) {
 	return typeof WebGL2RenderingContext < "u" && e instanceof WebGL2RenderingContext || !!(e && typeof e.createVertexArray == "function");
 }
-function sge(e) {
+function WS(e) {
 	return {
 		...e,
 		debug: e.debug ?? kf.defaultProps.debug,
@@ -29661,12 +29661,12 @@ function sge(e) {
 }
 async function GS(e) {
 	let t = [];
-	(e.debugWebGL || e.debug) && t.push(ppe()), e.debugSpectorJS && t.push(hpe(e));
+	(e.debugWebGL || e.debug) && t.push(mpe()), e.debugSpectorJS && t.push(gpe(e));
 	let n = await Promise.allSettled(t);
 	for (let e of n) e.status === "rejected" && W.error(`Failed to initialize debug libraries ${e.reason}`)();
 }
 var KS, qS, JS, cge = o((() => {
-	Qp(), fpe(), _pe(), KS = 1, qS = class extends id {
+	Qp(), ppe(), vpe(), KS = 1, qS = class extends id {
 		type = "webgl";
 		enforceWebGL2(e) {
 			cpe(e);
@@ -29678,12 +29678,12 @@ var KS, qS, JS, cge = o((() => {
 			return typeof WebGL2RenderingContext < "u" && e instanceof WebGL2RenderingContext || (typeof WebGLRenderingContext < "u" && e instanceof WebGLRenderingContext && W.warn("WebGL1 is not supported", e)(), !1);
 		}
 		async attach(e, t = {}) {
-			let { WebGLDevice: n } = await Promise.resolve().then(() => (WS(), tge));
+			let { WebGLDevice: n } = await Promise.resolve().then(() => (US(), nge));
 			if (e instanceof n) return e;
 			let r = n.getDeviceFromContext(e);
 			if (r) return r;
-			if (!oge(e)) throw Error("Invalid WebGL2RenderingContext");
-			t = sge(t), await GS(t);
+			if (!sge(e)) throw Error("Invalid WebGL2RenderingContext");
+			t = WS(t), await GS(t);
 			let i = t.createCanvasContext === !0 ? {} : t.createCanvasContext;
 			return new n({
 				...t,
@@ -29696,8 +29696,8 @@ var KS, qS, JS, cge = o((() => {
 			});
 		}
 		async create(e = {}) {
-			let { WebGLDevice: t } = await Promise.resolve().then(() => (WS(), tge));
-			e = sge(e), await GS(e);
+			let { WebGLDevice: t } = await Promise.resolve().then(() => (US(), nge));
+			e = WS(e), await GS(e);
 			try {
 				let n = new t(e);
 				W.groupCollapsed(KS, `WebGLDevice ${n.id} created`)();
@@ -29711,7 +29711,7 @@ ${n.info.vendor}, ${n.info.renderer} for canvas: ${n.canvasContext.id}`;
 		}
 	}, JS = new qS();
 })), YS = o((() => {
-	cge(), WS(), dme(), xS(), FS(), Sme(), Nme(), vS(), Uhe(), mhe(), Ahe(), khe(), Ihe(), zhe(), DS(), lhe(), Qx(), Xx(), jS();
+	cge(), US(), fme(), bS(), PS(), Cme(), Pme(), _S(), Whe(), hhe(), jhe(), Ahe(), Lhe(), Bhe(), ES(), uhe(), Zx(), Yx(), AS();
 }));
 Qp(), YS(), Ib(), Dt();
 function XS() {}
@@ -35890,9 +35890,9 @@ var yye = {
 		try {
 			t && this.setShaderModuleProps(t);
 			let { getPolygonOffset: i } = this.props, o = i && i(n) || [0, 0];
-			a.device instanceof US && a.device.setParametersWebGL({ polygonOffset: o });
-			let s = a.device instanceof US ? null : bye(r);
-			if (xye(this.getModels(), e, r, s), a.device instanceof US) a.device.withParametersWebGL(r, () => {
+			a.device instanceof HS && a.device.setParametersWebGL({ polygonOffset: o });
+			let s = a.device instanceof HS ? null : bye(r);
+			if (xye(this.getModels(), e, r, s), a.device instanceof HS) a.device.withParametersWebGL(r, () => {
 				let i = {
 					renderPass: e,
 					shaderModuleProps: t,
@@ -72972,19 +72972,19 @@ var zq = class extends sq {
 	}
 };
 zq.prototype.size = 68;
-var Bq = class extends Oq {
+var $Ve = class extends Oq {
 	get(e) {
 		return new zq(this, e);
 	}
 };
-PK("SymbolInstanceArray", Bq);
-var Vq = class extends kq {
+PK("SymbolInstanceArray", $Ve);
+var Bq = class extends kq {
 	getoffsetX(e) {
 		return this.float32[e * 1 + 0];
 	}
 };
-PK("GlyphOffsetArray", Vq);
-var $Ve = class extends fq {
+PK("GlyphOffsetArray", Bq);
+var Vq = class extends fq {
 	getx(e) {
 		return this.int16[e * 3 + 0];
 	}
@@ -72995,7 +72995,7 @@ var $Ve = class extends fq {
 		return this.int16[e * 3 + 2];
 	}
 };
-PK("SymbolLineVertexArray", $Ve);
+PK("SymbolLineVertexArray", Vq);
 var Hq = class extends sq {
 	get textAnchor() {
 		return this._structArray.uint16[this._pos2 + 0];
@@ -79309,7 +79309,7 @@ var tQ = class {
 		this.sortFeaturesByY = a && this.canOverlap, n.get("symbol-placement") === "point" && (this.writingModes = n.get("text-writing-mode").map((e) => pZ[e])), this.stateDependentLayerIds = this.layers.filter((e) => e.isStateDependent()).map((e) => e.id), this.sourceID = e.sourceID;
 	}
 	createArrays() {
-		this.text = new $Z(new TJ(this.layers, this.zoom, (e) => e.startsWith("text"))), this.icon = new $Z(new TJ(this.layers, this.zoom, (e) => e.startsWith("icon"))), this.glyphOffsetArray = new Vq(), this.lineVertexArray = new $Ve(), this.symbolInstances = new Bq(), this.textAnchorOffsets = new Uq();
+		this.text = new $Z(new TJ(this.layers, this.zoom, (e) => e.startsWith("text"))), this.icon = new $Z(new TJ(this.layers, this.zoom, (e) => e.startsWith("icon"))), this.glyphOffsetArray = new Bq(), this.lineVertexArray = new Vq(), this.symbolInstances = new $Ve(), this.textAnchorOffsets = new Uq();
 	}
 	calculateGlyphDependencies(e, t, n, r, i) {
 		let a = (r || this.allowVerticalPlacement) && i, o = iZ.fromFeature(e, n), s = o.graphemes();
@@ -113662,11 +113662,6 @@ var yot = {
 	212,
 	210
 ], Tot = [
-	14,
-	14,
-	14,
-	235
-], Eot = [
 	255,
 	196,
 	36,
@@ -113675,9 +113670,9 @@ var yot = {
 	79,
 	214,
 	255
-], Dot = "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"><path d=\"M6 9l6 6 6-6\"/></svg>", Q9 = 12, $9 = "sm-fit-on", Oot = !1;
+], Eot = "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"><path d=\"M6 9l6 6 6-6\"/></svg>", Q9 = 12, $9 = "sm-fit-on", Dot = !1;
 U0e(URL.createObjectURL(new Blob([W0e], { type: "text/javascript" })));
-function kot({ model: e, el: t }) {
+function Oot({ model: e, el: t }) {
 	let n = JSON.parse(String(e.get("config") || "{}"));
 	for (let e of /* @__PURE__ */ new Set([document.head, t.getRootNode()])) {
 		let t = e instanceof ShadowRoot ? e : document.head;
@@ -113703,7 +113698,7 @@ function kot({ model: e, el: t }) {
 			"chrome-controls-bottom-right"
 		].map((e) => `html.${$9} [data-testid='${e}']`).join(",") + `{display:none!important}html.${$9}{overflow:hidden}html.${$9} *:focus,html.${$9} *:focus-visible,html.${$9} *:focus-within{outline:none!important;box-shadow:none!important}`, document.head.appendChild(e);
 	}
-	Oot ||= (Oze("pmtiles", new f2e().tile), !0);
+	Dot ||= (Oze("pmtiles", new f2e().tile), !0);
 	let r = {
 		look: {
 			src: "ours",
@@ -113723,13 +113718,13 @@ function kot({ model: e, el: t }) {
 		return t && (r.className = t), n != null && (r.innerHTML = n), r;
 	}, a = i("div", "sm clean"), o = i("div", "map"), s = i("div", "map2"), c = i("div", "load", "<i></i>"), l = i("div", "loadtag glass");
 	a.append(s, o, c, l), t.appendChild(a);
-	let u = i("div", "card glass"), d = i("div", "hd"), f = i("div", "ht"), m = i("button", "cb", Dot);
+	let u = i("div", "card glass"), d = i("div", "hd"), f = i("div", "ht"), m = i("button", "cb", Eot);
 	m.title = "fold the card (H)", d.append(f, m);
 	let h = i("div", "body"), g = i("div", "row"), _ = i("div", "seg"), v = i("button", "", "Ours"), y = i("button", "", "WSF");
 	v.title = "the aggregate earthwork model (AlphaEarth and TESSERA): when the ground was dug or graded", y.title = "the WSF Tracker: when the ground first read as built-up", _.append(v, y), g.append(i("span", "lab", "Color by"), _, i("kbd", "", "C"));
 	let b = i("div", "chips"), x = i("div", "hint"), S = i("div", "zoom"), C = i("div", "notes");
 	C.append(x, S);
-	let w = i("button", "less", Dot), T = (e) => {
+	let w = i("button", "less", Eot), T = (e) => {
 		u.classList.toggle("short", e), w.title = e ? "show the notes" : "hide the notes, the years alone";
 	};
 	w.onclick = () => T(!u.classList.contains("short")), T(!1), h.append(b, C, w);
@@ -113872,23 +113867,10 @@ function kot({ model: e, el: t }) {
 	function Ue() {
 		if (!Oe) return;
 		let e = I >= 0 ? I : He, t = r.pair && e >= 0 && le ? ge(e) : null, n = t ? [new HD({
-			id: "hi-under",
-			data: [t],
-			getPath: (e) => e,
-			getColor: [
-				0,
-				0,
-				0,
-				170
-			],
-			getWidth: 4.5,
-			widthUnits: "pixels",
-			jointRounded: !0
-		}), new HD({
 			id: "hi",
 			data: [t],
 			getPath: (e) => e,
-			getColor: Eot,
+			getColor: Tot,
 			getWidth: 2.5,
 			widthUnits: "pixels",
 			jointRounded: !0
@@ -113947,17 +113929,6 @@ function kot({ model: e, el: t }) {
 				$e(), Se();
 			}
 		})), le && e.push(new pB({
-			...t,
-			id: "foot-edge",
-			filled: !1,
-			stroked: !0,
-			getLineColor: Tot,
-			getLineWidth: 10,
-			lineWidthUnits: "meters",
-			lineWidthMinPixels: 1.5,
-			lineWidthMaxPixels: 3.5,
-			beforeId: "foot"
-		}), new pB({
 			...t,
 			id: "foot-line",
 			filled: !1,
@@ -114451,6 +114422,6 @@ function kot({ model: e, el: t }) {
 		} catch {}
 	};
 }
-var Aot = { render: kot };
+var kot = { render: Oot };
 //#endregion
-export { Aot as default };
+export { kot as default };

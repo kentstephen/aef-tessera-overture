@@ -37,8 +37,6 @@ const FOOT = "#4fd6ff";
 // a footprint's outline: silver, a neutral with no hue to mix up with any imola year (seen normally or with
 // protanopia), light enough to hold an edge on the dark basemap and on the filled years alike
 const FOOT_LINE: [number, number, number, number] = [200, 205, 212, 210];
-// a footprint's dark edge under its outline: the basemap's background, a little see-through
-const EDGE: [number, number, number, number] = [14, 14, 14, 235];
 // the footprint hovered, drawn over the pair's imagery
 const GOLD: [number, number, number, number] = [255, 196, 36, 255];
 // a footprint with no year, on the Sentinel-2 imagery: solid, so it reads on bright ground
@@ -372,8 +370,6 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     const ring = st.pair && row >= 0 && footBatch ? ringOf(row) : null;
     const hi = ring
       ? [
-          // a dark edge under the gold, so it holds on bright roofs and pale ground
-          new PathLayer({ id: "hi-under", data: [ring], getPath: (r: number[][]) => r as never, getColor: [0, 0, 0, 170], getWidth: 4.5, widthUnits: "pixels", jointRounded: true }),
           new PathLayer({ id: "hi", data: [ring], getPath: (r: number[][]) => r as never, getColor: GOLD, getWidth: 2.5, widthUnits: "pixels", jointRounded: true }),
         ]
       : [];
@@ -411,7 +407,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     }
     // the digging raster over the buildings: it shows wherever the model found ground dug, buildings or not. A
     // building's year is the pixels under it read together; the raster is the digging itself. In order: the buildings'
-    // fills, the raster over them, each building's dark edge and silver outline on top
+    // fills, the raster over them, each building's silver outline on top
     const footProps = footBatch && {
       data: footBatch,
       getPolygon: footBatch.getChild("geometry")!.data[0] as never,
@@ -450,19 +446,6 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     );
     if (footBatch)
       layers.push(
-        // a dark edge under each outline, so a building stands out in the raster without dimming the ground around it
-        new GeoArrowPolygonLayer({
-          ...footProps,
-          id: "foot-edge",
-          filled: false,
-          stroked: true,
-          getLineColor: EDGE,
-          getLineWidth: 10,
-          lineWidthUnits: "meters",
-          lineWidthMinPixels: 1.5,
-          lineWidthMaxPixels: 3.5,
-          beforeId: "foot",
-        } as never),
         // a silver outline each, over everything of ours and the roads, under the labels
         new GeoArrowPolygonLayer({
           ...footProps,
