@@ -39,9 +39,9 @@ const FOOT = "#4fd6ff";
 // light: with protanopia it reads as a pale lavender, lighter than every blue of the ramp and apart from its greens,
 // its yellow and the silver (the farthest from all of them of the bright colors that are not red)
 const DUG_LINE: [number, number, number, number] = [240, 165, 255, 255];
-// a footprint's outline: silver, a neutral with no hue to mix up with any imola year (seen normally or with
-// protanopia), light enough to hold an edge on the dark basemap and on the filled years alike
-const FOOT_LINE: [number, number, number, number] = [200, 205, 212, 210];
+// a footprint with no digging under it: a neutral gray with no hue to mix up with any year of the ramp (seen normally
+// or with protanopia), light enough to hold an edge on the dark basemap
+const FOOT_LINE: [number, number, number, number] = [184, 184, 184, 210];
 // a footprint with no year, on the Sentinel-2 imagery: solid, so it reads on bright ground
 const S2_LINE = [79, 214, 255];
 // the fold chevron, as aef-earthwork-web's cards
