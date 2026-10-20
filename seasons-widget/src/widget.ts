@@ -34,6 +34,9 @@ const QUARTERS = false;
 const SEASONS = [["Q1", "Jan-Mar"], ["Q2", "Apr-Jun"], ["Q3", "Jul-Sep"], ["Q4", "Oct-Dec"]];
 // the Overture outlines: one color, apart from every color of the ramp
 const FOOT = "#4fd6ff";
+// a footprint with digging under it: amber, solid, deeper than the ramp's yellow end so the two stay apart (seen
+// normally or with protanopia, where it reads darker than that yellow)
+const DUG_LINE: [number, number, number, number] = [245, 166, 35, 255];
 // a footprint's outline: silver, a neutral with no hue to mix up with any imola year (seen normally or with
 // protanopia), light enough to hold an edge on the dark basemap and on the filled years alike
 const FOOT_LINE: [number, number, number, number] = [200, 205, 212, 210];
@@ -218,6 +221,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   let fill: ReturnType<typeof colorData> | null = null;
   // on the imagery: each footprint's outline, its year's color where it has one, solid light blue where not
   let line: ReturnType<typeof colorData> | null = null;
+  // on the map: amber where digging is under it, silver where not
+  let mapLine: ReturnType<typeof colorData> | null = null;
   let fillN = 0;
   // the basemap layer our raster, the footprints and their fade go under: its first road, so the streets stay over both
   let groundId = "foot";
@@ -230,7 +235,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     hoverRow = pinRow = -1;
     setL2();
     join = footBatch ? joinPixels(footBatch) : null;
-    fill = null;
+    fill = line = mapLine = null;
     recolor();
   }
   model.on("change:foot", loadFoot);
@@ -250,9 +255,10 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     if (!codes || !join) return render();
     const at = codes.at;
     const rgba = joinColors(join, at, st.look.year, (y) => YEAR_RGB[y - Y0_RAMP] ?? [0, 0, 0], QUARTER_RGB, UNCLEAR_RGB);
-    const ln = new Uint8Array(rgba.length);
+    const ln = new Uint8Array(rgba.length), ml = new Uint8Array(rgba.length);
     for (let r = 0; r < join.rows; r++) {
       const o = 4 * r, has = rgba[o + 3] > 0;
+      ml.set(has ? DUG_LINE : FOOT_LINE, o);
       ln[o] = has ? rgba[o] : S2_LINE[0];
       ln[o + 1] = has ? rgba[o + 1] : S2_LINE[1];
       ln[o + 2] = has ? rgba[o + 2] : S2_LINE[2];
@@ -260,6 +266,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     }
     fill = colorData(rgba, join.rows);
     line = colorData(ln, join.rows);
+    mapLine = colorData(ml, join.rows);
     fillN++;
     render();
   }
@@ -446,14 +453,16 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     );
     if (footBatch)
       layers.push(
-        // a silver outline each, over everything of ours and the roads, under the labels
+        // an outline each (amber where digging is under the building, silver where not), over everything of ours and
+        // the roads, under the labels
         new GeoArrowPolygonLayer({
           ...footProps,
           id: "foot-line",
           filled: false,
           stroked: true,
-          // on the imagery the outlines carry the years: solid, a pixel and a half; on the map, silver
-          getLineColor: (s2Shown() && line ? line : FOOT_LINE) as never,
+          // on the imagery the outlines carry the years: solid, a pixel and a half; on the map, amber where digging is
+          // under the building, silver where not
+          getLineColor: (s2Shown() ? (line ?? FOOT_LINE) : (mapLine ?? FOOT_LINE)) as never,
           // in meters, held between half a pixel and two: zoomed out the outlines thin instead of adding up to a glare
           getLineWidth: s2Shown() ? 1.5 : 2,
           lineWidthUnits: s2Shown() ? "pixels" : "meters",
