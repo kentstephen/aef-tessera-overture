@@ -11,16 +11,16 @@ import type { WorldModel } from "./earthwork-cpu";
 /** What the map colors: the aggregate's years (ours) or WSF's, all years or one year opened. */
 export type Look = { src: "ours" | "wsf"; year: number | null };
 
-/** The year ramp (plasma from its violet, short of its darkest end, which the dark basemap would swallow), 2018 to 2025:
+/** The year ramp (Crameri's imola, blue to yellow, its whole length), 2018 to 2025:
  * the years ours can date (its first pair is 2017 to 2018). */
 // 2016 and 2017 commented out with WSF, the only source that dates them:
-// export const YEAR_COL = ["#8808a6", "#a31e9a", "#ba3388", "#cd4a76", "#de6164", "#ec7754", "#f79143", "#fdae32", "#fdcb26", "#f4ed27"];
+// export const YEAR_COL = ["#1a33b3", "#2446a9", "#2d59a0", "#396b94", "#497b85", "#60927b", "#7bae74", "#99cc6d", "#c4ea67", "#ffff66"];
 // export const Y0_RAMP = 2016;
-export const YEAR_COL = ["#8808a6", "#aa2395", "#c6417d", "#dc5d67", "#ee7b51", "#fa9c3c", "#fdc328", "#f4ed27"];
+export const YEAR_COL = ["#1a33b3", "#274ca6", "#346499", "#467987", "#64967a", "#87ba71", "#b5e268", "#ffff66"];
 export const Y0_RAMP = 2018;
 /** The quarters (Jan-Mar, Apr-Jun, Jul-Sep, Oct-Dec) and WSF's halves, steps of the same ramp; a quarter not made out, gray. */
-export const SEASON_COL = ["#8f0da4", "#d6556d", "#fb9f3a", "#f4ed27"];
-export const HALF_COL = ["#bf3984", "#fcce25"];
+export const SEASON_COL = ["#1a33b3", "#396b94", "#7bae74", "#ffff66"];
+export const HALF_COL = ["#356598", "#b2e068"];
 export const UNCLEAR = "#9aa1a9";
 const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 const YR = YEAR_COL.map(rgb), SE = SEASON_COL.map(rgb), UN = rgb(UNCLEAR);

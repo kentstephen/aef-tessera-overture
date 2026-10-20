@@ -1,52 +1,88 @@
-.sm{position:relative;width:100%;height:780px;background:#0e0e0e;font-family:'Instrument Sans',system-ui,sans-serif;color:#e6e9ec;overflow:hidden}
+/* the cards and panels match aef-earthwork-web (its ui.css and page.css): one glass, one line, one muted gray */
+.sm{--glass:rgba(26,29,33,.92);--card:rgba(26,29,33,.85);--glass-hi:#23272c;--line:rgba(255,255,255,.12);--text:#e6e9ec;--muted:#9ba5af;--faint:rgba(255,255,255,.18);--cool:#56b4e9;--sel:rgba(255,255,255,.08);--on:#15181b;--col:264px;
+  position:relative;width:100%;height:780px;background:#0e0e0e;font:14px/1.45 'Instrument Sans',ui-sans-serif,system-ui,sans-serif;font-variant-numeric:tabular-nums;color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased}
+.sm *{box-sizing:border-box}
+.sm .glass{background:var(--card);backdrop-filter:blur(18px) saturate(1.15);-webkit-backdrop-filter:blur(18px) saturate(1.15);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 22px rgba(0,0,0,.35)}
+.sm kbd{font:10.5px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:1px 4px}
+.sm .load i{display:block;height:100%;width:0;background:var(--cool);transition:width .3s ease-out}
+.sm .loadtag{position:absolute;top:12px;left:50%;transform:translateX(-50%);padding:5px 10px;font-size:12px;z-index:6;display:none;white-space:nowrap;pointer-events:none}
+.sm .loadtag span{color:var(--muted);margin-left:6px}
+.sm .loadtag.on{display:block}
+/* the map's card: the column's width, small type; its head folds it */
+.sm .card{position:absolute;top:12px;right:12px;width:var(--col);max-width:calc(50vw - 24px);padding:9px 11px;font-size:12.5px;z-index:5}
+.sm .card.folded{width:auto;padding:7px 8px 7px 11px}
+.sm .card.folded .body{display:none}
+.sm .hd{display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;user-select:none}
+.sm .ht{display:flex;align-items:baseline;gap:6px;flex:1}
+.sm .ht b{font-size:13px;font-weight:600}
+.sm .ht .crumb{color:var(--muted);cursor:pointer}
+.sm .ht .crumb:hover{color:var(--text)}
+.sm .ht .sep{color:var(--muted)}
+.sm .cb{flex:0 0 auto;border:0;background:none;color:var(--muted);cursor:pointer;width:26px;height:26px;margin:-4px -4px -4px 0;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.sm .cb:hover{background:var(--sel);color:var(--text)}
+.sm .cb svg{transition:transform .15s}
+.sm .folded .cb svg{transform:rotate(-90deg)}
+.sm .lab{color:var(--muted);min-width:46px;font-size:12px}
+.sm .seg{display:flex;gap:2px;padding:2px;border:1px solid var(--line);border-radius:9px;width:max-content}
+.sm .seg button{border:0;background:none;color:var(--muted);padding:2px 6px;border-radius:7px;cursor:pointer;font:inherit;font-size:12.5px}
+.sm .seg button:hover{color:var(--text)}
+.sm .seg button.on{background:var(--text);color:var(--on)}
+/* the Sentinel-2 card: small, the search's width, top left while the imagery shows (54px under the search, which is
+   commented out for now); the year first */
+.sm .s2card{position:absolute;top:12px;left:12px;padding:9px 12px 10px;z-index:5;display:none}
+.sm .s2card.on{display:block}
+.sm .s2hd{display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.sm .s2hd b{font-size:34px;line-height:1;font-weight:600;letter-spacing:-.03em}
+.sm .s2hd span{font-size:12px;line-height:1.25;color:var(--muted);white-space:nowrap}
+.sm .s2card .keys{display:flex;flex-wrap:wrap;gap:3px 9px;margin:9px 0 0;font-size:12px;line-height:1.5}
+.sm .s2card .keys>span{white-space:nowrap}
+/* search: small until it is used, then the column's width; its places drop over the cards */
+.sm .search{position:absolute;top:12px;left:12px;z-index:6;display:flex;align-items:center;width:212px;height:34px;padding:0 10px;transition:width .15s ease}
+.sm .search:focus-within{width:var(--col);border-color:rgba(255,255,255,.3)}
+.sm .search input{flex:1;min-width:0;background:none;border:0;color:var(--text);font:inherit;font-size:13px;outline:none}
+.sm .search input::placeholder{color:var(--muted)}
+.sm .hits{position:absolute;left:-1px;right:-1px;top:40px;display:none;padding:4px;background:var(--glass-hi);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 22px rgba(0,0,0,.35)}
+.sm .hit{padding:7px 10px;border-radius:8px;cursor:pointer;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sm .hit small{display:block;color:var(--muted);font-size:12px}
+.sm .hit:hover,.sm .hit.sel{background:var(--sel)}
+.sm .tip{position:absolute;pointer-events:none;background:var(--glass-hi);border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12.5px;line-height:1.4;display:none;z-index:7;max-width:260px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+.sm .toast{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);padding:6px 11px;font-size:13px;color:var(--muted);z-index:7;opacity:0;transition:opacity .2s;pointer-events:none}
+.sm .toast.on{opacity:1}
+.sm .maplibregl-ctrl-attrib{background:var(--card)!important;color:var(--muted)}
+.sm .maplibregl-ctrl-attrib a{color:var(--muted)}
 .sm.fit{position:fixed;inset:0;z-index:9999;height:100vh}
 .sm:fullscreen{width:100vw;height:100vh}
 .sm .map{position:absolute;inset:0}
+/* the pair (P): Sentinel-2 on a second map on the left, the map on the right; the notices over the right half */
+.sm .map2{position:absolute;top:0;bottom:0;left:0;right:50%;display:none;border-right:2px solid rgba(255,255,255,.35)}
+.sm.pair .map{left:50%}
+.sm.pair .map2{display:block}
+.sm.pair .loadtag{left:calc(50% + 12px);transform:none}
+.sm.pair .toast{left:75%}
 .sm *:focus,.sm *:focus-visible,.sm .maplibregl-canvas:focus{outline:none!important}
 .sm .load{position:absolute;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,.08);z-index:6;display:none}
-.sm .load i{display:block;height:100%;width:0;background:#4fd6ff;transition:width .3s ease}
 .sm .load.on{display:block}
-.sm .loadtag{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(22,24,27,.6);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px 10px;font-size:12px;z-index:6;display:none;white-space:nowrap}
-.sm .loadtag span{color:#9aa1a9;margin-left:6px}
-.sm .loadtag.on{display:block}
-.sm .card{position:absolute;top:12px;right:12px;width:290px;background:rgba(22,24,27,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 11px;font-size:12.5px;z-index:5}
-.sm .card.folded{width:auto}
-.sm .card.folded .body{display:none}
-.sm .hd{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
-.sm .ht{display:flex;align-items:baseline;gap:6px;flex:1}
-.sm .ht b{font-size:13.5px}
-.sm .ht .crumb{color:#9aa1a9;cursor:pointer}
-.sm .ht .crumb:hover{color:#e6e9ec}
-.sm .ht .sep{color:#9aa1a9}
-.sm .fold{border:0;background:none;color:#9aa1a9;cursor:pointer;font-size:12px;padding:0 2px}
 .sm .body{display:flex;flex-direction:column;gap:8px;margin-top:8px}
 .sm .row{display:flex;align-items:center;gap:8px}
-.sm .lab{color:#9aa1a9;min-width:56px}
-.sm .seg{display:flex;gap:2px;padding:2px;border:1px solid rgba(255,255,255,.14);border-radius:8px}
-.sm .seg button{border:0;background:none;color:#b8bec5;padding:3px 10px;border-radius:6px;cursor:pointer;font:inherit}
-.sm .seg button.on{background:#e6e9ec;color:#111}
-.sm kbd{font-size:10.5px;color:#9aa1a9;border:1px solid rgba(255,255,255,.18);border-radius:4px;padding:0 4px;font-family:inherit}
 .sm .chips{display:grid;gap:3px}
 .sm .chip{border:0;border-radius:5px;padding:5px 0 4px;font:inherit;font-size:11.5px;font-weight:600;cursor:pointer;text-align:center}
 .sm .chip small{display:block;font-size:10px;font-weight:400;opacity:.85}
 .sm .chip:disabled{opacity:.25;cursor:default}
 .sm button.chip:not(:disabled):hover{outline:2px solid #fff!important}
+.sm .notes{display:flex;flex-direction:column;gap:8px}
+.sm .card.short .notes{display:none}
+/* the notes' chevron: under the years, up to hide them, down to show them */
+.sm .less{align-self:center;border:0;background:none;color:var(--muted);cursor:pointer;width:100%;height:14px;margin:-4px 0 -6px;border-radius:5px;display:flex;align-items:center;justify-content:center;padding:0}
+.sm .less:hover{background:var(--sel);color:var(--text)}
+.sm .less svg{transform:rotate(180deg);transition:transform .15s}
+.sm .card.short .less svg{transform:none}
 .sm .hint{color:#b8bec5;font-size:11.5px;line-height:1.4}
-.sm .zoom{color:#9aa1a9;font-size:11.5px}
-.sm .zoom .warn{color:#4fd6ff;margin-left:4px}
-.sm .search{position:absolute;top:12px;left:12px;width:240px;z-index:5}
-.sm .search input{width:100%;box-sizing:border-box;background:rgba(22,24,27,.55);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);color:#e6e9ec;border-radius:9px;padding:7px 10px;font:inherit;font-size:12.5px}
-.sm .hits{margin-top:4px;background:rgba(22,24,27,.92);border-radius:9px;overflow:hidden;display:none}
-.sm .hit{padding:6px 10px;cursor:pointer;font-size:12.5px}
-.sm .hit small{display:block;color:#9aa1a9}
-.sm .hit:hover,.sm .hit.sel{background:rgba(255,255,255,.08)}
-.sm .tip{position:absolute;pointer-events:none;background:rgba(22,24,27,.94);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.45;display:none;z-index:7;max-width:270px}
-.sm .tip .dim{color:#9aa1a9}
+.sm .zoom{color:var(--muted);font-size:11.5px}
+.sm .zoom .warn{color:var(--cool);margin-left:4px}
+.sm .tip .dim{color:var(--muted)}
 .sm .tip .bar{display:flex;height:8px;border-radius:3px;overflow:hidden;margin:4px 0 3px}
 .sm .tip .mix{display:flex;flex-wrap:wrap;gap:2px 10px;color:#b8bec5;font-size:11.5px}
 .sm .tip .mix i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px}
-.sm .maplibregl-ctrl-attrib{background:rgba(14,14,14,.6)!important;color:#9aa1a9}
-.sm .maplibregl-ctrl-attrib a{color:#9aa1a9}
 .sm .years{display:flex;gap:2px;align-items:center}
 .sm .years .allyears{border:1px solid rgba(255,255,255,.22);background:none;color:#e6e9ec;border-radius:5px;padding:2px 6px;font:inherit;font-size:11px;cursor:pointer;margin-right:2px}
 .sm .years .allyears:hover{background:rgba(255,255,255,.1)}
@@ -55,10 +91,18 @@
 .sm .years .yr:not(:disabled):hover{opacity:1}
 .sm .years .yr:disabled{opacity:.15;cursor:default}
 .sm .years kbd{margin-left:4px}
-.sm .zoom .keys{margin-top:4px}
-.sm .toast{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);background:rgba(22,24,27,.85);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:5px 12px;font-size:12px;z-index:7;opacity:0;transition:opacity .2s;pointer-events:none}
-.sm .toast.on{opacity:1}
-.sm .s2tag{position:absolute;bottom:40px;left:12px;background:rgba(22,24,27,.8);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:5px 10px;font-size:12px;z-index:6;display:none}
-.sm .s2tag b{font-size:14px;margin:0 4px}
-.sm .s2tag span{color:#9aa1a9}
-.sm .s2tag.on{display:block}
+.sm .zoom .keys{display:flex;flex-wrap:wrap;gap:3px 9px;margin-top:6px}
+.sm .zoom .keys>span{white-space:nowrap}
+
+/* the card's clean look: the card's title over a thin stepped line of the years, the first and last at its ends; no
+   chips, notes, keys or folding */
+.sm .legend{display:none;align-items:center;gap:8px;margin-top:8px;font-size:11.5px;color:var(--muted)}
+.sm .lline{display:flex;gap:1px;width:168px;height:6px}
+.sm .lline i{flex:1}
+.sm .lline i:first-child{border-radius:3px 0 0 3px}
+.sm .lline i:last-child{border-radius:0 3px 3px 0}
+.sm.clean .card{width:auto;display:flex;align-items:center;gap:12px;padding:7px 12px}
+.sm.clean .card .legend{display:flex;margin-top:0}
+.sm.clean .card .body,.sm.clean .card .cb{display:none}
+.sm.clean .hd{cursor:default;pointer-events:none}
+.sm.clean .s2card .keys{display:none}

@@ -5,11 +5,11 @@ import { CHUNK, RES, X0, Y0, YEAR_ORIGIN } from "./aef";
 /**
  * The Overture footprints of the area read (the kernel's GeoArrow: a geoarrow.polygon a row, its exterior ring only)
  * joined to the 10 m pixels under them. Each row's pixels are the AlphaEarth pixels whose centers fall inside it (the
- * one under its middle when none does). From them: the mask the raster leaves out (every footprint and the ground
- * within MASK_PX pixels of it, so a built neighborhood's yards and streets drop away and the raster is left on dug
- * ground with no building), and each footprint's color.
+ * one under its middle when none does). From them: the mask the raster leaves out (every footprint's pixels, and
+ * the ground within MASK_PX pixels of them; 0 now that halo.ts fades the ground toward each building on an even
+ * edge instead of the pixels' staircase), and each footprint's color.
  */
-export const MASK_PX = 3;
+export const MASK_PX = 0;
 
 export type FootJoin = {
   rows: number;

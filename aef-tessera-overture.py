@@ -7,6 +7,7 @@
 #     "duckdb>=1.5.5",
 #     "pyarrow>=25.0.0",
 #     "shapely>=2.0",
+#     "numpy==2.5.4",
 # ]
 # ///
 
@@ -30,7 +31,7 @@ quarter of the year before, and the quarter is the first where the two part by a
 difference. Quarters, not seasons, so they mean the same in either hemisphere. Hovering a footprint gives what each
 source says about it, with the quarter mix of its pixels.
 
-The view reads by itself from zoom 13.5 once the map settles, and on Enter from zoom 12: every chunk is scored in
+The view reads by itself from zoom 12 once the map settles: every chunk is scored in
 a worker and kept on disk, so a place read before comes back at once. The kernel reads the area's footprints from Overture's GeoParquet (the files found through the
 Portolan catalog, or Overture's own STAC when the catalog is behind) and sends them to the map as GeoArrow. In the
 map each footprint is joined to the 10 m pixels under it: a footprint with a year is filled in that year's color (a
@@ -50,6 +51,7 @@ app = marimo.App(width="full")
 def _():
     import json
     import pathlib
+    import re
     import urllib.request
 
     import asyncio
@@ -71,6 +73,7 @@ def _():
         np,
         pa,
         pathlib,
+        re,
         shapely,
         time,
         traceback,
@@ -105,6 +108,10 @@ def _(anywidget, pathlib, traitlets):
         foot_ask = traitlets.Unicode("").tag(sync=True)
         foot = traitlets.Bytes(b"").tag(sync=True)
         foot_status = traitlets.Unicode("").tag(sync=True)
+        # K in the map: a 4x PNG of the map and its name (zoom, center), written to exports/; the result in snap_status
+        snap = traitlets.Bytes(b"").tag(sync=True)
+        snap_name = traitlets.Unicode("").tag(sync=True)
+        snap_status = traitlets.Unicode("").tag(sync=True)
 
     return (SeasonsMap,)
 
@@ -242,6 +249,35 @@ def _(HOLD, asyncio, footprints_arrow, json, time, traceback, view):
             pass
     view.observe(on_ask, names="foot_ask")
     HOLD["h_ask"] = on_ask
+    return
+
+
+@app.cell
+def _(HOLD, pathlib, re, time, view):
+    # ---- K in the map: its 4x PNG saved to exports/ beside the notebook
+    def on_snap(change):
+        data = change["new"]
+        if not data:
+            return
+        try:
+            out = pathlib.Path(__file__).parent / "exports"
+            out.mkdir(exist_ok=True)
+            name = re.sub(r"[^A-Za-z0-9._-]", "", view.snap_name or "map")
+            path = out / f"{time.strftime('%Y%m%d-%H%M%S')}_{name}.png"
+            path.write_bytes(bytes(data))
+            view.snap_status = f"Saved exports/{path.name} ({len(data) / 1e6:.1f} MB)"
+        except Exception as exc:
+            view.snap_status = f"Export failed: {type(exc).__name__}: {exc}"
+        finally:
+            view.snap = b""
+
+    if HOLD.get("h_snap") is not None:
+        try:
+            view.unobserve(HOLD["h_snap"], names="snap")
+        except ValueError:
+            pass
+    view.observe(on_snap, names="snap")
+    HOLD["h_snap"] = on_snap
     return
 
 
