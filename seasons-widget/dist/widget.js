@@ -91511,7 +91511,8 @@ function EHe({ model: e, el: t }) {
 	let g = i("div", "tri"), _ = [
 		0,
 		1,
-		2
+		2,
+		3
 	].map(() => {
 		let e = i("div", "pan"), t = i("div", "pm"), n = i("div", "pl");
 		return e.append(t, n), g.appendChild(e), {
@@ -91649,7 +91650,9 @@ function EHe({ model: e, el: t }) {
 			[e.first, "first dug"],
 			[e.last, "last dug"],
 			[t, "latest"]
-		], r = [];
+		];
+		e.last - e.first <= 1 && e.first > L9[0] && n.unshift([L9[0], "before"]);
+		let r = [];
 		for (let [e, t] of n) {
 			let n = r.find((t) => t[0] === e);
 			n ? n[1] += ", " + t : r.push([e, t]);

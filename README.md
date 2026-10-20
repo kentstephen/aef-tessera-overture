@@ -13,9 +13,9 @@ embeddings alone (AlphaEarth Foundations and TESSERA), scored by the aggregate e
   pair of years is joined to its neighbors where they touch by side or corner, whatever its year, as
   aef-tessera-earthwork's year map joins them but with no gap (it also joins across one pixel: `PATCH_GAP`) (`patchesIn` in `seasons-widget/src/patch.ts`); each patch is outlined on
   its outer edge, holes filled, not filled in. Every patch is drawn, however small (no size cutoff yet).
-- **A patch's years.** A click on a patch fills the window with it in up to three years side by side, framed the same
+- **A patch's years.** A click on a patch fills the window with it in up to four years side by side, framed the same
   in each: the first year any of it was dug, the last year any of it was dug, and 2025 (a year in two of those places
-  is one panel). The frame fits the patch with room around it and comes no closer than zoom 15,
+  is one panel); when it was all dug within two years, 2017 in front of them, the ground before it. The frame fits the patch with room around it and comes no closer than zoom 15,
   so the 10 m pixels stay small. Each panel shows that year's pass chosen for the map's view, so a place already looked
   at comes back at once; each panel's imagery shows as it arrives. In the panels the imagery outside the patch is dimmed, as aef-tessera-earthwork's spotlight dims around a patch (the patch's pixels, holes filled, as a mask): darkened, or `J` grays it. `O` outlines the patch. The patch's size is at the bottom. A click anywhere,
   or `Esc`, goes back.

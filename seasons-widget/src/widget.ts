@@ -147,9 +147,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   sBox.append(q, E("kbd", "", "/"), hits);
   const s2Card = E("div", "s2card glass showing");
   top.append(sBox, s2Card);
-  // the panels: the clicked patch in one to three years side by side over the whole window; a click anywhere goes back
+  // the panels: the clicked patch in one to four years side by side over the whole window; a click anywhere goes back
   const tri = E("div", "tri");
-  const panels = [0, 1, 2].map(() => {
+  const panels = [0, 1, 2, 3].map(() => {
     const p = E("div", "pan"), m = E("div", "pm"), l = E("div", "pl");
     p.append(m, l);
     tri.appendChild(p);
@@ -337,10 +337,12 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   }
 
   // ---- the panels
-  /** Each year's place in the panels: the first year any of the patch was dug, the last year any of it was, and 2025. */
+  /** Each year's place in the panels: the first year any of the patch was dug, the last year any of it was, and 2025;
+   * when it was all dug in two years or one, 2017 in front, the ground before it. */
   function yearsOf(p: Patch) {
     const last = S2_YEARS[S2_YEARS.length - 1];
     const ys: [number, string][] = [[p.first, "first dug"], [p.last, "last dug"], [last, "latest"]];
+    if (p.last - p.first <= 1 && p.first > S2_YEARS[0]) ys.unshift([S2_YEARS[0], "before"]);
     // a year in two places (first and last dug the same year, or last dug in 2025): one panel for both
     const out: [number, string][] = [];
     for (const [y, r] of ys) {
