@@ -138,23 +138,23 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     lline.appendChild(i);
   });
   legend.append(E("span", "", String(Y0_RAMP)), lline, E("span", "", String(Y0_RAMP + YEAR_COL.length - 1)));
-  // ---- search (Photon, over OpenStreetMap): a magnifier at the card's left end, opened by a click or /
-  const sBox = E("div", "search"), q = E("input") as HTMLInputElement, hits = E("div", "hits");
-  q.placeholder = "Search a place";
-  q.spellcheck = false;
-  sBox.append(E("span", "mag", '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>'), q, hits);
-  sBox.onmousedown = (e) => {
-    if (e.target === q) return;
-    e.preventDefault();
-    q.focus();
-  };
-  card.append(sBox, hd, legend, body);
+  card.append(hd, legend, body);
   root.appendChild(card);
   const tip = E("div", "tip");
   const toast = E("div", "toast glass");
-  // the Sentinel-2 card: top left while the imagery shows
+  // top left, as in aef-earthwork-web: the search, and under it the Sentinel-2 card while the imagery shows
+  const top = E("div", "top");
+  const sBox = E("div", "search glass", '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>');
+  const q = E("input") as HTMLInputElement, hits = E("div", "hits");
+  q.type = "search";
+  q.placeholder = "Search";
+  q.title = "a place (/)";
+  q.autocomplete = "off";
+  q.spellcheck = false;
+  sBox.append(q, E("kbd", "", "/"), hits);
   const s2Card = E("div", "s2card glass");
-  root.append(tip, toast, s2Card);
+  top.append(sBox, s2Card);
+  root.append(tip, toast, top);
   let toastT = 0;
   const note = (t: string) => {
     toast.textContent = t;
@@ -740,70 +740,182 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     setHi(-1);
   });
 
-  // ---- search
-  type Hit = { name: string; sub: string; center: [number, number] };
-  let found: Hit[] = [], sel = 0, sT = 0;
-  const showHits = () => {
+  // ---- search, as aef-earthwork-web searches: Photon as you type; when it is slow or finds nothing, Enter asks
+  // Nominatim (whose usage policy allows no search-as-you-type and at most one request a second, so it runs on Enter
+  // only)
+  type Hit = { geometry: { coordinates: [number, number] }; properties: Record<string, unknown> & { extent?: number[] } };
+  const PHOTON = "https://photon.komoot.io/api/", NOMINATIM = "https://nominatim.openstreetmap.org/search";
+  const PHOTON_MS = 6000, PHOTON_ENTER_MS = 2500;
+  let gcHits: Hit[] = [], gcSel = -1, gcTimer = 0, gcSeq = 0, gcBusy: string | null = null, gcAbort: AbortController | null = null, nomLast = 0;
+  const hitName = (f: Hit) => {
+    const p = f.properties as Record<string, string>;
+    return [p.name, p.street && !p.name ? p.street : null, p.city && p.city !== p.name ? p.city : null, p.state, p.country].filter(Boolean).join(", ");
+  };
+  const hitKind = (f: Hit) => {
+    const p = f.properties as Record<string, string>;
+    return [p.osm_value, p.type].filter((x) => x && x !== "yes").join(", ");
+  };
+  const gcHide = () => {
+    hits.style.display = "none";
     hits.replaceChildren();
-    found.forEach((h, i) => {
-      const r = E("div", "hit" + (i === sel ? " sel" : ""));
-      r.textContent = h.name;
-      const s = E("small");
-      s.textContent = h.sub;
-      r.appendChild(s);
-      r.onmousedown = (ev) => {
-        ev.preventDefault();
-        go(h);
+    gcSel = -1;
+  };
+  const gcShow = () => {
+    hits.replaceChildren();
+    if (!gcHits.length) return gcHide();
+    gcHits.forEach((f, i) => {
+      const r = E("div", "hit" + (i === gcSel ? " sel" : ""));
+      r.textContent = hitName(f);
+      const k = E("small");
+      k.textContent = hitKind(f);
+      r.appendChild(k);
+      r.onmousedown = (e) => {
+        e.preventDefault();
+        gcFly(f);
+      };
+      r.onmouseenter = () => {
+        gcSel = i;
+        gcShow();
       };
       hits.appendChild(r);
     });
-    hits.style.display = found.length ? "block" : "none";
+    hits.style.display = "block";
   };
-  q.oninput = () => {
-    clearTimeout(sT);
-    sT = window.setTimeout(async () => {
-      const t = q.value.trim();
-      if (t.length < 2) {
-        found = [];
-        showHits();
-        return;
-      }
-      try {
-        const c = map.getCenter();
-        const j = await (await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(t)}&limit=6&lat=${c.lat}&lon=${c.lng}`)).json();
-        found = (j.features || []).map((f: { geometry: { coordinates: [number, number] }; properties: Record<string, string> }) => ({
-          name: f.properties.name || f.properties.city || "",
-          sub: [f.properties.city, f.properties.state, f.properties.country].filter((v) => v && v !== f.properties.name).join(", "),
-          center: f.geometry.coordinates,
-        }));
-        sel = 0;
-        showHits();
-      } catch {
-        // a search let go for the next one
-      }
-    }, 250);
+  // one gray line in the list in place of hits: searching, or why there are none
+  const gcStatus = (t: string) => {
+    hits.replaceChildren();
+    gcSel = -1;
+    const r = E("div", "hit wait");
+    r.textContent = t;
+    hits.appendChild(r);
+    hits.style.display = "block";
   };
-  const go = (h: Hit) => {
-    found = [];
-    showHits();
-    q.blur();
-    map.flyTo({ center: h.center, zoom: 13.5 });
-  };
-  q.onkeydown = (e) => {
-    e.stopPropagation();
-    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-      e.preventDefault();
-      sel = Math.max(0, Math.min(found.length - 1, sel + (e.key === "ArrowDown" ? 1 : -1)));
-      showHits();
-    } else if (e.key === "Enter" && found[sel]) go(found[sel]);
-    else if (e.key === "Escape") {
-      q.value = "";
-      found = [];
-      showHits();
-      q.blur();
+  const photon = async (t: string, ms: number): Promise<Hit[]> => {
+    const params = new URLSearchParams({ q: t, limit: "6", lang: "en" });
+    const c = map.getCenter();
+    params.set("lon", c.lng.toFixed(4));
+    params.set("lat", c.lat.toFixed(4));
+    gcAbort?.abort();
+    const ac = (gcAbort = new AbortController()), tm = setTimeout(() => ac.abort(), ms);
+    try {
+      const d = await (await fetch(PHOTON + "?" + params.toString(), { signal: ac.signal })).json();
+      return (d.features || []).filter((f: Hit) => f.geometry && f.geometry.coordinates);
+    } finally {
+      clearTimeout(tm);
     }
   };
-  q.onblur = () => window.setTimeout(() => (hits.style.display = "none"), 150);
+  // Nominatim's results in Photon's shape (extent is [west, north, east, south]), so the list and the fly-to read both
+  // alike
+  const nominatim = async (t: string): Promise<Hit[]> => {
+    const wait = nomLast + 1100 - Date.now();
+    if (wait > 0) await new Promise((ok) => setTimeout(ok, wait));
+    nomLast = Date.now();
+    const params = new URLSearchParams({ q: t, format: "jsonv2", addressdetails: "1", limit: "6", "accept-language": "en" });
+    const b = map.getBounds();
+    params.set("viewbox", [b.getWest(), b.getNorth(), b.getEast(), b.getSouth()].map((v) => v.toFixed(4)).join(","));
+    const d = await (await fetch(NOMINATIM + "?" + params.toString())).json();
+    return (d || []).map((h: Record<string, unknown> & { address?: Record<string, string>; boundingbox?: string[] }) => {
+      const a = h.address || {}, bb = (h.boundingbox || []).map(Number);
+      return {
+        geometry: { coordinates: [Number(h.lon), Number(h.lat)] },
+        properties: {
+          name: h.name || String(h.display_name || "").split(",")[0],
+          city: a.city || a.town || a.village,
+          state: a.state,
+          country: a.country,
+          osm_value: h.type,
+          type: "via Nominatim",
+          extent: bb.length === 4 ? [bb[2], bb[1], bb[3], bb[0]] : undefined,
+        },
+      };
+    });
+  };
+  // enter: Enter was pressed, so Photon gets a shorter wait and Nominatim follows when it fails
+  const gcAsk = async (enter = false) => {
+    const t = q.value.trim();
+    if (t.length < 2) {
+      gcHits = [];
+      gcBusy = null;
+      return gcHide();
+    }
+    const s = ++gcSeq;
+    // Enter while Photon is still on this same query: it has been waited on already
+    const skipPhoton = enter && gcBusy === t;
+    if (skipPhoton) {
+      gcAbort?.abort();
+      gcBusy = null;
+    }
+    gcStatus("searching\u2026");
+    let found: Hit[] = [], why = "";
+    if (!skipPhoton) {
+      gcBusy = t;
+      try {
+        found = await photon(t, enter ? PHOTON_ENTER_MS : PHOTON_MS);
+      } catch (e) {
+        why = (e as Error).name === "AbortError" ? "slow" : "down";
+      }
+      if (s !== gcSeq) return;
+      gcBusy = null;
+    }
+    if (!found.length && enter) {
+      gcStatus("searching Nominatim\u2026");
+      try {
+        found = await nominatim(t);
+      } catch {
+        why = "down";
+      }
+      if (s !== gcSeq) return;
+    }
+    gcHits = found;
+    gcSel = found.length ? 0 : -1;
+    if (found.length) gcShow();
+    else if (enter) gcStatus(why ? "search is not answering, try again in a moment" : "no match");
+    else gcStatus(why === "slow" ? "Photon is slow: press Enter to search Nominatim" : why ? "Photon is not answering: press Enter to search Nominatim" : "no match: press Enter to search Nominatim");
+  };
+  // to the place's extent, no farther out than the view is read by itself
+  const gcFly = (f: Hit) => {
+    const [lon, lat] = f.geometry.coordinates;
+    const ext = f.properties.extent;
+    let zoom = 13.5;
+    if (ext && ext.length === 4) {
+      const span = Math.max(Math.abs(ext[2] - ext[0]), Math.abs(ext[1] - ext[3]) * 2, 0.01);
+      zoom = Math.log2((360 * ((mapEl.clientWidth || 1200) / 512)) / span) - 0.3;
+    }
+    zoom = Math.max(AUTO_Z, Math.min(16, zoom));
+    q.value = hitName(f);
+    gcHits = [];
+    gcHide();
+    q.blur();
+    map.flyTo({ center: [lon, lat], zoom, duration: 2200, essential: true });
+  };
+  q.addEventListener("input", () => {
+    clearTimeout(gcTimer);
+    gcTimer = window.setTimeout(gcAsk, 250);
+  });
+  q.addEventListener("focus", () => gcHits.length && gcShow());
+  q.addEventListener("blur", () => setTimeout(gcHide, 120));
+  q.addEventListener("keydown", (e) => {
+    e.stopPropagation();
+    if (e.key === "ArrowDown" && gcHits.length) {
+      gcSel = (gcSel + 1) % gcHits.length;
+      gcShow();
+      e.preventDefault();
+    } else if (e.key === "ArrowUp" && gcHits.length) {
+      gcSel = (gcSel - 1 + gcHits.length) % gcHits.length;
+      gcShow();
+      e.preventDefault();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (gcHits.length) gcFly(gcHits[Math.max(0, gcSel)]);
+      else {
+        clearTimeout(gcTimer);
+        gcAsk(true).then(() => gcHits.length && gcFly(gcHits[0]));
+      }
+    } else if (e.key === "Escape") {
+      gcHide();
+      q.blur();
+    }
+  });
 
   // ---- K: the map (no cards; paired, both halves) as a PNG at SNAP_X times its size on screen, written by the kernel
   // to exports/
