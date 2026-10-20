@@ -470,7 +470,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     );
     if (footBatch)
       layers.push(
-        // an outline each (amber where digging is under the building, silver where not), over everything of ours and
+        // an outline each (orchid where digging is under the building, silver where not), over everything of ours and
         // the roads, under the labels
         // the outlines as paths over the same column (a polygon's rings are laid out as a multilinestring's lines), so
         // they are never triangulated, as a polygon layer would even unfilled
