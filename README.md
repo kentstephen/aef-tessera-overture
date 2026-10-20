@@ -15,9 +15,13 @@ GeoParquet; Sentinel-2 scenes from Element 84's Earth Search, beside the map or 
   aside and the buildings carry the color.
 - **Sentinel-2.** `P` pairs the map with Sentinel-2: a second map on the left, moving with the map on the right.
   Hold space for the imagery over the map itself, the raster and the footprints stepped aside (scroll steps the
-  year). `[` `]` step the year, 2017 to 2025. A year shows, for each Sentinel-2 tile, the latest scene of that year
-  with almost no cloud and no missing pixels (the ground as it stood by the year's end; its day is on the card), with
-  the tile's next clearest scenes under it to fill any gap.
+  year). `[` `]` step the year, 2017 to 2025; `B` jumps to 2025, then between 2017 and 2025. A year shows, for each
+  Sentinel-2 tile, its clearest scenes on up to four days, the clearest on top and the others under it to fill any
+  gap (as deckgl-raster-mapterhorn-s2 picks them), each drawn from the scene's own true-color image (TCI). `N` puts
+  each tile's next scene on top; the card shows the day.
+- **Export.** `K` writes a 4x PNG of the map to `exports/` (paired, both halves side by side), with the legend drawn
+  at its top left (paired, the right half's) and the imagery's year and day at the left half's, and a copy sized for
+  a LinkedIn post in `exports/for_linkedin/` (long side 2048, under 5 MB).
 
 The model is aef-tessera-earthwork's aggregate (one logistic regression on AlphaEarth and TESSERA joined, opened
 where either embedding changed; `models/earthwork_world.json`), scored per pixel in a web worker exactly as that
@@ -33,8 +37,9 @@ The map fills the window. Search a place (`/`) and zoom in: from zoom 12 the vie
 settles (below it nothing is read). Reading scores the view in the
 browser; the footprints are read by the notebook's kernel and sent as GeoArrow.
 
-Keys: `P` pair with Sentinel-2, hold space Sentinel-2 over the map, `L` labels, `Q` picking and the tooltip, `H` folds the
-card, `/` search, `K` a 4x PNG of the map to `exports/`, `Shift` `←` `→` pivot, `X` notebook view, `F` full screen, `Esc` back.
+Keys: `P` pair with Sentinel-2, hold space Sentinel-2 over the map, `[` `]` its year, `B` 2017 or 2025, `N` another
+scene, `L` labels, `Q` picking and the tooltip, `/` search (the magnifier in the year card), `K` export, `Shift` `←`
+`→` pivot, `X` notebook view, `F` full screen, `Esc` back.
 
 ## How it is built
 

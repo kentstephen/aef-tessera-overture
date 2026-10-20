@@ -813,6 +813,47 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       if (b.size <= 5 * 1024 * 1024 || long <= 1080) return { png: b, size: `${w}x${h}` };
     }
   }
+  // the PNG carries no cards: the legend is drawn on it at the map's top left (paired, the right half's), and paired
+  // the imagery's year and day at the left half's; text on the map with a soft shadow, no box (LinkedIn's rule)
+  const FONT = "'Instrument Sans', system-ui, sans-serif";
+  function drawLegend(g: CanvasRenderingContext2D, x0: number, y0: number, k: number) {
+    g.save();
+    g.shadowColor = "rgba(0,0,0,.75)";
+    g.shadowBlur = 6 * k;
+    g.textBaseline = "middle";
+    const mid = y0 + 10 * k;
+    g.font = `600 ${15 * k}px ${FONT}`;
+    g.fillStyle = "#e6e9ec";
+    g.fillText("Dug by year", x0, mid);
+    let x = x0 + g.measureText("Dug by year").width + 14 * k;
+    g.font = `500 ${13 * k}px ${FONT}`;
+    g.fillStyle = "#c9cfd5";
+    const first = String(Y0_RAMP), last = String(Y0_RAMP + YEAR_COL.length - 1);
+    g.fillText(first, x, mid);
+    x += g.measureText(first).width + 8 * k;
+    YEAR_COL.forEach((col) => {
+      g.fillStyle = col;
+      g.fillRect(x, mid - 7 * k, 20 * k, 14 * k);
+      x += 22 * k;
+    });
+    g.fillStyle = "#c9cfd5";
+    g.fillText(last, x + 6 * k, mid);
+    g.restore();
+  }
+  function drawYear(g: CanvasRenderingContext2D, x0: number, y0: number, k: number) {
+    const c = map.getCenter(), d = s2?.dateAt(st.s2Year, c.lng, c.lat) ?? "";
+    g.save();
+    g.shadowColor = "rgba(0,0,0,.75)";
+    g.shadowBlur = 6 * k;
+    g.textBaseline = "top";
+    g.font = `600 ${34 * k}px ${FONT}`;
+    g.fillStyle = "#e6e9ec";
+    g.fillText(String(st.s2Year), x0, y0);
+    g.font = `500 ${13 * k}px ${FONT}`;
+    g.fillStyle = "#c9cfd5";
+    g.fillText("Sentinel-2" + (d ? ` · ${MONTHS[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}` : ""), x0, y0 + 40 * k);
+    g.restore();
+  }
   async function snap() {
     if (snapping) return;
     snapping = true;
@@ -842,6 +883,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
           at += line;
         }
       });
+      const pad = 14 * x;
+      drawLegend(g, (shots.length > 1 ? shots[0].width + line : 0) + pad, pad, x);
+      if (shots.length > 1) drawYear(g, pad, pad, x);
       const png = await new Promise<Blob | null>((r) => out.toBlob(r, "image/png"));
       if (!png) throw new Error("the canvas gave no PNG");
       const small = await forLinkedIn(out);
