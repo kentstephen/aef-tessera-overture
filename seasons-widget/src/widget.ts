@@ -35,6 +35,11 @@ const FOOT = "#4fd6ff";
 // a footprint's outline: faint, so the filled ones carry the map and the rest only say a building is there
 // (halfway between the first cyan outlines, 79 214 255 at 217, and a faint gray, 230 233 236 at 80)
 const FOOT_LINE: [number, number, number, number] = [154, 223, 245, 150];
+// a footprint with no year, on the Sentinel-2 imagery: solid, so it reads on bright ground
+const S2_LINE = [79, 214, 255];
+// from this zoom the view reads by itself once the map settles (a view here is some two dozen chunks); from MIN_ZOOM
+// to it, Enter, so a quick zoom out does not set off a read of a hundred chunks
+const AUTO_Z = 13.5;
 const FIT_CLS = "sm-fit-on";
 
 let protocolAdded = false;
@@ -175,6 +180,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   let footBatch: arrow.RecordBatch | null = null;
   let join: FootJoin | null = null;
   let fill: ReturnType<typeof colorData> | null = null;
+  // on the imagery: each footprint's outline, its year's color where it has one, solid light blue where not
+  let line: ReturnType<typeof colorData> | null = null;
   let fillN = 0;
   function loadFoot() {
     const b = model.get("foot") as DataView | ArrayBuffer | Uint8Array | null;
@@ -201,7 +208,17 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   function recolor() {
     if (!codes || !join) return render();
     const at = codes.at;
-    fill = colorData(joinColors(join, at, st.look.year, (y) => YEAR_RGB[y - Y0_RAMP] ?? [0, 0, 0], QUARTER_RGB, UNCLEAR_RGB), join.rows);
+    const rgba = joinColors(join, at, st.look.year, (y) => YEAR_RGB[y - Y0_RAMP] ?? [0, 0, 0], QUARTER_RGB, UNCLEAR_RGB);
+    const ln = new Uint8Array(rgba.length);
+    for (let r = 0; r < join.rows; r++) {
+      const o = 4 * r, has = rgba[o + 3] > 0;
+      ln[o] = has ? rgba[o] : S2_LINE[0];
+      ln[o + 1] = has ? rgba[o + 1] : S2_LINE[1];
+      ln[o + 2] = has ? rgba[o + 2] : S2_LINE[2];
+      ln[o + 3] = 255;
+    }
+    fill = colorData(rgba, join.rows);
+    line = colorData(ln, join.rows);
     fillN++;
     render();
   }
@@ -241,8 +258,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   function render() {
     if (!ready || !codes) return;
     const layers: unknown[] = [];
-    // the imagery under everything of ours: our raster and the buildings' fills step aside while it shows, the
-    // outlines stay on it
+    // the imagery under everything of ours: while it shows, our raster and the footprints step aside, the imagery alone
     if (s2) layers.push(...s2.layers(st.s2Year, s2Shown(), "foot"));
     if (!st.area) {
       overlay.setProps({ layers: layers as never });
@@ -269,19 +285,22 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
           id: "foot-poly",
           data: footBatch,
           getPolygon: footBatch.getChild("geometry")!.data[0] as never,
-          filled: !s2Shown(),
+          // the imagery alone while it shows: no footprints over it
+          visible: !s2Shown(),
+          filled: true,
           stroked: true,
           getFillColor: (fill ?? [0, 0, 0, 0]) as never,
-          getLineColor: FOOT_LINE,
+          // on the imagery the outlines carry the years (no fills there): solid, a pixel and a half; on the map, faint
+          getLineColor: (s2Shown() && line ? line : FOOT_LINE) as never,
           // in meters, held between a hair and one pixel: zoomed out the outlines thin instead of adding up to a glare
-          getLineWidth: 1.25,
-          lineWidthUnits: "meters",
-          lineWidthMinPixels: 0.25,
-          lineWidthMaxPixels: 1,
+          getLineWidth: s2Shown() ? 1.5 : 1.25,
+          lineWidthUnits: s2Shown() ? "pixels" : "meters",
+          lineWidthMinPixels: s2Shown() ? 1 : 0.25,
+          lineWidthMaxPixels: s2Shown() ? 2 : 1,
           // triangulated here, not in a worker fetched from a CDN
           earcutWorkerUrl: null,
           pickable: true,
-          updateTriggers: { getFillColor: fillN },
+          updateTriggers: { getFillColor: fillN, getLineColor: [fillN, s2Shown()] },
           // read by the MapLibre overlay
           beforeId: "foot",
         } as never),
@@ -361,7 +380,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   function drawZoom() {
     const z = map.getZoom();
     zoomRow.innerHTML =
-      `Zoom ${z.toFixed(1)} · reads from zoom ${MIN_ZOOM} · <kbd>Enter</kbd> reads this view` +
+      `Zoom ${z.toFixed(1)} · reads by itself from zoom ${AUTO_Z}; from ${MIN_ZOOM}, <kbd>Enter</kbd>` +
       (z < MIN_ZOOM ? ` <span class="warn">zoom in to read</span>` : "") +
       `<div class="keys"><kbd>Space</kbd> or <kbd>P</kbd> Sentinel-2 · <kbd>L</kbd> labels · <kbd>Q</kbd> picking · <kbd>H</kbd> fold · <kbd>/</kbd> search</div>`;
   }
@@ -731,6 +750,15 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     map.setLayoutProperty("area", "visibility", inside ? "none" : "visible");
   }
   map.on("move", outline);
+  // close enough in, a view that reaches past the area read is read once the map has settled
+  let autoT = 0;
+  map.on("moveend", () => {
+    clearTimeout(autoT);
+    if (map.getZoom() < AUTO_Z || !ready) return;
+    const b = map.getBounds(), a = st.area;
+    if (a && b.getWest() >= a[0] && b.getEast() <= a[2] && b.getSouth() >= a[1] && b.getNorth() <= a[3]) return;
+    autoT = window.setTimeout(read, 500);
+  });
   map.on("zoom", drawZoom);
 
 

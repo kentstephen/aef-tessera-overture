@@ -30,8 +30,8 @@ quarter of the year before, and the quarter is the first where the two part by a
 difference. Quarters, not seasons, so they mean the same in either hemisphere. Hovering a footprint gives what each
 source says about it, with the quarter mix of its pixels.
 
-Enter reads the view (from zoom 12): every chunk is scored in a worker and kept on disk, so a place read before
-comes back at once. The kernel reads the area's footprints from Overture's GeoParquet (the files found through the
+The view reads by itself from zoom 13.5 once the map settles, and on Enter from zoom 12: every chunk is scored in
+a worker and kept on disk, so a place read before comes back at once. The kernel reads the area's footprints from Overture's GeoParquet (the files found through the
 Portolan catalog, or Overture's own STAC when the catalog is behind) and sends them to the map as GeoArrow. In the
 map each footprint is joined to the 10 m pixels under it: a footprint with a year is filled in that year's color (a
 year opened: its quarter's), the rest are faint outlines, and the ground's own colors show only where digging was

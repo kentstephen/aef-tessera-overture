@@ -14,7 +14,7 @@ GeoParquet; Sentinel-2 from Earth Genome's yearly mosaics, behind the map on a k
   30 m: graded land, pads and sites nothing has been built or mapped on yet. Inside built neighborhoods it steps
   aside and the buildings carry the color.
 - **Sentinel-2.** Hold space (scroll or `[` `]` to step the year) or press `P` for Earth Genome's yearly Sentinel-2
-  mosaics, 2022 to 2025. The raster and the fills step aside; the outlines stay on the imagery.
+  mosaics, 2022 to 2025. The raster and the footprints step aside: the imagery alone.
 
 The model is aef-tessera-earthwork's aggregate (one logistic regression on AlphaEarth and TESSERA joined, opened
 where either embedding changed; `models/earthwork_world.json`), scored per pixel in a web worker exactly as that
@@ -26,8 +26,9 @@ project's web map does, and kept on disk in the browser so a place read before c
 uvx marimo run --sandbox --watch aef-tessera-overture.py
 ```
 
-The map fills the window. Search a place (`/`), zoom to 12 or closer, press `Enter` to read the view (scored in
-the browser; the footprints are read by the notebook's kernel and sent as GeoArrow).
+The map fills the window. Search a place (`/`) and zoom in: from zoom 13.5 the view reads by itself once the map
+settles; from 12 to 13.5 press `Enter` (a view there can be a hundred chunks). Reading scores the view in the
+browser; the footprints are read by the notebook's kernel and sent as GeoArrow.
 
 Keys: `Enter` reads the view, hold space or `P` Sentinel-2, `L` labels, `Q` picking and the tooltip, `H` folds the
 card, `/` search, `X` notebook view, `F` full screen, `Esc` back.
