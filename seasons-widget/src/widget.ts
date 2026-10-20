@@ -1214,6 +1214,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       drawS2Card();
       render();
     });
+    // the card is always there: drawn from the start, its year grayed until the imagery shows
+    drawS2Card();
     codes = await createCodesLayer(world as unknown as WorldModel, await decoderP, () => update());
     loadFoot();
     codes.setLook(st.look);

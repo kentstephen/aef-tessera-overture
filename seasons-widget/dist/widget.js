@@ -114588,7 +114588,7 @@ function Vot({ model: e, el: t }) {
 			}
 		}, i), Te = Sot(F, () => {
 			Be(), R();
-		}), we = await Ott(Not, await Fe, () => Ie()), he(), we.setLook(r.look), Pe = !0, Ye();
+		}), Be(), we = await Ott(Not, await Fe, () => Ie()), he(), we.setLook(r.look), Pe = !0, Ye();
 	}), qe(), ae(), () => {
 		window.removeEventListener("keydown", At), window.removeEventListener("keyup", jt), window.removeEventListener("blur", Mt), document.removeEventListener("fullscreenchange", ce), document.documentElement.classList.remove($9);
 		try {
