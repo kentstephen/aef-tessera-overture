@@ -324,9 +324,15 @@ export function patchesIn(bbox: [number, number, number, number], chunkAt: (r: n
  * outer edge, holes filled, as edges [lon, lat, lon, lat].
  */
 export function outerOutline(runs: number[], close = 3) {
+  return traceOutline(closedRuns(runs, close)).edges;
+}
+
+/** A patch's pixels closed by `close` pixels, row by row as runs [start, end) of the whole grid (holes not filled). */
+export function closedRuns(runs: number[], close = 3) {
+  const runsOf = new Map<number, Run[]>();
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
   for (let i = 0; i < runs.length; i += 3) (y0 = Math.min(y0, runs[i])), (y1 = Math.max(y1, runs[i] + 1)), (x0 = Math.min(x0, runs[i + 1])), (x1 = Math.max(x1, runs[i + 2]));
-  if (!(x1 > x0)) return [];
+  if (!(x1 > x0)) return runsOf;
   // the patch's box with room to grow, as a grid
   const ox = x0 - close, oy = y0 - close, w = x1 - x0 + 2 * close, h = y1 - y0 + 2 * close;
   let a = new Uint8Array(w * h), b = new Uint8Array(w * h);
@@ -351,7 +357,6 @@ export function outerOutline(runs: number[], close = 3) {
       step(a, b, grow, k % 2 === 0);
       [a, b] = [b, a];
     }
-  const runsOf = new Map<number, Run[]>();
   for (let y = 0; y < h; y++) {
     const rs: Run[] = [];
     for (let x = 0; x < w; x++) {
@@ -362,5 +367,12 @@ export function outerOutline(runs: number[], close = 3) {
     }
     if (rs.length) runsOf.set(oy + y, rs);
   }
-  return traceOutline(runsOf).edges;
+  return runsOf;
+}
+
+/** A patch's outer extent as runs [row, start, end, ...]: closed by `close` pixels, holes filled (what its outline encloses). */
+export function extentRuns(runs: number[], close = 3) {
+  const out: number[] = [];
+  for (const [y, rs] of traceOutline(closedRuns(runs, close)).filled) for (const [s0, e] of rs) out.push(y, s0, e);
+  return out;
 }

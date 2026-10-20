@@ -12,7 +12,7 @@ import { MIN_ZOOM, RES, X0, Y0 } from "./aef";
 import { createCodesLayer, pixelOf } from "./codes-layer";
 import decoderBin from "./decoder_month.bin?url";
 import { createS2, type Rated, S2_YEARS } from "./es-s2";
-import { filledRuns, FIRST_YEAR, outerOutline, type Patch, patchesIn } from "./patch";
+import { extentRuns, FIRST_YEAR, outerOutline, type Patch, patchesIn } from "./patch";
 import decoderMeta from "./decoder_month.json";
 import type { WorldModel } from "./earthwork-cpu";
 import world from "./earthwork_world.json";
@@ -58,8 +58,9 @@ const SPOT_MOD = {
 `,
   },
 };
-/** around the patch: darkened (false) or gray (true), J; and how far (1: all the way, 0: not at all) */
-const spot = { gray: false, k: 1 };
+/** around the patch: darkened (false) or gray (true); and how far (1: to 30% of its brightness, 0: not at all), D steps it */
+const spot = { gray: false, k: 0.5 };
+const SPOT_STEPS = [0.5, 0.25, 0, 1];
 class SpotExtension extends MaskExtension {
   getShaders() {
     (this as unknown as { state: { maskByInstance: boolean } }).state.maskByInstance = false;
@@ -379,12 +380,12 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
         return `<span class="hb${y === dugYear ? " on" : ""}"><i style="height:${h}px"></i><small>${String(y).slice(2)}</small></span>`;
       })
       .join("");
-    back.innerHTML = `<b>${backHa}</b><span class="hist" title="the share of the patch last dug each year">${bars}</span><span class="keys">click or <kbd>Esc</kbd> back · <kbd>O</kbd> outline</span>`;
+    back.innerHTML = `<b>${backHa}</b><span class="hist" title="the share of the patch last dug each year">${bars}</span><span class="keys">click or <kbd>Esc</kbd> back · <kbd>O</kbd> outline · <kbd>D</kbd> dim</span>`;
   }
-  /** The open patch's pixels (holes filled) as one bitmap over its box, coarser past 2048 across. */
+  /** The open patch's outer extent (what its outline encloses) as one bitmap over its box, coarser past 2048 across. */
   let openMask: { image: HTMLCanvasElement; bounds: [number, number, number, number] } | null = null;
   function maskOf(p: Patch) {
-    const r = filledRuns(p.runs);
+    const r = extentRuns(p.runs);
     let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
     for (let i = 0; i < r.length; i += 3) (y0 = Math.min(y0, r[i])), (y1 = Math.max(y1, r[i] + 1)), (x0 = Math.min(x0, r[i + 1])), (x1 = Math.max(x1, r[i + 2]));
     const f = Math.max(1, Math.ceil(Math.max(x1 - x0, y1 - y0) / 2048)), w = Math.ceil((x1 - x0) / f), h = Math.ceil((y1 - y0) / f);
@@ -405,10 +406,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       if (!pn.year || !pn.map || !pn.overlay) return;
       const line = new PathLayer({ id: "patch", data: openPaths, getPath: (r: number[][]) => r as never, getColor: ORCHID, getWidth: 2.5, widthUnits: "pixels", jointRounded: true, capRounded: true });
       // the mask first, then the imagery dimmed outside it (each scene's layer given the mask from its first tile)
-      // the dimming around the patch commented out for now: the imagery drawn as it is
-      const mask = null as InstanceType<typeof SpotMaskLayer> | null;
-      void openMask;
-      // const mask = openMask && new SpotMaskLayer({ id: "spot-mask", image: openMask.image, bounds: openMask.bounds, operation: "mask", extensions: [DISCARD_CLEAR], _imageCoordinateSystem: COORDINATE_SYSTEM.LNGLAT } as never);
+      // the imagery around the patch dimmed by spot.k (D steps it; 0 the imagery as it is)
+      const mask = openMask && new SpotMaskLayer({ id: "spot-mask", image: openMask.image, bounds: openMask.bounds, operation: "mask", extensions: [DISCARD_CLEAR], _imageCoordinateSystem: COORDINATE_SYSTEM.LNGLAT } as never);
       const ext = mask ? { extensions: [SPOT], maskId: "spot-mask", maskByInstance: false } : {};
       const img = pn.wait ? [] : pn.pass ? s2!.layerForPass(pn.year, pn.pass, `t${i}`, ext) : s2!.layerFor(pn.year, `t${i}`, ext);
       pn.overlay.setProps({ layers: [...(mask ? [mask] : []), ...img, ...(st.panelLines ? [line] : [])] as never });
@@ -835,7 +834,13 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
         sizes();
       }
     }
-    // J, dark or gray around the patch: commented out with the dimming
+    else if (k === "d" || k === "D") {
+      // how dim around the patch in the panels: half, a quarter, none, full
+      spot.k = SPOT_STEPS[(SPOT_STEPS.indexOf(spot.k) + 1) % SPOT_STEPS.length];
+      for (const pn of panels) pn.map?.triggerRepaint();
+      note(spot.k ? `Around the patch: dimmed ${spot.k === 1 ? "fully" : spot.k === 0.5 ? "half" : "a quarter"} (D)` : "Around the patch: not dimmed (D)");
+    }
+    // J, dark or gray around the patch: commented out
     // else if (k === "j" || k === "J") {
     //   spot.gray = !spot.gray;
     //   for (const pn of panels) pn.map?.triggerRepaint();
