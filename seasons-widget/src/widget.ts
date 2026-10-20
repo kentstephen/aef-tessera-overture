@@ -12,7 +12,7 @@ import { MIN_ZOOM, RES, X0, Y0 } from "./aef";
 import { createCodesLayer, pixelOf } from "./codes-layer";
 import decoderBin from "./decoder_month.bin?url";
 import { createS2, type Rated, S2_YEARS } from "./es-s2";
-import { filledRuns, outlineOfRuns, type Patch, patchesIn } from "./patch";
+import { filledRuns, FIRST_YEAR, outlineOfRuns, type Patch, patchesIn } from "./patch";
 import decoderMeta from "./decoder_month.json";
 import type { WorldModel } from "./earthwork-cpu";
 import world from "./earthwork_world.json";
@@ -494,7 +494,13 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     openMask = maskOf(p);
     // its size, to see where a cutoff for small patches would sit: hectares from its 10 m pixels at its latitude
     const ha = (p.n * (RES * 111320) ** 2 * Math.cos((((p.box[1] + p.box[3]) / 2) * Math.PI) / 180)) / 1e4;
-    back.innerHTML = `${ha < 10 ? ha.toFixed(2) : ha.toFixed(0)} ha, ${p.n.toLocaleString()} pixels · click anywhere or <kbd>Esc</kbd> to go back · <kbd>O</kbd> outline`;
+    // the model's years for it: the share of its pixels last dug each year (the year the map colors a pixel by), and
+    // first dug each year
+    const share = (c: number[]) =>
+      c.map((v, i) => [FIRST_YEAR + i, v] as const).filter(([, v]) => v > 0).map(([y, v]) => `${y} ${Math.round((100 * v) / p.n) || "<1"}%`).join(", ");
+    back.innerHTML =
+      `<div>${ha < 10 ? ha.toFixed(2) : ha.toFixed(0)} ha, ${p.n.toLocaleString()} pixels · click anywhere or <kbd>Esc</kbd> to go back · <kbd>O</kbd> outline</div>` +
+      `<div class="yrs">Last dug: ${share(p.lastYears)}</div><div class="yrs">First dug: ${share(p.years)}</div>`;
     // before, dug, 2025: the year before any of it was dug, its dug year picked for the most change, and the latest
     const last = S2_YEARS[S2_YEARS.length - 1], before = Math.max(S2_YEARS[0], p.first - 1);
     const ys: [number, string][] = [[before, "before"], [p.last, "dug"], [last, "latest"]];
