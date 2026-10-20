@@ -28,17 +28,23 @@
 .sm .seg button:hover{color:var(--text)}
 .sm .seg button.on{background:var(--text);color:var(--on)}
 /* the Sentinel-2 card: small, top left while the imagery shows; the year first */
-.sm .s2card{padding:9px 12px 10px;display:none}
-.sm .s2card.on{display:block}
-.sm .s2hd{display:flex;flex-direction:column;align-items:flex-start;gap:5px}
-.sm .s2hd b{font-size:34px;line-height:1;font-weight:600;letter-spacing:-.03em}
+/* the Sentinel-2 card (aef-earthwork-web's): the search's width, under it; the year first, so the pair always says which
+   year; the zoom in the gap at the right of its head, two lines as the words beside it */
+.sm .s2card{width:212px;padding:12px 12px 12px 14px;border-radius:12px}
+.sm .s2hd{display:flex;align-items:center;gap:9px}
+.sm .s2hd b{font-size:34px;line-height:1;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.sm .s2card:not(.showing) .s2hd b{color:var(--muted)}
 .sm .s2hd span{font-size:12px;line-height:1.25;color:var(--muted);white-space:nowrap}
+.sm .s2hd .zw{margin-left:auto;text-align:right}
+.sm .s2hd .z{font-style:normal;font-variant-numeric:tabular-nums}
+/* its keys in groups that wrap, so the card stays a small box */
 .sm .s2card .keys{display:flex;flex-wrap:wrap;gap:3px 9px;margin:9px 0 0;font-size:12px;line-height:1.5}
 .sm .s2card .keys>span{white-space:nowrap}
 /* top left, as in aef-earthwork-web: the search, and under it the Sentinel-2 card while the imagery shows */
-.sm .top{position:absolute;left:12px;top:12px;z-index:6;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.sm .top{position:absolute;left:12px;top:12px;z-index:6;display:flex;flex-direction:column;gap:8px;align-items:flex-start;width:var(--col);max-width:calc(50% - 24px)}
 /* search (aef-earthwork-web's): small until it is used, then the column's width; its places drop over the card */
-.sm .search{position:relative;z-index:2;display:flex;align-items:center;gap:8px;width:212px;height:34px;padding:0 10px;transition:width .15s ease}
+.sm .search{position:relative;z-index:2;display:flex;align-items:center;gap:8px;width:212px;height:34px;padding:0 10px;background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:width .15s ease}
+.sm .search input:focus-visible{outline:none}
 .sm .search svg{flex:0 0 auto;opacity:.6}
 .sm .search:focus-within{width:var(--col);border-color:rgba(255,255,255,.3)}
 .sm .search input{flex:1;min-width:0;background:none;border:0;color:var(--text);font:inherit;outline:none}
@@ -107,4 +113,3 @@
 .sm.clean .card .legend{display:flex;margin-top:0}
 .sm.clean .card .body,.sm.clean .card .cb{display:none}
 .sm.clean .hd{cursor:default;pointer-events:none}
-.sm.clean .s2card .keys{display:none}

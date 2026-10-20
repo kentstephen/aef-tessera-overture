@@ -344,21 +344,21 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   const imgShown = () => st.holding || st.pair;
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   function drawS2Card() {
-    s2Card.classList.toggle("on", imgShown());
-    if (!imgShown()) return;
-    // held: the wheel steps the year too; paired: P goes back to one map
-    const keys = st.holding
-      ? `<span>Scroll or <kbd>[</kbd><kbd>]</kbd> year</span><span>let go of <kbd>Space</kbd></span>`
-      : `<span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>P</kbd> one map</span>`;
-    // the day of the scene on top at the map's middle
+    // as aef-earthwork-web's: the year, what it is, the zoom at the right; its keys under it. Always there, the year
+    // grayed while the imagery is not showing
+    const showImg = imgShown();
     // the day of the year's pass; while one is being chosen, the one still on screen
     const c = map.getCenter(), d = s2?.dateAt(st.s2Year, c.lng, c.lat) ?? "", stt = s2?.status(st.s2Year) ?? "finding";
-    const day =
-      (d ? `${MONTHS[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}` : stt === "cloudy" ? "no scene found" : "finding a clear scene...") +
-      (d && stt === "finding" ? " (finding a clear one...)" : d && stt === "cloudy" ? " (least cloudy found)" : "");
+    const day = !showImg ? "true color" : d ? `${MONTHS[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}` + (stt === "cloudy" ? ", cloudy" : "") : stt === "cloudy" ? "no scene" : "finding\u2026";
+    const ends = `${String(S2_YEARS[0]).slice(2)}/${String(S2_YEARS[S2_YEARS.length - 1]).slice(2)}`;
     s2Card.innerHTML =
-      `<div class="s2hd"><b>${st.s2Year}</b><span>Sentinel-2<br>${day}</span></div>` +
-      `<div class="keys">${keys}</div>`;
+      `<div class="s2hd"><b>${st.s2Year}</b><span>Sentinel-2<br>${day}</span><span class="zw">z<br><i class="z">${map.getZoom().toFixed(1)}</i></span></div>` +
+      `<div class="keys">${
+        showImg
+          ? `<span>${st.holding ? "Scroll or " : ""}<kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${ends}</span><span><kbd>N</kbd> next</span>`
+          : `<span><kbd>Space</kbd> or <kbd>P</kbd> to see it</span>`
+      }</div>`;
+    s2Card.classList.toggle("showing", showImg);
   }
   // the pair's left map: its imagery, and over it in gold the footprint pinned by a click, else the one hovered, on
   // either half
