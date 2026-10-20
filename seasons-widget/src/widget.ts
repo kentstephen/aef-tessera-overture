@@ -214,6 +214,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   // ---- the footprints of the area read, as GeoArrow (a polygon a row; `fid` the footprint), joined to the pixels
   let footBatch: arrow.RecordBatch | null = null;
   let join: FootJoin | null = null;
+  // each footprint's fill: its year's color where it has one
+  let fill: ReturnType<typeof colorData> | null = null;
   // on the imagery: each footprint's outline, its year's color where it has one, solid light blue where not
   let line: ReturnType<typeof colorData> | null = null;
   let fillN = 0;
@@ -228,14 +230,15 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     hoverRow = pinRow = -1;
     setL2();
     join = footBatch ? joinPixels(footBatch) : null;
+    fill = null;
     recolor();
   }
   model.on("change:foot", loadFoot);
   model.on("change:foot_status", () => note(String(model.get("foot_status") || "")));
   const ringOf = (row: number): number[][] => footRing(footBatch!, row);
 
-  // each footprint's year from the pixels under it (its outline's color on the imagery), again as chunks and quarters
-  // come in (a few times a second at most)
+  // each footprint's year from the pixels under it (its fill, and its outline's color on the imagery), again as chunks
+  // and quarters come in (a few times a second at most)
   const hexRgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   const YEAR_RGB = YEAR_COL.map(hexRgb), QUARTER_RGB = SEASON_COL.map(hexRgb), UNCLEAR_RGB = hexRgb(UNCLEAR);
   let joinT = 0;
@@ -255,6 +258,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       ln[o + 2] = has ? rgba[o + 2] : S2_LINE[2];
       ln[o + 3] = 255;
     }
+    fill = colorData(rgba, join.rows);
     line = colorData(ln, join.rows);
     fillN++;
     render();
@@ -407,8 +411,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     // building's year is the pixels under it read together (the tooltip); the raster is the digging itself
     if (footBatch)
       layers.push(
-        // the buildings: a silver outline each, under the raster and the roads. Filled clear, so the whole footprint
-        // picks, not only its outline
+        // the buildings: filled in their year's color (a year opened: their quarter's) where the join gives one, a
+        // silver outline each; under the raster and the roads, so the dug pixels lie over the building's color
         new GeoArrowPolygonLayer({
           id: "foot-poly",
           data: footBatch,
@@ -417,7 +421,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
           visible: !s2Shown(),
           filled: true,
           stroked: true,
-          getFillColor: [0, 0, 0, 0],
+          getFillColor: (fill ?? [0, 0, 0, 0]) as never,
           // on the imagery the outlines carry the years: solid, a pixel and a half; on the map, silver
           getLineColor: (s2Shown() && line ? line : FOOT_LINE) as never,
           // in meters, held between half a pixel and two: zoomed out the outlines thin instead of adding up to a glare
@@ -428,7 +432,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
           // triangulated here, not in a worker fetched from a CDN
           earcutWorkerUrl: null,
           pickable: true,
-          updateTriggers: { getLineColor: [fillN, s2Shown()] },
+          updateTriggers: { getFillColor: fillN, getLineColor: [fillN, s2Shown()] },
           // read by the MapLibre overlay: under the roads, drawn before the raster so the raster lies over it
           beforeId: groundId,
         } as never),
