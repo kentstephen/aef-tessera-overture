@@ -361,7 +361,10 @@ export async function createCodesLayer(model: WorldModel, decoder: { w: Float32A
     return { done, wanted };
   }
 
-  return { layer, setLook, loadedIn, quartersIn, at, seasonsReady, work: () => ({ ...work }), version: () => version };
+  /** The chunk on hand at a chunk row and column (null where it is not). */
+  const chunk = (r: number, c: number) => live.get(keyOf(r, c)) ?? null;
+
+  return { layer, setLook, loadedIn, quartersIn, at, chunk, seasonsReady, work: () => ({ ...work }), version: () => version };
 }
 
 /** Lon/lat to the mosaic pixel. */

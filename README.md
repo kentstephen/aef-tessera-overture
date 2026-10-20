@@ -1,35 +1,27 @@
-# AlphaEarth and TESSERA earthwork over Overture buildings
+# Dug ground outlined on Sentinel-2, a patch's years on a click
 
-A marimo notebook with one map: the Overture building footprints filled by the year their ground was dug or graded,
-and, elsewhere, the dug ground that has no building on it yet. The years come from satellite embeddings alone
-(AlphaEarth Foundations and TESSERA), scored by the aggregate earthwork model; the footprints from Overture's
-GeoParquet; Sentinel-2 scenes from Element 84's Earth Search, beside the map or behind it on a key.
+A marimo notebook with one map: a year of Sentinel-2 from Element 84's Earth Search, and over it, in orchid, the
+outline of every patch of ground found dug or graded between 2017 and 2025. The digging comes from satellite
+embeddings alone (AlphaEarth Foundations and TESSERA), scored by the aggregate earthwork model. (The branch
+`earth-search` has the map this one grew from: Overture footprints, the year raster, the pair.)
 
 ## What the map shows
 
-- **Digging.** The raster is where the model found the ground dug in a pair of years (2017 to 2018 through 2024 to
-  2025), colored by the year it was last dug, 2018 (blue) to 2025 (yellow). It shows wherever it is found, buildings
-  or not.
-- **Buildings.** Overture footprints are outlines over the raster, not filled: light orchid where digging is under
-  the building, silver where not. Each is joined to the 10 m pixels under it, and its tooltip lists every year those
-  pixels were last dug in: a building's years are the pixels under it read together, the raster is the digging itself.
-- **Sentinel-2.** `P` pairs the map with Sentinel-2: a second map on the left, moving with the map on the right.
-  Hold space for the imagery over the map itself, the raster and the footprints stepped aside (scroll steps the
-  year). `[` `]` step the year, 2017 to 2025; `B` jumps to 2025, then between 2017 and 2025. A year shows one
-  acquisition (one pass, one day), never a mix of days, drawn from its true-color image (TCI) as it is, with no
-  masking or blending. The pass is chosen for the view: each candidate's scene classification (SCL) is read over the
-  view, and the first pass with data over all of it and at most 2% cloud, cloud shadow, cirrus or snow there is
-  taken (none: the least cloudy, and the card says so). Winter is skipped by hemisphere (December to February north of
-  the tropics, June to August south of them) along with scenes under a sun below 15 degrees. The pass stays while the
-  view stays near where it was chosen, and the last few years shown stay loaded, so blinking between years swaps two
-  finished images. `N` steps to the year's next clear pass; the card shows the day. Paired, the footprint under the
-  pointer on either half is outlined in orchid on the imagery. A click pins it there while the years are stepped;
-  where no footprint is, a click pins the patch of dug ground instead, joined as aef-tessera-earthwork's year map joins
-  one: every pixel dug in any year (a year opened, dug that year) joined by side or corner or across a one pixel gap,
-  outlined on its outer edge with its holes filled. With one pinned, any click lets it go.
-- **Export.** `K` writes a 4x PNG of the map to `exports/` (paired, both halves side by side), with the legend drawn
-  at its top left (paired, the right half's) and the imagery's year and day at the left half's, and a copy sized for
-  a LinkedIn post in `exports/for_linkedin/` (long side 2048, under 5 MB).
+- **Sentinel-2.** One clear pass for the view, 2025 to start; `[` `]` step the year, 2017 to 2025, `B` jumps to 2025
+  and then between 2017 and 2025, `N` steps to the year's next clear pass. The card shows the year and the pass's day.
+- **Patches.** From zoom 12 the view is read by itself once the map settles. Every pixel the model found dug in any
+  pair of years is joined to its neighbors by side or corner, or across a one pixel gap, whatever its year, as
+  aef-tessera-earthwork's year map joins them (`patchesIn` in `seasons-widget/src/patch.ts`); each patch is outlined on
+  its outer edge, holes filled, not filled in. Every patch is drawn, however small (no size cutoff yet).
+- **A patch's years.** A click on a patch fills the window with it in three years side by side, framed the same in
+  each: the year before any of it was first dug, the year most of its pixels were first dug, and 2025 (two panels when
+  the year most of it was dug is 2025). The frame fits the patch with room around it and comes no closer than zoom 15,
+  so the 10 m pixels stay small. Each panel shows that year's pass chosen for the map's view, so a place already looked
+  at comes back at once; each panel's imagery shows as it arrives. The patch's size is at the bottom. A click anywhere,
+  or `Esc`, goes back.
+- **Export.** `K` writes a 4x PNG to `exports/` (the panels side by side while they are open, else the map), each
+  image's year and day drawn at its top left, and a copy sized for a LinkedIn post in `exports/for_linkedin/` (long
+  side 2048, under 5 MB).
 
 The model is aef-tessera-earthwork's aggregate (one logistic regression on AlphaEarth and TESSERA joined, opened
 where either embedding changed; `models/earthwork_world.json`), scored per pixel in a web worker exactly as that
@@ -87,21 +79,17 @@ uvx marimo run --sandbox --watch aef-tessera-overture.py
 
 The map fills the window. Search a place (`/`) and zoom in: from zoom 12 the view reads by itself once the map
 settles (below it nothing is read). Reading scores the view in the
-browser; the footprints are read by the notebook's kernel and sent as GeoArrow.
+browser.
 
-Keys: `P` pair with Sentinel-2, hold space Sentinel-2 over the map, `[` `]` its year, `B` 2017 or 2025, `N` another
-clear pass, `L` labels, `Q` picking and the tooltip, `/` search (the magnifier in the year card), `K` export, `Shift` `←`
-`→` pivot, `X` notebook view, `F` full screen, `Esc` back.
+Keys: `[` `]` the imagery's year, `B` 2017 or 2025, `N` another clear pass, `/` search, `K` export, `Shift` `←` `→`
+pivot, `X` notebook view, `F` full screen, `Esc` back from the panels.
 
 ## How it is built
 
-- `aef-tessera-overture.py`: the notebook. The kernel finds the Overture building files that meet the area read
-  through the [Portolan catalog of Overture](https://nlebovits.github.io/overture-portolan) (or Overture's own
-  STAC when the catalog points at a release Overture has since removed), reads them with DuckDB, and sends the
-  footprints as GeoArrow polygons.
+- `aef-tessera-overture.py`: the notebook: the widget, and the kernel saving the PNGs `K` sends.
 - `seasons-widget/`: the map, a TypeScript anywidget built into one file, `dist/widget.js` (`npm ci && npm run
   build` after a change). MapLibre and deck.gl; AlphaEarth and TESSERA read as Zarr with zarrita
-  (deck.gl-zarr), the score per chunk in a worker; the footprints drawn with `@geoarrow/deck.gl-layers`; the
+  (deck.gl-zarr), the score per chunk in a worker; the
   Sentinel-2 L2A scenes found through Earth Search's STAC and their TCI COGs read with deck.gl-geotiff.
 - `models/`: the earthwork model's weights and the decoder (below).
 
@@ -121,6 +109,5 @@ way to read them.
 | --- | --- | --- |
 | AlphaEarth Foundations Satellite Embedding, annual 2017 to 2025 ([tge-labs/aef-mosaic](https://source.coop/tge-labs/aef-mosaic)) | Google and Google DeepMind | CC BY 4.0 |
 | TESSERA v1.1 embeddings ([tessera on Source Cooperative](https://source.coop/tessera/tessera)) | University of Cambridge | see the dataset |
-| Overture Maps buildings | Overture Maps Foundation | ODbL |
 | Sentinel-2 L2A ([Earth Search](https://earth-search.aws.element84.com/v1), AWS Open Data `sentinel-cogs`) | Copernicus Sentinel data, cataloged by Element 84 | Copernicus open access |
 | Basemap | CARTO, OpenStreetMap contributors | ODbL |

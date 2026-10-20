@@ -2,20 +2,15 @@ import maplibreCss from "maplibre-gl/dist/maplibre-gl.css?inline";
 import "./mesh-sampler";
 
 import { MapLibreOverlay as MapboxOverlay } from "@deck.gl/maplibre";
-import { PathLayer } from "@deck.gl/layers";
-import { GeoArrowPathLayer, GeoArrowPolygonLayer } from "@geoarrow/deck.gl-layers";
-import * as arrow from "apache-arrow";
+import { LineLayer, PathLayer } from "@deck.gl/layers";
 import * as maplibregl from "maplibre-gl";
 import maplibreWorker from "maplibre-gl/dist/maplibre-gl-worker.mjs?raw";
-import { Protocol } from "pmtiles";
 
-import { MIN_ZOOM, YEAR_ORIGIN } from "./aef";
-import { createCodesLayer, HALF_COL, type Look, pixelCenter, pixelOf, SEASON_COL, UNCLEAR, Y0_RAMP, YEAR_COL } from "./codes-layer";
+import { MIN_ZOOM, RES } from "./aef";
+import { createCodesLayer, pixelOf } from "./codes-layer";
 import decoderBin from "./decoder_month.bin?url";
-import { colorData, type FootJoin, joinColors, joinPixels, ringOf as footRing } from "./foot";
-// Earth Genome's yearly mosaics (eg-s2.ts) swapped for single scenes from Earth Search
 import { createS2, S2_YEARS } from "./es-s2";
-import { patchAt } from "./patch";
+import { outlineOfRuns, type Patch, patchesIn } from "./patch";
 import decoderMeta from "./decoder_month.json";
 import type { WorldModel } from "./earthwork-cpu";
 import world from "./earthwork_world.json";
@@ -28,34 +23,23 @@ type Model = {
   on(ev: string, f: () => void): void;
 };
 
-// quarters of the calendar year, not seasons: they mean the same in either hemisphere
-// quarters off for now: measured against real Sentinel-2 they were no better than a guess (embeddings-vis
-// scripts/quarter_check.py: the rule shown matched 50%, always Q1 62%). The years stay; the code stays for the work ahead
-const QUARTERS = false;
-const SEASONS = [["Q1", "Jan-Mar"], ["Q2", "Apr-Jun"], ["Q3", "Jul-Sep"], ["Q4", "Oct-Dec"]];
-// the Overture outlines: one color, apart from every color of the ramp
-const FOOT = "#4fd6ff";
-// a footprint with digging under it: light orchid, solid. A hue the ramp (blue to green to yellow) never takes, and
-// light: with protanopia it reads as a pale lavender, lighter than every blue of the ramp and apart from its greens,
-// its yellow and the silver (the farthest from all of them of the bright colors that are not red)
-const DUG_LINE: [number, number, number, number] = [240, 165, 255, 255];
-// a footprint with no digging under it: a neutral gray with no hue to mix up with any year of the ramp (seen normally
-// or with protanopia), light enough to hold an edge on the dark basemap
-const FOOT_LINE: [number, number, number, number] = [184, 184, 184, 210];
-// a footprint with no year, on the Sentinel-2 imagery: solid, so it reads on bright ground
-const S2_LINE = [79, 214, 255];
-// the fold chevron, as aef-earthwork-web's cards
-const CHEV = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>';
+// the patches' outlines: light orchid, solid. A hue Sentinel-2's ground rarely takes, and light: with protanopia it
+// reads as a pale lavender, apart from the greens, browns and grays of the imagery
+const ORCHID: [number, number, number, number] = [240, 165, 255, 255];
 // from this zoom the view reads by itself once the map settles; below it nothing is read
 const AUTO_Z = MIN_ZOOM;
+// the panels come no closer than this: Sentinel-2's 10 m pixels stay under about 3 screen pixels
+const PANEL_MAX_Z = 15;
 const FIT_CLS = "sm-fit-on";
+// the panels' maps: no basemap, the imagery alone on a dark ground
+const BLANK = { version: 8, sources: {}, layers: [{ id: "bg", type: "background", paint: { "background-color": "#0e0e0e" } }] } as maplibregl.StyleSpecification;
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-let protocolAdded = false;
 // maplibre's worker from the bundle itself, as a blob: the widget is one file with nothing beside it
 maplibregl.setWorkerUrl(URL.createObjectURL(new Blob([maplibreWorker], { type: "text/javascript" })));
 
 function render({ model, el }: { model: Model; el: HTMLElement }) {
-  const cfg = JSON.parse(String(model.get("config") || "{}")) as { home: { lon: number; lat: number; zoom: number }; release: string };
+  const cfg = JSON.parse(String(model.get("config") || "{}")) as { home: { lon: number; lat: number; zoom: number } };
   // the styles: maplibre's and the widget's, in the page and in the widget's own root if it has one
   for (const host of new Set<Node>([document.head, el.getRootNode()])) {
     const target = host instanceof ShadowRoot ? host : document.head;
@@ -82,69 +66,20 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
         .join(",") + `{display:none!important}html.${FIT_CLS}{overflow:hidden}html.${FIT_CLS} *:focus,html.${FIT_CLS} *:focus-visible,html.${FIT_CLS} *:focus-within{outline:none!important;box-shadow:none!important}`;
     document.head.appendChild(s);
   }
-  if (!protocolAdded) {
-    maplibregl.addProtocol("pmtiles", new Protocol().tile);
-    protocolAdded = true;
-  }
 
-  const st = { look: { src: "ours", year: null } as Look, fit: true, folded: false, area: null as [number, number, number, number] | null, readId: 0, labels: true, picking: true, pair: false, holding: false, s2Year: S2_YEARS[S2_YEARS.length - 1] };
+  const st = { fit: true, area: null as [number, number, number, number] | null, readId: 0, s2Year: S2_YEARS[S2_YEARS.length - 1], open: null as Patch | null };
   const E = (t: string, c?: string, h?: string) => {
     const e = document.createElement(t);
     if (c) e.className = c;
     if (h != null) e.innerHTML = h;
     return e;
   };
-  const root = E("div", "sm clean"), mapEl = E("div", "map"), mapEl2 = E("div", "map2");
+  const root = E("div", "sm"), mapEl = E("div", "map");
   const load = E("div", "load", "<i></i>"), loadTag = E("div", "loadtag glass");
-  root.append(mapEl2, mapEl, load, loadTag);
+  root.append(mapEl, load, loadTag);
   el.appendChild(root);
-
-  // ---- the card
-  const card = E("div", "card glass");
-  const hd = E("div", "hd");
-  const hdT = E("div", "ht");
-  // the chevron turns a quarter when the card is folded (the CSS)
-  const fold = E("button", "cb", CHEV) as HTMLButtonElement;
-  fold.title = "fold the card (H)";
-  hd.append(hdT, fold);
-  const body = E("div", "body");
-  const rSrc = E("div", "row");
-  const seg = E("div", "seg");
-  const bOurs = E("button", "", "Ours") as HTMLButtonElement, bWsf = E("button", "", "WSF") as HTMLButtonElement;
-  bOurs.title = "the aggregate earthwork model (AlphaEarth and TESSERA): when the ground was dug or graded";
-  bWsf.title = "the WSF Tracker: when the ground first read as built-up";
-  seg.append(bOurs, bWsf);
-  rSrc.append(E("span", "lab", "Color by"), seg, E("kbd", "", "C"));
-  const chips = E("div", "chips");
-  const hint = E("div", "hint");
-  const zoomRow = E("div", "zoom");
-  // WSF commented out for now: the card colors by ours only
-  // body.append(rSrc, chips, hint, zoomRow);
-  // the text under the years hides behind a chevron of its own, leaving the years alone
-  const notes = E("div", "notes");
-  notes.append(hint, zoomRow);
-  const less = E("button", "less", CHEV) as HTMLButtonElement;
-  const setLess = (on: boolean) => {
-    card.classList.toggle("short", on);
-    less.title = on ? "show the notes" : "hide the notes, the years alone";
-  };
-  less.onclick = () => setLess(!card.classList.contains("short"));
-  setLess(false);
-  body.append(chips, notes, less);
-  // the card: the years as one thin stepped line, the first and last at its ends, and no notes or keys
-  const legend = E("div", "legend");
-  const lline = E("div", "lline");
-  YEAR_COL.forEach((col) => {
-    const i = E("i");
-    i.style.background = col;
-    lline.appendChild(i);
-  });
-  legend.append(E("span", "", String(Y0_RAMP)), lline, E("span", "", String(Y0_RAMP + YEAR_COL.length - 1)));
-  card.append(hd, legend, body);
-  root.appendChild(card);
-  const tip = E("div", "tip");
   const toast = E("div", "toast glass");
-  // top left, as in aef-earthwork-web: the search, and under it the Sentinel-2 card while the imagery shows
+  // top left, as in aef-earthwork-web: the search, and under it the Sentinel-2 card
   const top = E("div", "top");
   const sBox = E("div", "search glass", '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>');
   const q = E("input") as HTMLInputElement, hits = E("div", "hits");
@@ -154,9 +89,19 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   q.autocomplete = "off";
   q.spellcheck = false;
   sBox.append(q, E("kbd", "", "/"), hits);
-  const s2Card = E("div", "s2card glass");
+  const s2Card = E("div", "s2card glass showing");
   top.append(sBox, s2Card);
-  root.append(tip, toast, top);
+  // the panels: the clicked patch in two or three years side by side over the whole window; a click anywhere goes back
+  const tri = E("div", "tri");
+  const panels = [0, 1, 2].map(() => {
+    const p = E("div", "pan"), m = E("div", "pm"), l = E("div", "pl");
+    p.append(m, l);
+    tri.appendChild(p);
+    return { el: p, mapEl: m, label: l, map: null as maplibregl.Map | null, overlay: null as InstanceType<typeof MapboxOverlay> | null, year: 0, role: "" };
+  });
+  const back = E("div", "back glass");
+  tri.appendChild(back);
+  root.append(top, tri, toast);
   let toastT = 0;
   const note = (t: string) => {
     toast.textContent = t;
@@ -176,7 +121,6 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     maxPitch: 0,
     dragRotate: false,
     attributionControl: false,
-    // deck.gl draws into this canvas (interleaved), so its footprint edges are smoothed only if the canvas is
     canvasContextAttributes: { antialias: true },
     // room for the 4x export (K); maplibre's own cap is 4096. Past this the export comes out smaller (its name says)
     maxCanvasSize: [8192, 8192],
@@ -185,7 +129,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   map.addControl(
     new maplibregl.AttributionControl({
       compact: true,
-      customAttribution: "Overture Maps (ODbL) · WSF Tracker, DLR and MindEarth (CC BY 3.0 IGO) · AlphaEarth Foundations, Google DeepMind (CC BY 4.0) · TESSERA v1.1, University of Cambridge · Sentinel-2: Copernicus, via Element 84 Earth Search",
+      customAttribution: "AlphaEarth Foundations, Google DeepMind (CC BY 4.0) · TESSERA v1.1, University of Cambridge · Sentinel-2: Copernicus, via Element 84 Earth Search",
     }),
     "bottom-right",
   );
@@ -196,159 +140,102 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   const overlay = new MapboxOverlay({ interleaved: true, layers: [] });
   map.addControl(overlay as unknown as maplibregl.IControl);
 
+  const resizeAll = () => {
+    try {
+      map.resize();
+      for (const p of panels) p.map?.resize();
+    } catch {
+      // the map is gone
+    }
+  };
   function sizes() {
     root.classList.toggle("fit", st.fit);
     document.documentElement.classList.toggle(FIT_CLS, st.fit);
     setTimeout(() => {
-      try {
-        map.resize();
-      } catch {
-        // the map is gone
-      }
+      resizeAll();
+      if (st.open) frame();
     }, 30);
   }
   const fsOn = () => !!document.fullscreenElement;
   const fullScreen = () => (fsOn() ? document.exitFullscreen() : root.requestFullscreen?.());
-  const onFs = () => setTimeout(() => map.resize(), 60);
+  const onFs = () =>
+    setTimeout(() => {
+      resizeAll();
+      if (st.open) frame();
+    }, 60);
   document.addEventListener("fullscreenchange", onFs);
-  // the map's own box: it halves when the pair opens
   new ResizeObserver(() => map.resize()).observe(mapEl);
 
-  // ---- the footprints of the area read, as GeoArrow (a polygon a row; `fid` the footprint), joined to the pixels
-  let footBatch: arrow.RecordBatch | null = null;
-  let join: FootJoin | null = null;
-  // on the imagery: each footprint's outline, its year's color where it has one, solid light blue where not
-  let line: ReturnType<typeof colorData> | null = null;
-  // on the map: orchid where digging is under it, silver where not
-  let mapLine: ReturnType<typeof colorData> | null = null;
-  // the arrays behind them, to tell a change; and a count for each, read by its layer's update trigger
-  let lineRgba: Uint8Array | null = null, mapLineRgba: Uint8Array | null = null;
-  let lineN = 0, mapLineN = 0;
-  // the basemap layer our raster, the footprints and their fade go under: its first road, so the streets stay over both
-  let groundId = "foot";
-  function loadFoot() {
-    const b = model.get("foot") as DataView | ArrayBuffer | Uint8Array | null;
-    if (!b || !(b as ArrayBuffer).byteLength || !codes) return;
-    const bytes = b instanceof DataView ? new Uint8Array(b.buffer, b.byteOffset, b.byteLength) : b instanceof Uint8Array ? b : new Uint8Array(b);
-    footBatch = arrow.tableFromIPC(bytes).batches[0] ?? null;
-    // the rows are new: a footprint hovered or pinned by its old row is let go
-    if (hoverHi?.key.startsWith("a:")) hoverHi = null;
-    if (pinHi?.key.startsWith("a:")) pinHi = null;
-    setL2();
-    join = footBatch ? joinPixels(footBatch) : null;
-    line = mapLine = lineRgba = mapLineRgba = null;
-    recolor();
-  }
-  model.on("change:foot", loadFoot);
-  model.on("change:foot_status", () => note(String(model.get("foot_status") || "")));
-  const ringOf = (row: number): number[][] => footRing(footBatch!, row);
-
-  // each footprint's year from the pixels under it (its outline's color), again as chunks and quarters come in (a few
-  // times a second at most)
-  const hexRgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-  const YEAR_RGB = YEAR_COL.map(hexRgb), QUARTER_RGB = SEASON_COL.map(hexRgb), UNCLEAR_RGB = hexRgb(UNCLEAR);
-  let joinT = 0;
-  function joinSoon() {
-    clearTimeout(joinT);
-    joinT = window.setTimeout(recolor, 300);
-  }
-  function recolor() {
-    if (!codes || !join) return render();
-    const at = codes.at;
-    const rgba = joinColors(join, at, st.look.year, (y) => YEAR_RGB[y - Y0_RAMP] ?? [0, 0, 0], QUARTER_RGB, UNCLEAR_RGB);
-    const ln = new Uint8Array(rgba.length), ml = new Uint8Array(rgba.length);
-    for (let r = 0; r < join.rows; r++) {
-      const o = 4 * r, has = rgba[o + 3] > 0;
-      ml.set(has ? DUG_LINE : FOOT_LINE, o);
-      ln[o] = has ? rgba[o] : S2_LINE[0];
-      ln[o + 1] = has ? rgba[o + 1] : S2_LINE[1];
-      ln[o + 2] = has ? rgba[o + 2] : S2_LINE[2];
-      ln[o + 3] = 255;
-    }
-    // a color array swapped (and its layer's colors laid out again) only when it changed: tiles come in a few times a
-    // second, and most leave every building as it was
-    let changed = false;
-    if (!line || !same(lineRgba, ln)) {
-      lineRgba = ln;
-      line = colorData(ln, join.rows);
-      lineN++;
-      changed = true;
-    }
-    if (!mapLine || !same(mapLineRgba, ml)) {
-      mapLineRgba = ml;
-      mapLine = colorData(ml, join.rows);
-      mapLineN++;
-      changed = true;
-    }
-    if (changed) render();
-  }
-  const same = (a: Uint8Array | null, b: Uint8Array) => {
-    if (!a || a.length !== b.length) return false;
-    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
-    return true;
-  };
-
-  // ---- the data layer
+  // ---- the data: the chunks scored in the worker (not drawn: they only give the patches), and Sentinel-2
   let codes: Awaited<ReturnType<typeof createCodesLayer>> | null = null;
   let s2: ReturnType<typeof createS2> | null = null;
-  /** Space held: the imagery alone on the map (in the pair it is already on the left). */
-  function setS2(on: boolean) {
-    if (on && st.pair) return;
-    st.holding = on;
-    if (imgShown()) s2?.discover(st.s2Year);
-    drawS2Card();
-    render();
+  let ready = false;
+  const decoderP = fetch(decoderBin)
+    .then((r) => r.arrayBuffer())
+    .then((b) => ({ w: new Float32Array(b), layers: (decoderMeta as { net: { layers: unknown[] } }).net.layers }));
+
+  // ---- the patches of dug ground in the area read, found again as chunks come in (a few times a second at most)
+  let patches: Patch[] = [];
+  // every patch's outline as segments, for the map: their ends, and how many
+  let segSrc = new Float64Array(0), segTgt = new Float64Array(0), segN = 0, segV = 0;
+  // the patches' runs by row: [start, end, patch, ...], to find the patch under the pointer
+  let rowsOf = new Map<number, number[]>();
+  let patchT = 0;
+  function patchesSoon() {
+    clearTimeout(patchT);
+    patchT = window.setTimeout(findPatches, 400);
+  }
+  function findPatches() {
+    if (!codes || !st.area) return;
+    patches = patchesIn(st.area, codes.chunk);
+    const edges: number[] = [];
+    rowsOf = new Map();
+    patches.forEach((p, i) => {
+      for (const e of outlineOfRuns(p.runs)) edges.push(e[0], e[1], e[2], e[3]);
+      for (let k = 0; k < p.runs.length; k += 3) {
+        const r = rowsOf.get(p.runs[k]);
+        if (r) r.push(p.runs[k + 1], p.runs[k + 2], i);
+        else rowsOf.set(p.runs[k], [p.runs[k + 1], p.runs[k + 2], i]);
+      }
+    });
+    segN = edges.length / 4;
+    segSrc = new Float64Array(2 * segN);
+    segTgt = new Float64Array(2 * segN);
+    for (let i = 0; i < segN; i++) {
+      segSrc[2 * i] = edges[4 * i];
+      segSrc[2 * i + 1] = edges[4 * i + 1];
+      segTgt[2 * i] = edges[4 * i + 2];
+      segTgt[2 * i + 1] = edges[4 * i + 3];
+    }
+    segV++;
+    draw();
+  }
+  /** The patch at a point: the one under it, else one within two pixels (the gap a patch joins across). */
+  function patchAt(lng: number, lat: number): Patch | null {
+    const [gx, gy] = pixelOf(lng, lat);
+    let best: Patch | null = null, bestD = Infinity;
+    for (let dy = -2; dy <= 2; dy++) {
+      const r = rowsOf.get(gy + dy);
+      if (!r) continue;
+      for (let k = 0; k < r.length; k += 3) {
+        const dx = gx < r[k] ? r[k] - gx : gx >= r[k + 1] ? gx - r[k + 1] + 1 : 0;
+        const d = Math.max(Math.abs(dy), dx);
+        if (d <= 2 && d < bestD) (bestD = d), (best = patches[r[k + 2]]);
+      }
+    }
+    return best;
   }
 
-  // ---- the pair (P), as aef-earthwork-web pairs its map: a second map on the left showing Sentinel-2, the map as it
-  // was on the right, either moving the other. Both halves are the same size under one camera, so a point is the same
-  // place on both and the right reads exactly as one map would
-  let map2: maplibregl.Map | null = null;
-  let overlay2: InstanceType<typeof MapboxOverlay> | null = null;
-  let syncing = false;
-  const camOf = (m: maplibregl.Map) => ({ center: m.getCenter(), zoom: m.getZoom(), bearing: m.getBearing(), pitch: m.getPitch() });
-  function boot2() {
-    if (map2) return;
-    const m2 = (map2 = new maplibregl.Map({ container: mapEl2, style: STYLE, ...camOf(map), maxPitch: 0, dragRotate: false, attributionControl: false, maxCanvasSize: [8192, 8192] }));
-    m2.keyboard.disable();
-    overlay2 = new MapboxOverlay({ interleaved: true, layers: [] });
-    m2.addControl(overlay2 as unknown as maplibregl.IControl);
-    // the imagery alone: every basemap layer but its background hidden, so no road or name lands over it
-    m2.on("load", () => {
-      for (const l of m2.getStyle().layers) if (l.type !== "background") m2.setLayoutProperty(l.id, "visibility", "none");
-      render();
-    });
-    const follow = (a: maplibregl.Map, b: maplibregl.Map) =>
-      a.on("move", () => {
-        if (syncing || !st.pair) return;
-        syncing = true;
-        b.jumpTo(camOf(a));
-        syncing = false;
-      });
-    follow(map, m2);
-    follow(m2, map);
-    // the halves share one camera and size: the pointer on the left picks the footprint at the same point on the right
-    // hover outlines a footprint; a patch of dug ground only on a click
-    m2.on("mousemove", (e) => {
-      const row = footAt(e.point);
-      setHi(row >= 0 ? footHi(row) : null);
-    });
-    m2.on("click", (e) => pin(e.point));
-    mapEl2.addEventListener("mouseleave", () => setHi(null));
-    new ResizeObserver(() => m2.resize()).observe(mapEl2);
-  }
-  function setPair(on: boolean) {
-    if (on === st.pair) return;
-    if (on) st.holding = false;
-    st.pair = on;
-    root.classList.toggle("pair", on);
-    if (on) {
-      boot2();
-      map2!.jumpTo(camOf(map));
-    }
-    if (imgShown()) s2?.discover(st.s2Year);
-    drawS2Card();
-    render();
+  // ---- the Sentinel-2 card: the year shown, the day of its pass, the keys
+  function drawS2Card() {
+    const c = map.getCenter(), d = s2?.dateAt(st.s2Year, c.lng, c.lat) ?? "", stt = s2?.status(st.s2Year) ?? "finding";
+    const day = d ? `${MONTHS[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}` + (stt === "cloudy" ? ", cloudy" : "") : stt === "cloudy" ? "no scene" : "finding…";
+    const ends = `${String(S2_YEARS[0]).slice(2)}/${String(S2_YEARS[S2_YEARS.length - 1]).slice(2)}`;
+    const z = map.getZoom();
+    s2Card.innerHTML =
+      `<div class="s2hd"><b>${st.s2Year}</b><span>Sentinel-2<br>${day}</span><span class="zw">z<br><i class="z">${z.toFixed(1)}</i></span></div>` +
+      `<div class="keys"><span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${ends}</span><span><kbd>N</kbd> next</span><span><kbd>K</kbd> PNG</span></div>` +
+      `<div class="pnote">${z < AUTO_Z ? `Zoom in to ${AUTO_Z} to outline the dug ground` : `<i></i>Dug ground, 2018 to 2025. Click a patch for its years`}</div>`;
   }
   function stepS2(d: number) {
     const i = Math.max(0, Math.min(S2_YEARS.length - 1, S2_YEARS.indexOf(st.s2Year) + d));
@@ -356,283 +243,124 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     st.s2Year = S2_YEARS[i];
     s2?.discover(st.s2Year);
     drawS2Card();
-    render();
+    draw();
   }
-  let ready = false;
-  const decoderP = fetch(decoderBin)
-    .then((r) => r.arrayBuffer())
-    .then((b) => ({ w: new Float32Array(b), layers: (decoderMeta as { net: { layers: unknown[] } }).net.layers }));
-  function update() {
-    joinSoon();
-    render();
-  }
-  // the imagery over the map itself: while space is held (our raster and the footprints step aside)
-  const s2Shown = () => st.holding;
-  // the imagery anywhere: held, or on the pair's left
-  const imgShown = () => st.holding || st.pair;
-  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  function drawS2Card() {
-    // as aef-earthwork-web's: the year, what it is, the zoom at the right; its keys under it. Always there, the year
-    // grayed while the imagery is not showing
-    const showImg = imgShown();
-    // the day of the year's pass; while one is being chosen, the one still on screen
-    const c = map.getCenter(), d = s2?.dateAt(st.s2Year, c.lng, c.lat) ?? "", stt = s2?.status(st.s2Year) ?? "finding";
-    const day = !showImg ? "true color" : d ? `${MONTHS[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}` + (stt === "cloudy" ? ", cloudy" : "") : stt === "cloudy" ? "no scene" : "finding\u2026";
-    const ends = `${String(S2_YEARS[0]).slice(2)}/${String(S2_YEARS[S2_YEARS.length - 1]).slice(2)}`;
-    s2Card.innerHTML =
-      `<div class="s2hd"><b>${st.s2Year}</b><span>Sentinel-2<br>${day}</span><span class="zw">z<br><i class="z">${map.getZoom().toFixed(1)}</i></span></div>` +
-      `<div class="keys">${
-        showImg
-          ? `<span>${st.holding ? "Scroll or " : ""}<kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${ends}</span><span><kbd>N</kbd> next</span>`
-          : `<span><kbd>Space</kbd> or <kbd>P</kbd> to see it</span>`
-      }</div>`;
-    s2Card.classList.toggle("showing", showImg);
-  }
-  // the pair's left map: its imagery, and over it in orchid what is pinned by a click, else the footprint hovered, on
-  // either half. A click pins a footprint, or where no footprint is, the patch of dug ground under it
-  let l2: unknown[] = [];
-  /** A thing outlined on the imagery: its key and its outline as paths. */
-  type Hi = { key: string; paths: number[][][] };
-  let hoverHi: Hi | null = null, pinHi: Hi | null = null;
-  function setL2() {
-    if (!overlay2) return;
-    const h = pinHi ?? hoverHi;
-    const hi = st.pair && h
-      ? [new PathLayer({ id: "hi", data: h.paths, getPath: (r: number[][]) => r as never, getColor: DUG_LINE, getWidth: 2.5, widthUnits: "pixels", jointRounded: true, capRounded: true })]
-      : [];
-    overlay2.setProps({ layers: [...l2, ...hi] as never });
-  }
-  function setHi(h: Hi | null) {
-    if ((h?.key ?? "") === (hoverHi?.key ?? "")) return;
-    hoverHi = h;
-    if (st.pair && !pinHi) setL2();
-  }
-  /** The footprint's row at a point (the halves share one camera and size, so a point on either is the same place). */
-  const footAt = (pt: { x: number; y: number }) => {
-    const info = st.picking && footBatch ? overlay.pickObject({ x: pt.x, y: pt.y, radius: 2, layerIds: ["foot-poly"] }) : null;
-    return info && info.index >= 0 ? info.index : -1;
-  };
-  const footHi = (row: number): Hi => ({ key: `a:${row}`, paths: [ringOf(row)] });
-  /**
-   * The patch of dug ground at a point, as aef-tessera-earthwork's year map joins one (patch.ts): every pixel dug, in
-   * any year (a year opened: dug that year), joined to it by side or corner or across a one pixel gap, inside the area
-   * read; its outer outline, holes filled.
-   */
-  function patchHi(lng: number, lat: number): Hi | null {
-    if (!codes || !st.area) return null;
-    const yOpen = st.look.year != null ? st.look.year - YEAR_ORIGIN : -1, bit = yOpen > 0 ? 1 << (yOpen - 1) : 0;
-    const [W, S, E, N] = st.area;
-    const [ax0, ay0] = pixelOf(W, N), [ax1, ay1] = pixelOf(E, S);
-    const dug = (x: number, y: number) => {
-      if (x < ax0 || x > ax1 || y < ay0 || y > ay1) return false;
-      const c = codes!.at(x, y);
-      return !!c && (yOpen > 0 ? (c.bits & bit) !== 0 : c.ours > 0);
-    };
-    const [x0, y0] = pixelOf(lng, lat);
-    const p = patchAt(x0, y0, dug);
-    return p && { key: `p:${yOpen}:${p.first}`, paths: p.edges.map(([a, b, c, d]) => [[a, b], [c, d]]) };
-  }
-  /** What is under a point: a footprint, else a patch of dug ground, else nothing. */
-  function hiAt(pt: { x: number; y: number }): Hi | null {
-    if (!st.picking) return null;
-    const row = footAt(pt);
-    if (row >= 0) return footHi(row);
-    const ll = map.unproject([pt.x, pt.y]);
-    return patchHi(ll.lng, ll.lat);
-  }
-  /** A click pins what is under it, so the years can be stepped with it held; with one pinned, any click lets go. */
-  function pin(pt: { x: number; y: number }) {
-    pinHi = pinHi ? null : hiAt(pt);
-    if (st.pair) setL2();
-  }
-  function render() {
+
+  // ---- the map's layers: the imagery over everything of the basemap (no beforeId: drawn last), the patches' outlines
+  // over it; the scored chunks loaded but not drawn
+  function draw() {
     if (!ready || !codes) return;
     const layers: unknown[] = [];
-    // the imagery under everything of ours: while it shows, our raster and the footprints step aside, the imagery alone
-    // paired, the imagery is the left map's alone
-    // over everything of the basemap's (no beforeId: drawn last), so no Carto label, road or line lands on the imagery
-    if (s2 && !st.pair) layers.push(...s2.layers(st.s2Year, s2Shown()));
-    if (map2 && overlay2) {
-      l2 = st.pair && s2 ? s2.layers(st.s2Year, true, undefined, "l") : [];
-      setL2();
-      if (!map2.isStyleLoaded()) map2.once("idle", setL2);
-    }
-    if (!st.area) {
-      overlay.setProps({ layers: layers as never });
-      return;
-    }
-    // the digging raster over the buildings: it shows wherever the model found ground dug, buildings or not. A
-    // building's year is the pixels under it read together; the raster is the digging itself. Buildings are outlines
-    // only, over the raster
-    const footProps = footBatch && {
-      data: footBatch,
-      getPolygon: footBatch.getChild("geometry")!.data[0] as never,
-      // the imagery alone while it shows: no footprints over it
-      visible: !s2Shown(),
-      // triangulated here, not in a worker fetched from a CDN
-      earcutWorkerUrl: null,
-    };
-    if (footBatch)
+    if (s2) layers.push(...s2.layers(st.s2Year, true));
+    if (st.area)
       layers.push(
-        // the buildings as the pointer's target: not drawn (filled clear), so the whole footprint picks, not only its
-        // outline
-        new GeoArrowPolygonLayer({
-          ...footProps,
-          id: "foot-poly",
-          filled: true,
-          stroked: false,
-          getFillColor: [0, 0, 0, 0],
-          pickable: true,
-          beforeId: groundId,
-        } as never),
+        codes.layer({
+          minZoom: MIN_ZOOM,
+          area: st.area,
+          readId: st.readId,
+          visible: false,
+          onTile: () => {
+            progressSoon();
+            patchesSoon();
+          },
+        }),
       );
-    layers.push(
-      codes.layer({
-        minZoom: MIN_ZOOM,
-        area: st.area,
-        readId: st.readId,
-        visible: !s2Shown(),
-        beforeId: groundId,
-        onTile: () => {
-          progressSoon();
-          joinSoon();
-        },
-      }),
-    );
-    if (footBatch)
+    if (segN)
       layers.push(
-        // an outline each (orchid where digging is under the building, silver where not), over everything of ours and
-        // the roads, under the labels
-        // the outlines as paths over the same column (a polygon's rings are laid out as a multilinestring's lines), so
-        // they are never triangulated, as a polygon layer would even unfilled
-        new GeoArrowPathLayer({
-          id: "foot-line",
-          data: footBatch,
-          getPath: footBatch.getChild("geometry")!.data[0] as never,
-          visible: !s2Shown(),
-          // on the imagery the outlines carry the years: solid, a pixel and a half; on the map, orchid where digging
-          // is under the building, silver where not
-          getColor: (s2Shown() ? (line ?? FOOT_LINE) : (mapLine ?? FOOT_LINE)) as never,
-          // in meters, held between half a pixel and two: zoomed out the outlines thin instead of adding up to a glare
-          getWidth: s2Shown() ? 1.5 : 2,
-          widthUnits: s2Shown() ? "pixels" : "meters",
-          widthMinPixels: s2Shown() ? 1 : 0.5,
-          widthMaxPixels: 2,
-          _pathType: "loop",
-          updateTriggers: { getColor: [lineN, mapLineN, s2Shown()] },
-          // read by the MapLibre overlay
-          beforeId: "foot",
-        } as never),
+        new LineLayer({
+          id: "patches",
+          data: { length: segN, attributes: { getSourcePosition: { value: segSrc, size: 2 }, getTargetPosition: { value: segTgt, size: 2 } } } as never,
+          getColor: ORCHID,
+          getWidth: 1.5,
+          widthUnits: "pixels",
+          updateTriggers: { getSourcePosition: segV, getTargetPosition: segV },
+        }),
       );
     overlay.setProps({ layers: layers as never });
-    // deck.gl slots the layer under the footprints only while MapLibre calls its style loaded, which it does not while
-    // any source's tiles are still coming: set again once the map is idle, so it lands under them, not over everything
-    if (!map.isStyleLoaded()) map.once("idle", () => overlay.setProps({ layers: layers as never }));
     progressSoon();
   }
 
-  // ---- the card's contents
-  function drawCard() {
-    const l = st.look;
-    bOurs.classList.toggle("on", l.src === "ours");
-    bWsf.classList.toggle("on", l.src === "wsf");
-    chips.replaceChildren();
-    body.querySelector(".years")?.remove();
-    if (l.year == null) {
-      hdT.innerHTML = "<b>Dug by year</b>";
-      chips.style.gridTemplateColumns = "repeat(4, 1fr)";
-      YEAR_COL.forEach((col, i) => {
-        const y = Y0_RAMP + i, b = E("button", "chip", String(y)) as HTMLButtonElement;
-        b.style.background = col;
-        b.style.color = i < 4 ? "#fff" : "#111";
-        // 2016 and 2017 commented out with WSF: the ramp starts at 2018
-        // b.disabled = l.src === "ours" && y < 2018;
-        // b.title = b.disabled ? "the first pair of years is 2017 to 2018" : `open ${y} by ${l.src === "ours" ? "quarter" : "half-year"}`;
-        if (QUARTERS) {
-          b.title = `open ${y} by ${l.src === "ours" ? "quarter" : "half-year"}`;
-          b.onclick = () => setLook({ ...st.look, year: y });
-        } else {
-          b.title = String(y);
-          b.style.cursor = "default";
-        }
-        chips.appendChild(b);
-      });
-      hint.textContent = l.src === "ours" ? "Buildings filled by the year their ground was dug or graded. Elsewhere the color is dug ground with no building on it: where to look." + (QUARTERS ? " Click a year to open it by quarter." : "") : "The ground colored by the year it first read as built-up. Click a year to open it by half-year.";
-    } else {
-      hdT.innerHTML = `<span class="crumb">All years</span><span class="sep">&rsaquo;</span><b>${l.year}</b>`;
-      (hdT.querySelector(".crumb") as HTMLElement).onclick = (e) => {
-        e.stopPropagation();
-        setLook({ ...st.look, year: null });
-      };
-      // every year, the one open outlined: another opens in its place, the open one (or All years) goes back
-      const years = E("div", "years");
-      const back = E("button", "allyears", "All") as HTMLButtonElement;
-      back.title = "back to every year (Esc)";
-      back.onclick = () => setLook({ ...st.look, year: null });
-      years.appendChild(back);
-      YEAR_COL.forEach((col, i) => {
-        const y = Y0_RAMP + i, b = E("button", "yr" + (y === l.year ? " on" : ""), String(y).slice(2)) as HTMLButtonElement;
-        b.style.background = col;
-        b.style.color = i < 4 ? "#fff" : "#111";
-        // b.disabled = l.src === "ours" && y < 2018;
-        b.title = y === l.year ? "back to every year" : `open ${y}`;
-        b.onclick = () => setLook({ ...st.look, year: y === l.year ? null : y });
-        years.appendChild(b);
-      });
-      chips.before(years);
-      const parts = l.src === "ours" ? SEASONS.map(([n, m], i) => [n, m, SEASON_COL[i]]) : [["First half", "Jan-Jun", HALF_COL[0]], ["Second half", "Jul-Dec", HALF_COL[1]]];
-      chips.style.gridTemplateColumns = `repeat(${parts.length}, 1fr)`;
-      parts.forEach(([n, m, col], i) => {
-        const b = E("div", "chip", `${n}<small>${m}</small>`);
-        b.style.background = col;
-        b.style.color = i === 0 && l.src === "ours" ? "#fff" : "#111";
-        b.style.cursor = "default";
-        chips.appendChild(b);
-      });
-      hint.innerHTML =
-        l.src === "ours"
-          ? `${l.year}'s buildings and dug ground by the quarter it changed, from the decoder. <span style="color:${UNCLEAR}">Gray</span>: no quarter made out. <kbd>[</kbd> <kbd>]</kbd> step the year, <kbd>Esc</kbd> all years.`
-          : `${l.year}'s built-up ground by WSF's half-year. <kbd>[</kbd> <kbd>]</kbd> step the year, <kbd>Esc</kbd> all years.`;
+  // ---- the panels
+  /** Each year's place in the panels: the year before the patch was first dug, the year most of it was, and 2025. */
+  function yearsOf(p: Patch) {
+    const last = S2_YEARS[S2_YEARS.length - 1];
+    const ys: [number, string][] = [[Math.max(S2_YEARS[0], p.first - 1), "before it was dug"], [p.main, "most of it dug"], [last, "latest"]];
+    // the year most of it was dug may be the latest: one panel for both
+    const out: [number, string][] = [];
+    for (const [y, r] of ys) {
+      const o = out.find((x) => x[0] === y);
+      if (o) o[1] += ", " + r;
+      else out.push([y, r]);
     }
-    drawZoom();
+    return out;
   }
-  function drawZoom() {
-    const z = map.getZoom();
-    const ze = s2Card.querySelector(".z");
-    if (ze) ze.textContent = z.toFixed(1);
-    zoomRow.innerHTML =
-      `Zoom ${z.toFixed(1)} · reads by itself from zoom ${AUTO_Z}` +
-      (z < AUTO_Z ? ` <span class="warn">zoom in to read</span>` : "") +
-      `<div class="keys"><span><kbd>Space</kbd> Sentinel-2</span><span><kbd>P</kbd> pair</span><span><kbd>L</kbd> labels</span><span><kbd>Q</kbd> picking</span><span><kbd>H</kbd> fold</span><span><kbd>K</kbd> PNG</span><span><kbd>Shift</kbd><kbd>&larr;</kbd><kbd>&rarr;</kbd> pivot</span></div>`;
+  function bootPanel(i: number) {
+    const pn = panels[i];
+    if (pn.map) return;
+    const m = (pn.map = new maplibregl.Map({ container: pn.mapEl, style: BLANK, center: map.getCenter(), zoom: map.getZoom(), interactive: false, attributionControl: false, maxCanvasSize: [8192, 8192] }));
+    pn.overlay = new MapboxOverlay({ interleaved: true, layers: [] });
+    m.addControl(pn.overlay as unknown as maplibregl.IControl);
+    m.on("load", drawPanels);
   }
+  /** The patch framed the same in every panel: its box with room around it, no closer than PANEL_MAX_Z. */
+  function frame() {
+    const p = st.open, m = panels[0].map;
+    if (!p || !m) return;
+    const [W, S, E, N] = p.box, w = m.getContainer().clientWidth, h = m.getContainer().clientHeight;
+    const cam = m.cameraForBounds([[W, S], [E, N]], { padding: { top: Math.max(90, h * 0.12), bottom: h * 0.1, left: w * 0.1, right: w * 0.1 } });
+    if (!cam) return;
+    const zoom = Math.min(PANEL_MAX_Z, cam.zoom ?? PANEL_MAX_Z);
+    for (const pn of panels) pn.map?.jumpTo({ center: cam.center ?? [(W + E) / 2, (S + N) / 2], zoom, bearing: 0 });
+  }
+  let openPaths: number[][][] = [];
+  function drawPanels() {
+    if (!st.open || !s2) return;
+    panels.forEach((pn, i) => {
+      if (!pn.year || !pn.map || !pn.overlay) return;
+      const line = new PathLayer({ id: "patch", data: openPaths, getPath: (r: number[][]) => r as never, getColor: ORCHID, getWidth: 2.5, widthUnits: "pixels", jointRounded: true, capRounded: true });
+      pn.overlay.setProps({ layers: [...s2!.layerFor(pn.year, `t${i}`), line] as never });
+      const d = s2!.dateAt(pn.year), stt = s2!.status(pn.year);
+      const day = d ? `${MONTHS[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}` + (stt === "cloudy" ? ", cloudy" : "") : stt === "cloudy" ? "no scene" : "finding…";
+      pn.label.innerHTML = `<b>${pn.year}</b><span>${pn.role}<br>Sentinel-2 · ${day}</span>`;
+    });
+  }
+  function openPatch(p: Patch) {
+    st.open = p;
+    openPaths = outlineOfRuns(p.runs).map(([a, b, c, d]) => [[a, b], [c, d]]);
+    // its size, to see where a cutoff for small patches would sit: hectares from its 10 m pixels at its latitude
+    const ha = (p.n * (RES * 111320) ** 2 * Math.cos((((p.box[1] + p.box[3]) / 2) * Math.PI) / 180)) / 1e4;
+    back.innerHTML = `${ha < 10 ? ha.toFixed(2) : ha.toFixed(0)} ha, ${p.n.toLocaleString()} pixels · click anywhere or <kbd>Esc</kbd> to go back · <kbd>K</kbd> PNG`;
+    const ys = yearsOf(p);
+    s2?.want(ys.map((y) => y[0]));
+    tri.classList.add("on");
+    panels.forEach((pn, i) => {
+      pn.year = ys[i]?.[0] ?? 0;
+      pn.role = ys[i]?.[1] ?? "";
+      pn.el.classList.toggle("off", !pn.year);
+      // the last open patch's imagery off until this one's is drawn
+      if (!pn.year) pn.overlay?.setProps({ layers: [] });
+    });
+    panels.forEach((pn, i) => pn.year && bootPanel(i));
+    for (const pn of panels) pn.map?.resize();
+    frame();
+    drawPanels();
+  }
+  function closePatch() {
+    st.open = null;
+    tri.classList.remove("on");
+    for (const pn of panels) pn.overlay?.setProps({ layers: [] });
+  }
+  tri.addEventListener("click", closePatch);
+
   /** Reads the view: the chunks in it scored (those read before come from the worker's and the disk's kept scores). */
   function read() {
-    if (map.getZoom() < MIN_ZOOM) {
-      drawZoom();
-      return;
-    }
+    if (map.getZoom() < MIN_ZOOM) return drawS2Card();
     const b = map.getBounds();
     st.area = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
     st.readId++;
-    model.set("foot_ask", JSON.stringify({ area: st.area, t: Date.now() }));
-    model.save_changes();
-    update();
+    draw();
+    patchesSoon();
   }
-  function setLook(l: Look) {
-    if (l.src === "ours" && l.year != null && l.year < 2018) l = { ...l, year: null };
-    st.look = l;
-    drawCard();
-    codes?.setLook(l);
-    progressSoon();
-  }
-  bOurs.onclick = () => setLook({ ...st.look, src: "ours" });
-  bWsf.onclick = () => setLook({ ...st.look, src: "wsf" });
-  const setFold = (on: boolean) => {
-    st.folded = on;
-    card.classList.toggle("folded", on);
-    fold.title = on ? "open the card (H)" : "fold the card (H)";
-  };
-  hd.onclick = () => setFold(!st.folded);
 
   // ---- the loading bar: the chunks in view on hand
   let progT = 0;
@@ -641,178 +369,29 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     progT = window.setTimeout(progress, 150);
   }
   function progress() {
-    drawZoom();
     if (!codes || map.getZoom() < MIN_ZOOM) {
       load.classList.remove("on");
       loadTag.classList.remove("on");
       return;
     }
     const w = codes.work();
-    const reading = w.reading > 0, decoding = !reading && w.decoding > 0;
-    const on = reading || decoding;
+    const on = w.reading > 0;
     load.classList.toggle("on", on);
     loadTag.classList.toggle("on", on);
     if (!on) return;
-    const [d, n] = reading ? [w.readDone, w.readDone + w.reading] : [w.decodeDone, w.decodeDone + w.decoding];
+    const d = w.readDone, n = w.readDone + w.reading;
     (load.firstChild as HTMLElement).style.width = ((100 * d) / Math.max(1, n)).toFixed(1) + "%";
-    loadTag.innerHTML = reading
-      ? `Scoring chunks: ${d} of ${n}, every year 2017 to 2025` + (n > 30 ? ` <span>zoom in to load faster</span>` : "")
-      : `Decoding ${st.look.year}'s quarters: ${d} of ${n} chunks`;
-    // the work goes on without the map moving: look again
+    loadTag.innerHTML = `Scoring chunks: ${d} of ${n}, every year 2017 to 2025` + (n > 30 ? ` <span>zoom in to load faster</span>` : "");
     progressSoon();
   }
 
-  // ---- hover: what each source says about the footprint, or the ground, under the pointer
-  type Ring = number[][];
-  const inRing = (x: number, y: number, ring: Ring) => {
-    let inside = false;
-    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-      const [xi, yi] = ring[i], [xj, yj] = ring[j];
-      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
-    }
-    return inside;
-  };
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const wsfText = (k: number) => (k >= 2 ? `${2016 + ((k - 1) >> 1)}, ${k % 2 === 0 ? "second half" : "first half"}` : k === 1 ? "built by mid 2016" : "not built-up");
-  function mixHtml(m: number[]) {
-    const tot = m.reduce((a, b) => a + b, 0);
-    if (!tot) return "";
-    const parts = [0, 1, 2, 3].map((i) => [m[i], SEASON_COL[i], SEASONS[i][0]] as [number, string, string]).concat([[m[4], UNCLEAR, "unclear"]]).filter((x) => x[0] > 0);
-    return (
-      `<div class="bar">${parts.map(([n, c]) => `<span style="width:${(100 * n) / tot}%;background:${c}"></span>`).join("")}</div>` +
-      `<div class="mix">${parts.map(([n, c, l]) => `<span><i style="background:${c}"></i>${l} ${Math.round((100 * n) / tot)}%</span>`).join("")}</div>`
-    );
-  }
-  let hoverKey = "";
-  function footHtml(rings: Ring[], key: string): string {
-    if (!codes) return "";
-    let W = Infinity, S = Infinity, E2 = -Infinity, N = -Infinity;
-    for (const r of rings) for (const [x, y] of r) (W = Math.min(W, x)), (E2 = Math.max(E2, x)), (S = Math.min(S, y)), (N = Math.max(N, y));
-    const [p0, q0] = pixelOf(W, N), [p1, q1] = pixelOf(E2, S);
-    let pts: { ours: number; bits: number; wsf: number; season: (i: number) => number | undefined; tile: unknown }[] = [];
-    for (let py = q0; py <= q1; py++)
-      for (let px = p0; px <= p1; px++) {
-        const [x, y] = pixelCenter(px, py);
-        if (!rings.some((r) => inRing(x, y, r))) continue;
-        const c = codes.at(px, py);
-        if (c) pts.push(c);
-      }
-    if (!pts.length) {
-      const [px, py] = pixelOf((W + E2) / 2, (S + N) / 2);
-      const c = codes.at(px, py);
-      if (c) pts = [c];
-    }
-    if (!pts.length) return `<b>Overture</b><br><span class="dim">not read here yet</span>`;
-    // a year opened: its pixels dug that year; else the year most of its pixels were last dug
-    const yOpen = st.look.year != null ? st.look.year - YEAR_ORIGIN : -1, bit = yOpen > 0 ? 1 << (yOpen - 1) : 0;
-    const lit = yOpen > 0 ? pts.filter((p) => p.bits & bit) : pts.filter((p) => p.ours > 0);
-    let ours = yOpen > 0 ? `not dug in ${st.look.year}` : "no digging found";
-    if (lit.length) {
-      const cnt = new Map<number, number>();
-      for (const p of lit) cnt.set(p.ours, (cnt.get(p.ours) ?? 0) + 1);
-      const idx = yOpen > 0 ? yOpen : [...cnt].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0];
-      ours = String(YEAR_ORIGIN + idx);
-      const mine = yOpen > 0 ? lit : lit.filter((p) => p.ours === idx);
-      const m = [0, 0, 0, 0, 0];
-      let missing = false;
-      for (const p of mine) {
-        const s = p.season(idx);
-        if (s === undefined) missing = true;
-        else m[s >= 1 && s <= 4 ? s - 1 : 4]++;
-      }
-      if (!QUARTERS) {
-        // quarters off: every year its pixels were last dug in, earliest first
-        if (yOpen <= 0) ours = [...cnt.keys()].sort((a, b) => a - b).map((i) => YEAR_ORIGIN + i).join(", ");
-      } else if (missing) {
-        ours += ` <span class="dim">decoding the quarters...</span>`;
-        const tiles = [...new Set(mine.map((p) => p.tile))] as Parameters<NonNullable<typeof codes>["seasonsReady"]>[0];
-        codes.seasonsReady(tiles, idx).then(() => {
-          if (hoverKey === key) showTip(footHtml(rings, key));
-        });
-      } else ours += mixHtml(m);
-    }
-    // WSF commented out for now
-    // const ks = pts.map((p) => p.wsf).filter((k) => k >= 1);
-    // return `<b>Overture</b><br>Ours (dug or graded): ${ours}<br>WSF (built-up): ${wsfText(ks.length ? Math.min(...ks) : 0)}`;
-    return `<b>Overture</b><br>Dug or graded: ${ours}`;
-  }
-  let lastPoint = { x: 0, y: 0 };
-  function showTip(html: string) {
-    if (!html) {
-      tip.style.display = "none";
-      return;
-    }
-    tip.innerHTML = html;
-    tip.style.display = "block";
-    const r = root.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight;
-    // the pointer is in the map's own box, which the pair moves to the right half
-    const px = lastPoint.x + mapEl.offsetLeft, py = lastPoint.y + mapEl.offsetTop;
-    let x = px + 14, y = py + 14;
-    if (x + tw > r.width - 8) x = px - tw - 14;
-    if (y + th > r.height - 8) y = py - th - 14;
-    tip.style.left = x + "px";
-    tip.style.top = y + "px";
-  }
+  // ---- the pointer: a hand over a patch, and a click opens it
   map.on("mousemove", (e) => {
-    lastPoint = e.point;
-    if (!st.picking || !codes || !map.getLayer("foot")) return setHi(null);
-    if (footBatch) {
-      const info = overlay.pickObject({ x: e.point.x, y: e.point.y, radius: 2, layerIds: ["foot-poly"] });
-      if (info && info.index >= 0) {
-        const key = `a:${info.index}`;
-        setHi(footHi(info.index));
-        hoverKey = key;
-        showTip(footHtml([ringOf(info.index)], key));
-        return;
-      }
-    }
-    setHi(null);
-    // the building tiles are only the layers' anchor now: their features are not asked
-    const f = null as { geometry: { type: string; coordinates: unknown }; id?: unknown } | null;
-    if (f) {
-      const g = f.geometry as { type: string; coordinates: unknown };
-      const rings: Ring[] = g.type === "Polygon" ? [(g.coordinates as Ring[])[0]] : g.type === "MultiPolygon" ? (g.coordinates as Ring[][]).map((p) => p[0]) : [];
-      const key = `f:${f.id ?? JSON.stringify(rings[0]?.[0])}`;
-      hoverKey = key;
-      showTip(footHtml(rings, key));
-      return;
-    }
-    const [px, py] = pixelOf(e.lngLat.lng, e.lngLat.lat);
-    const c = codes.at(px, py);
-    // WSF commented out for now: only ours' ground answers
-    // if (!c || (!c.ours && c.wsf < 2)) {
-    const yOpen = st.look.year != null ? st.look.year - YEAR_ORIGIN : -1;
-    if (!c || !c.ours || (yOpen > 0 && !(c.bits & (1 << (yOpen - 1))))) {
-      hoverKey = "";
-      showTip("");
-      return;
-    }
-    const key = `p:${px}:${py}`;
-    hoverKey = key;
-    let ours = "no digging found";
-    if (c.ours) {
-      const yi = yOpen > 0 ? yOpen : c.ours;
-      const s = c.season(yi);
-      ours = String(YEAR_ORIGIN + yi);
-      if (!QUARTERS) {
-        // quarters off: the year alone
-      } else if (s === undefined) {
-        // its quarters not decoded yet: asked for, and the tooltip told when they come
-        ours += ` <span class="dim">decoding the quarters...</span>`;
-        codes.seasonsReady([c.tile] as Parameters<NonNullable<typeof codes>["seasonsReady"]>[0], yi).then(() => {
-          if (hoverKey !== key || !codes) return;
-          const s2 = codes.at(px, py)?.season(yi);
-          showTip(`<b>No footprint</b><br>Dug or graded: ${YEAR_ORIGIN + yi}` + (s2 && s2 >= 1 && s2 <= 4 ? `, ${SEASONS[s2 - 1][0]} (${SEASONS[s2 - 1][1]})` : ", quarter unclear"));
-        });
-      } else ours += s >= 1 && s <= 4 ? `, ${SEASONS[s - 1][0]} (${SEASONS[s - 1][1]})` : ", quarter unclear";
-    }
-    showTip(`<b>No footprint</b><br>Dug or graded: ${ours}`);
+    map.getCanvas().style.cursor = patchAt(e.lngLat.lng, e.lngLat.lat) ? "pointer" : "";
   });
-  map.on("click", (e) => pin(e.point));
-  mapEl.addEventListener("mouseleave", () => {
-    hoverKey = "";
-    showTip("");
-    setHi(null);
+  map.on("click", (e) => {
+    const p = patchAt(e.lngLat.lng, e.lngLat.lat);
+    if (p) openPatch(p);
   });
 
   // ---- search, as aef-earthwork-web searches: Photon as you type; when it is slow or finds nothing, Enter asks
@@ -992,6 +571,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     }
   });
 
+
   // ---- K: the map (no cards; paired, both halves) as a PNG at SNAP_X times its size on screen, written by the kernel
   // to exports/
   const SNAP_X = 4;
@@ -1048,53 +628,37 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       if (b.size <= 5 * 1024 * 1024 || long <= 1080) return { png: b, size: `${w}x${h}` };
     }
   }
-  // the PNG carries no cards: the legend is drawn on it at the map's top left (paired, the right half's), and paired
-  // the imagery's year and day at the left half's; text on the map with a soft shadow, no box (LinkedIn's rule)
+  // the PNG carries no cards: each image's year and day drawn at its top left, text with a soft shadow, no box
+  // (LinkedIn's rule)
   const FONT = "'Instrument Sans', system-ui, sans-serif";
-  function drawLegend(g: CanvasRenderingContext2D, x0: number, y0: number, k: number) {
+  function drawYear(g: CanvasRenderingContext2D, x0: number, y0: number, k: number, year: number, role: string) {
+    const d = s2?.dateAt(year) ?? "";
     g.save();
-    g.shadowColor = "rgba(0,0,0,.75)";
-    g.shadowBlur = 6 * k;
-    g.textBaseline = "middle";
-    const mid = y0 + 10 * k;
-    g.font = `600 ${15 * k}px ${FONT}`;
-    g.fillStyle = "#e6e9ec";
-    g.fillText("Dug by year", x0, mid);
-    let x = x0 + g.measureText("Dug by year").width + 14 * k;
-    g.font = `500 ${13 * k}px ${FONT}`;
-    g.fillStyle = "#c9cfd5";
-    const first = String(Y0_RAMP), last = String(Y0_RAMP + YEAR_COL.length - 1);
-    g.fillText(first, x, mid);
-    x += g.measureText(first).width + 8 * k;
-    YEAR_COL.forEach((col) => {
-      g.fillStyle = col;
-      g.fillRect(x, mid - 7 * k, 20 * k, 14 * k);
-      x += 22 * k;
-    });
-    g.fillStyle = "#c9cfd5";
-    g.fillText(last, x + 6 * k, mid);
-    g.restore();
-  }
-  function drawYear(g: CanvasRenderingContext2D, x0: number, y0: number, k: number) {
-    const c = map.getCenter(), d = s2?.dateAt(st.s2Year, c.lng, c.lat) ?? "";
-    g.save();
-    g.shadowColor = "rgba(0,0,0,.75)";
-    g.shadowBlur = 6 * k;
+    g.shadowColor = "rgba(0,0,0,.9)";
+    g.shadowBlur = 5 * k;
     g.textBaseline = "top";
     g.font = `600 ${34 * k}px ${FONT}`;
     g.fillStyle = "#e6e9ec";
-    g.fillText(String(st.s2Year), x0, y0);
-    g.font = `500 ${13 * k}px ${FONT}`;
-    g.fillStyle = "#c9cfd5";
-    g.fillText("Sentinel-2" + (d ? ` · ${MONTHS[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}` : ""), x0, y0 + 40 * k);
+    g.fillText(String(year), x0, y0);
+    g.font = `600 ${14 * k}px ${FONT}`;
+    g.fillStyle = "#f2f4f6";
+    let y = y0 + 40 * k;
+    if (role) {
+      g.fillText(role[0].toUpperCase() + role.slice(1), x0, y);
+      y += 18 * k;
+    }
+    g.fillText("Sentinel-2" + (d ? ` · ${MONTHS[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}` : ""), x0, y);
     g.restore();
   }
   async function snap() {
     if (snapping) return;
     snapping = true;
     note(`Exporting a ${SNAP_X}x PNG...`);
-    // paired, both halves side by side with the divider between them, as on screen
-    const maps: [maplibregl.Map, InstanceType<typeof MapboxOverlay>][] = st.pair && map2 && overlay2 ? [[map2, overlay2], [map, overlay]] : [[map, overlay]];
+    // the panels open: each side by side with the divider between them, as on screen; else the map
+    const open = st.open ? panels.filter((p) => p.year && p.map && p.overlay) : [];
+    const maps: [maplibregl.Map, InstanceType<typeof MapboxOverlay>, number, string][] = open.length
+      ? open.map((p) => [p.map!, p.overlay!, p.year, p.role])
+      : [[map, overlay, st.s2Year, ""]];
     try {
       for (const [m, ov] of maps) {
         m.setPixelRatio(SNAP_X);
@@ -1102,15 +666,17 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       }
       const shots = await Promise.all(maps.map(([m]) => grab(m)));
       // the ratio drawn, lower than SNAP_X where maxCanvasSize held the canvas back
-      const x = shots[shots.length - 1].width / map.getContainer().clientWidth;
+      const x = shots[0].width / maps[0][0].getContainer().clientWidth;
       const line = shots.length > 1 ? Math.round(2 * x) : 0;
       const out = document.createElement("canvas");
-      out.width = shots.reduce((w, c) => w + c.width, 0) + line;
+      out.width = shots.reduce((w, c) => w + c.width, 0) + line * (shots.length - 1);
       out.height = Math.max(...shots.map((c) => c.height));
       const g = out.getContext("2d")!;
       let at = 0;
+      const pad = 14 * x;
       shots.forEach((c, i) => {
         g.drawImage(c, at, 0);
+        drawYear(g, at + pad, pad, x, maps[i][2], maps[i][3]);
         at += c.width;
         if (i < shots.length - 1) {
           g.fillStyle = "rgba(255,255,255,.35)";
@@ -1118,17 +684,11 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
           at += line;
         }
       });
-      const pad = 14 * x;
-      drawLegend(g, (shots.length > 1 ? shots[0].width + line : 0) + pad, pad, x);
-      if (shots.length > 1) drawYear(g, pad, pad, x);
       const png = await new Promise<Blob | null>((r) => out.toBlob(r, "image/png"));
       if (!png) throw new Error("the canvas gave no PNG");
       const small = await forLinkedIn(out);
-      const c = map.getCenter();
-      const name =
-        `z${map.getZoom().toFixed(1)}_${c.lat.toFixed(4)}_${c.lng.toFixed(4)}` +
-        (st.pair ? `_pair-s2-${st.s2Year}` : s2Shown() ? `_s2-${st.s2Year}` : "") +
-        `_${+x.toFixed(1)}x`;
+      const c = open.length ? open[0].map!.getCenter() : map.getCenter(), z = open.length ? open[0].map!.getZoom() : map.getZoom();
+      const name = `z${z.toFixed(1)}_${c.lat.toFixed(4)}_${c.lng.toFixed(4)}` + (open.length ? `_patch-${open.map((p) => p.year).join("-")}` : `_s2-${st.s2Year}`) + `_${+x.toFixed(1)}x`;
       model.set("snap_name", name);
       model.set("snap_small", new DataView(await small.png.arrayBuffer()));
       model.set("snap_small_size", small.size);
@@ -1152,55 +712,31 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   const onKey = (e: KeyboardEvent) => {
     if (e.metaKey || e.ctrlKey || e.altKey || e.target === q) return;
     const k = e.key;
-    if (e.code === "Space") {
-      if (!e.repeat) setS2(true);
-    } else if (k === "p" || k === "P") setPair(!st.pair);
-    else if ((k === "[" || k === "]") && imgShown()) stepS2(k === "]" ? 1 : -1);
-    else if ((k === "b" || k === "B") && imgShown()) {
-      // from any year to the latest, then back and forth between the first and the latest
-      const last = S2_YEARS.length - 1, i = S2_YEARS.indexOf(st.s2Year);
-      stepS2((i === last ? 0 : last) - i);
-    }
-    else if (k === "l" || k === "L") {
-      // the basemap's labels on or off
-      st.labels = !st.labels;
-      for (const l of map.getStyle().layers) if (l.type === "symbol") map.setLayoutProperty(l.id, "visibility", st.labels ? "visible" : "none");
-      note(st.labels ? "Labels on" : "Labels off");
-    } else if (k === "q" || k === "Q") {
-      // picking and the tooltip on or off
-      st.picking = !st.picking;
-      if (!st.picking) {
-        hoverKey = "";
-        showTip("");
-      }
-      note(st.picking ? "Picking on" : "Picking off");
-    }
-    else if (QUARTERS && (k === "[" || k === "]") && st.look.year != null) {
-      const lo = st.look.src === "ours" ? 2018 : Y0_RAMP, hi = Y0_RAMP + YEAR_COL.length - 1;
-      setLook({ ...st.look, year: Math.max(lo, Math.min(hi, st.look.year + (k === "]" ? 1 : -1))) });
-    }
-    // WSF commented out for now
-    // else if (k === "c" || k === "C") setLook({ ...st.look, src: st.look.src === "ours" ? "wsf" : "ours" });
-    else if (k === "h" || k === "H") setFold(!st.folded);
-    else if ((k === "n" || k === "N") && imgShown() && s2) {
-      // the year's next look: another of its clear scenes
-      s2.next(st.s2Year);
-      drawS2Card();
-      render();
-    }
-    else if (k === "x" || k === "X") {
-      st.fit = !st.fit;
-      sizes();
-    } else if (k === "f" || k === "F") fullScreen();
-    else if (k === "k" || k === "K") snap();
-    else if (k === "/") q.focus();
+    if (k === "k" || k === "K") snap();
     else if (k === "Escape") {
-      if (st.look.year != null) setLook({ ...st.look, year: null });
+      if (st.open) closePatch();
       else if (st.fit) {
         st.fit = false;
         sizes();
       }
-    } else if (e.shiftKey && (k === "ArrowLeft" || k === "ArrowRight")) {
+    } else if (k === "f" || k === "F") fullScreen();
+    else if (k === "x" || k === "X") {
+      st.fit = !st.fit;
+      sizes();
+    } else if (st.open) return;
+    // the rest move the map or its imagery: not while the panels are open
+    else if (k === "[" || k === "]") stepS2(k === "]" ? 1 : -1);
+    else if (k === "b" || k === "B") {
+      // from any year to the latest, then back and forth between the first and the latest
+      const last = S2_YEARS.length - 1, i = S2_YEARS.indexOf(st.s2Year);
+      stepS2((i === last ? 0 : last) - i);
+    } else if ((k === "n" || k === "N") && s2) {
+      // the year's next look: another of its clear passes
+      s2.next(st.s2Year);
+      drawS2Card();
+      draw();
+    } else if (k === "/") q.focus();
+    else if (e.shiftKey && (k === "ArrowLeft" || k === "ArrowRight")) {
       // Shift and an arrow: the map pivots about its center, 15 degrees a press
       pivotTo = (map.isMoving() ? pivotTo : map.getBearing()) + (k === "ArrowRight" ? 15 : -15);
       map.easeTo({ bearing: pivotTo, duration: 250 });
@@ -1214,37 +750,11 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     e.preventDefault();
   };
   window.addEventListener("keydown", onKey);
-  const onKeyUp = (e: KeyboardEvent) => {
-    if (e.code === "Space" && st.holding) setS2(false);
-  };
-  window.addEventListener("keyup", onKeyUp);
-  const onBlur = () => st.holding && setS2(false);
-  window.addEventListener("blur", onBlur);
-  // while the imagery shows, the wheel steps its year instead of zooming
-  let wheelAcc = 0, lastStep = 0;
-  root.addEventListener(
-    "wheel",
-    (e) => {
-      if (!st.holding) return;
-      e.preventDefault();
-      e.stopPropagation();
-      wheelAcc += e.deltaY;
-      const now = performance.now();
-      if (Math.abs(wheelAcc) >= 40 && now - lastStep > 140) {
-        stepS2(wheelAcc > 0 ? 1 : -1);
-        wheelAcc = 0;
-        lastStep = now;
-      }
-    },
-    { capture: true, passive: false },
-  );
   map.on("moveend", progressSoon);
   map.on("moveend", () => {
-    if (imgShown()) {
-      s2?.discover(st.s2Year);
-      drawS2Card();
-      render();
-    }
+    s2?.discover(st.s2Year);
+    drawS2Card();
+    draw();
   });
   // close enough in, a view that reaches past the area read is read once the map has settled
   let autoT = 0;
@@ -1255,59 +765,32 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     if (a && b.getWest() >= a[0] && b.getEast() <= a[2] && b.getSouth() >= a[1] && b.getNorth() <= a[3]) return;
     autoT = window.setTimeout(read, 500);
   });
-  map.on("zoom", drawZoom);
-
+  map.on("zoom", () => {
+    const ze = s2Card.querySelector(".z");
+    if (ze) ze.textContent = map.getZoom().toFixed(1);
+  });
 
   map.on("load", async () => {
-    // the basemap's own buildings off; the data over its roads, under its labels
-    for (const l of map.getStyle().layers) if (/building/.test(l.id)) map.setLayoutProperty(l.id, "visibility", "none");
-    // and its roads below side streets (Carto's "service": parking lot aisles, driveways, alleys; "path" and "track"),
-    // on the ground, in tunnels and on bridges: they draw over the raster and would only crowd it
-    for (const l of map.getStyle().layers) if (/(^|_)(service|path)(_|$)/.test(l.id)) map.setLayoutProperty(l.id, "visibility", "none");
-    const ls = map.getStyle().layers;
-    const lastNon = ls.reduce((a, l, i) => (l.type !== "symbol" ? i : a), -1);
-    const below = ls.slice(lastNon + 1).find((l) => l.type === "symbol")?.id;
-    groundId = ls.find((l) => l.type === "line" && /aeroway|tunnel|road|bridge|rail|transport/.test(l.id))?.id ?? "foot";
-    map.addSource("overture", {
-      type: "vector",
-      url: `pmtiles://https://overturemaps-extras-us-west-2.s3.us-west-2.amazonaws.com/tiles/${cfg.release}/buildings.pmtiles`,
-    });
-    map.addLayer(
-      {
-        id: "foot",
-        type: "line",
-        source: "overture",
-        "source-layer": "building",
-        // not drawn: the footprints are the kernel's GeoArrow; this layer only holds the deck layers' place in the order
-        layout: { visibility: "none" },
-        paint: { "line-color": FOOT, "line-width": ["interpolate", ["linear"], ["zoom"], 14, 0.5, 16, 0.8, 18, 1], "line-opacity": 0.85 },
-      },
-      below,
-    );
     s2 = createS2(map, () => {
       drawS2Card();
-      render();
+      draw();
+      if (st.open) drawPanels();
     });
-    // the card is always there: drawn from the start, its year grayed until the imagery shows
+    s2.discover(st.s2Year);
     drawS2Card();
-    codes = await createCodesLayer(world as unknown as WorldModel, await decoderP, () => update());
-    loadFoot();
-    codes.setLook(st.look);
+    codes = await createCodesLayer(world as unknown as WorldModel, await decoderP, () => draw());
     ready = true;
     // the first view reads at once
     read();
   });
 
-  drawCard();
   sizes();
   return () => {
     window.removeEventListener("keydown", onKey);
-    window.removeEventListener("keyup", onKeyUp);
-    window.removeEventListener("blur", onBlur);
     document.removeEventListener("fullscreenchange", onFs);
     document.documentElement.classList.remove(FIT_CLS);
     try {
-      map2?.remove();
+      for (const p of panels) p.map?.remove();
       map.remove();
     } catch {
       // gone already

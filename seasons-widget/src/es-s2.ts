@@ -383,5 +383,17 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
     return out;
   }
 
-  return { discover, layers, dateAt, status, next };
+  /** The years given chosen for the view now, side by side, ahead of the rest (each kept if already chosen near here). */
+  function want(ys: number[]) {
+    for (const y of ys) choose(y).catch(() => {});
+  }
+
+  /** The year's pass alone, shown (none until it is chosen). `tag` keeps another map's layer ids apart. */
+  function layerFor(year: number, tag: string) {
+    poolGet();
+    const s = years.get(year), p = s && shownOf(s);
+    return p ? [layerOf(year, p, true, undefined, tag)] : [];
+  }
+
+  return { discover, layers, layerFor, want, dateAt, status, next };
 }
