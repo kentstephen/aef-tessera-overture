@@ -113834,7 +113834,10 @@ function Oot({ model: e, el: t }) {
 		let t = (e, t) => e.on("move", () => {
 			!Ne && r.pair && (Ne = !0, t.jumpTo(Pe(e)), Ne = !1);
 		});
-		t(F, e), t(e, F), e.on("mousemove", (e) => Je(Qe(e.point))), e.on("click", (e) => $e(e.point)), s.addEventListener("mouseleave", () => Je(null)), new ResizeObserver(() => e.resize()).observe(s);
+		t(F, e), t(e, F), e.on("mousemove", (e) => {
+			let t = Ye(e.point);
+			Je(t >= 0 ? Xe(t) : null);
+		}), e.on("click", (e) => $e(e.point)), s.addEventListener("mouseleave", () => Je(null)), new ResizeObserver(() => e.resize()).observe(s);
 	}
 	function Ie(e) {
 		e !== r.pair && (e && (r.holding = !1), r.pair = e, a.classList.toggle("pair", e), e && (Fe(), je.jumpTo(Pe(F))), He() && ke?.discover(r.s2Year), Ue(), et());
@@ -113900,9 +113903,7 @@ function Oot({ model: e, el: t }) {
 	});
 	function Ze(e, t) {
 		if (!Oe || !r.area) return null;
-		let [n, i] = F7(e, t);
-		if (Ge?.has?.(n, i)) return Ge;
-		let a = r.look.year == null ? -1 : r.look.year - w8, o = a > 0 ? 1 << a - 1 : 0, s = Oe.at(n, i);
+		let [n, i] = F7(e, t), a = r.look.year == null ? -1 : r.look.year - w8, o = a > 0 ? 1 << a - 1 : 0, s = Oe.at(n, i);
 		if (!s || !s.ours || a > 0 && !(s.bits & o)) return null;
 		let c = s.ours, [l, u, d, f] = r.area, [p, m] = F7(l, f), [h, g] = F7(d, u), _ = 4194304, v = (e, t) => t * _ + e, y = (e, t) => {
 			if (e < p || e > h || t < m || t > g) return !1;
@@ -113931,8 +113932,7 @@ function Oot({ model: e, el: t }) {
 		}
 		return {
 			key: `p:${a}:${S}`,
-			paths: T,
-			has: (e, t) => b.has(v(e, t))
+			paths: T
 		};
 	}
 	function Qe(e) {
@@ -114167,7 +114167,7 @@ function Oot({ model: e, el: t }) {
 				return;
 			}
 		}
-		Je(Ze(e.lngLat.lng, e.lngLat.lat));
+		Je(null);
 		let [t, n] = F7(e.lngLat.lng, e.lngLat.lat), i = Oe.at(t, n), a = r.look.year == null ? -1 : r.look.year - w8;
 		if (!i || !i.ours || a > 0 && !(i.bits & 1 << a - 1)) {
 			ft("");

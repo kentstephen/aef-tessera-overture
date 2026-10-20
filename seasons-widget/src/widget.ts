@@ -327,7 +327,11 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     follow(map, m2);
     follow(m2, map);
     // the halves share one camera and size: the pointer on the left picks the footprint at the same point on the right
-    m2.on("mousemove", (e) => setHi(hiAt(e.point)));
+    // hover outlines a footprint; a patch of dug ground only on a click
+    m2.on("mousemove", (e) => {
+      const row = footAt(e.point);
+      setHi(row >= 0 ? footHi(row) : null);
+    });
     m2.on("click", (e) => pin(e.point));
     mapEl2.addEventListener("mouseleave", () => setHi(null));
     new ResizeObserver(() => m2.resize()).observe(mapEl2);
@@ -383,11 +387,11 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       }</div>`;
     s2Card.classList.toggle("showing", showImg);
   }
-  // the pair's left map: its imagery, and over it in orchid what is pinned by a click, else what is hovered, on either
-  // half: a footprint, or where no footprint is, the patch of dug ground under the pointer
+  // the pair's left map: its imagery, and over it in orchid what is pinned by a click, else the footprint hovered, on
+  // either half. A click pins a footprint, or where no footprint is, the patch of dug ground under it
   let l2: unknown[] = [];
-  /** A thing outlined on the imagery: its key, its outline as paths, and (a patch) whether a pixel is in it. */
-  type Hi = { key: string; paths: number[][][]; has?: (px: number, py: number) => boolean };
+  /** A thing outlined on the imagery: its key and its outline as paths. */
+  type Hi = { key: string; paths: number[][][] };
   let hoverHi: Hi | null = null, pinHi: Hi | null = null;
   function setL2() {
     if (!overlay2) return;
@@ -418,8 +422,6 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   function patchAt(lng: number, lat: number): Hi | null {
     if (!codes || !st.area) return null;
     const [x0, y0] = pixelOf(lng, lat);
-    // still in the patch outlined: no need to trace it again
-    if (hoverHi?.has?.(x0, y0)) return hoverHi;
     const yOpen = st.look.year != null ? st.look.year - YEAR_ORIGIN : -1, bit = yOpen > 0 ? 1 << (yOpen - 1) : 0;
     const c0 = codes.at(x0, y0);
     if (!c0 || !c0.ours || (yOpen > 0 && !(c0.bits & bit))) return null;
@@ -456,7 +458,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       if (!seen.has(key(x - 1, y))) paths.push([[lon(x), la(y)], [lon(x), la(y + 1)]]);
       if (!seen.has(key(x + 1, y))) paths.push([[lon(x + 1), la(y)], [lon(x + 1), la(y + 1)]]);
     }
-    return { key: `p:${yOpen}:${first}`, paths, has: (x, y) => seen.has(key(x, y)) };
+    return { key: `p:${yOpen}:${first}`, paths };
   }
   /** What is under a point: a footprint, else a patch of dug ground, else nothing. */
   function hiAt(pt: { x: number; y: number }): Hi | null {
@@ -792,7 +794,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
         return;
       }
     }
-    setHi(patchAt(e.lngLat.lng, e.lngLat.lat));
+    setHi(null);
     // the building tiles are only the layers' anchor now: their features are not asked
     const f = null as { geometry: { type: string; coordinates: unknown }; id?: unknown } | null;
     if (f) {
