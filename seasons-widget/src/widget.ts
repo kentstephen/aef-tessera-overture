@@ -1011,8 +1011,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       const last = S2_YEARS.length - 1, i = S2_YEARS.indexOf(st.s2Year);
       stepS2((i === last ? 0 : last) - i);
     } else if ((k === "n" || k === "N") && s2) {
-      // the year's next look: another of its clear passes
-      s2.next(st.s2Year);
+      // the year's next look: another of its clear passes; Shift+N back to the look before
+      if (e.shiftKey) s2.back(st.s2Year);
+      else s2.next(st.s2Year);
       drawS2Card();
       draw();
     } else if (k === "/") q.focus();

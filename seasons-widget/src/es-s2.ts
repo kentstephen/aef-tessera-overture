@@ -21,7 +21,7 @@ import { getTileData, renderTile, type S2TileData, tileRgba } from "./s2-shaders
  * again over the new view and kept if it is still clear there. The image is drawn as it is: the precomposed true
  * color (TCI) at gain 1.0, only its black nodata fill dropped (s2-shaders.ts). No cloud masking, no blending.
  *
- * `next` steps a year to its next clear pass. Every year the model reads, 2017 to 2025.
+ * `next` steps a year to its next clear pass, `back` returns to the one before. Every year the model reads, 2017 to 2025.
  */
 const STAC = "https://earth-search.aws.element84.com/v1/search";
 const COLLECTION = "sentinel-2-l2a";
@@ -370,6 +370,14 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
     const v = viewBox();
     if (v[2] - v[0] > 4 || v[3] - v[1] > 4) return;
     const s = years.get(year);
+    // the look on screen, for back()
+    const was = s && shownOf(s);
+    if (was) {
+      const h = looked.get(year) ?? [];
+      if (h[h.length - 1]?.key !== was.key) h.push(was);
+      if (h.length > 20) h.shift();
+      looked.set(year, h);
+    }
     if (!s || s.view.some((x, i) => x !== v[i])) {
       const shown = s ? shownOf(s) : null;
       const ns: YearState = { view: v, hold: grow(v, 0.25), clear: [], look: 0, queue: [], best: null, prev: shown, busy: false, done: false };
@@ -393,6 +401,22 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
         onChange();
       });
     else s.look = 0;
+  }
+
+  /** The looks N stepped away from, by year, the latest last. */
+  const looked = new Map<number, Rated[]>();
+  /** Back to the year's look before the last N (Shift+N), over and over back through what N showed. */
+  function back(year: number) {
+    const h = looked.get(year);
+    const p = h?.pop();
+    if (!p) return;
+    const s = years.get(year);
+    if (!s) return;
+    const i = s.clear.findIndex((c) => c.key === p.key);
+    // a look from before the view's passes were checked again: put back in the list where it is shown
+    if (i >= 0) s.look = i;
+    else s.clear.splice((s.look = s.clear.length ? s.look % s.clear.length : 0), 0, p);
+    onChange();
   }
 
   /** The day of the year's pass, or "" before one is chosen. */
@@ -517,5 +541,5 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
     return p ? [layerOf(year, p, true, undefined, tag, extra)] : [];
   }
 
-  return { discover, layers, layerFor, layerForPass, want, candidates, shownPass, sample, isBad, dateAt, status, next };
+  return { discover, layers, layerFor, layerForPass, want, candidates, shownPass, sample, isBad, dateAt, status, next, back };
 }

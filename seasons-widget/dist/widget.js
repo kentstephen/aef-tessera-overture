@@ -90412,7 +90412,11 @@ function kHe(e, t) {
 	function S(e) {
 		let n = l();
 		if (n[2] - n[0] > 4 || n[3] - n[1] > 4) return;
-		let r = s.get(e);
+		let r = s.get(e), i = r && _(r);
+		if (i) {
+			let t = C.get(e) ?? [];
+			t[t.length - 1]?.key !== i.key && t.push(i), t.length > 20 && t.shift(), C.set(e, t);
+		}
 		if (!r || r.view.some((e, t) => e !== n[t])) {
 			let i = r ? _(r) : null, a = {
 				view: n,
@@ -90432,15 +90436,24 @@ function kHe(e, t) {
 			r.look + 1 < r.clear.length ? r.look++ : r.look = 0, t();
 		}) : r.look = 0;
 	}
-	function C(e, t, n) {
+	let C = /* @__PURE__ */ new Map();
+	function w(e) {
+		let n = C.get(e)?.pop();
+		if (!n) return;
+		let r = s.get(e);
+		if (!r) return;
+		let i = r.clear.findIndex((e) => e.key === n.key);
+		i >= 0 ? r.look = i : r.clear.splice(r.look = r.clear.length ? r.look % r.clear.length : 0, 0, n), t();
+	}
+	function T(e, t, n) {
 		let r = s.get(e);
 		return r && _(r)?.date || "";
 	}
-	function w(e) {
+	function E(e) {
 		let t = s.get(e);
 		return !t || !t.clear.length && !t.done ? "finding" : t.clear.length ? "clear" : "cloudy";
 	}
-	function T(e, t, r, i, a, s = {}) {
+	function D(e, t, r, i, a, s = {}) {
 		return new cHe({
 			id: `s2${a}-${e}-${t.key}`,
 			sources: t.scenes,
@@ -90462,16 +90475,16 @@ function kHe(e, t) {
 			}) : null
 		});
 	}
-	function E(e, t, n, i = "", a = {}) {
+	function O(e, t, n, i = "", a = {}) {
 		r();
 		let o = [...c.filter((t) => t !== e).slice(-3), e], l = [];
 		for (let r of o) {
 			let o = s.get(r), c = o && _(o);
-			c && l.push(T(r, c, t && r === e, n, i, a));
+			c && l.push(D(r, c, t && r === e, n, i, a));
 		}
 		return l;
 	}
-	async function D(e, t) {
+	async function k(e, t) {
 		await g(e).catch(() => {});
 		let n = s.get(e);
 		if (!n) return [];
@@ -90480,14 +90493,14 @@ function kHe(e, t) {
 		let r = _(n), i = n.clear.length ? [...n.clear] : r ? [r] : [];
 		return r && i.sort((e, t) => e === r ? -1 : +(t === r)), i.slice(0, t);
 	}
-	async function O(e) {
+	async function A(e) {
 		await g(e).catch(() => {});
 		let t = s.get(e);
 		if (!t) return null;
 		for (let e = 0; e < 200 && !_(t); e++) await new Promise((e) => setTimeout(e, 150));
 		return _(t);
 	}
-	async function k(e, t, n) {
+	async function j(e, t, n) {
 		let r = t.length / 2, i = new Uint8Array(3 * r), a = new Uint8Array(r), o = Infinity, s = Infinity, c = -Infinity, l = -Infinity;
 		for (let e = 0; e < r; e++) o = Math.min(o, t[2 * e]), c = Math.max(c, t[2 * e]), s = Math.min(s, t[2 * e + 1]), l = Math.max(l, t[2 * e + 1]);
 		let u = e.scenes.filter((e) => e.bbox[0] < c && e.bbox[2] > o && e.bbox[1] < l && e.bbox[3] > s), d = await Promise.all(u.map(async (e) => {
@@ -90506,31 +90519,32 @@ function kHe(e, t) {
 			cls: a
 		};
 	}
-	let A = (e) => D9.has(e);
-	function j(e) {
+	let M = (e) => D9.has(e);
+	function ee(e) {
 		for (let t of e) g(t).catch(() => {});
 	}
-	function M(e, t, n, i = {}) {
-		return r(), [T(e, t, !0, void 0, n, i)];
+	function te(e, t, n, i = {}) {
+		return r(), [D(e, t, !0, void 0, n, i)];
 	}
-	function ee(e, t, n = {}) {
+	function ne(e, t, n = {}) {
 		r();
 		let i = s.get(e), a = i && _(i);
-		return a ? [T(e, a, !0, void 0, t, n)] : [];
+		return a ? [D(e, a, !0, void 0, t, n)] : [];
 	}
 	return {
 		discover: x,
-		layers: E,
-		layerFor: ee,
-		layerForPass: M,
-		want: j,
-		candidates: D,
-		shownPass: O,
-		sample: k,
-		isBad: A,
-		dateAt: C,
-		status: w,
-		next: S
+		layers: O,
+		layerFor: ne,
+		layerForPass: te,
+		want: ee,
+		candidates: k,
+		shownPass: A,
+		sample: j,
+		isBad: M,
+		dateAt: T,
+		status: E,
+		next: S,
+		back: w
 	};
 }
 function AHe(e) {
@@ -92276,7 +92290,7 @@ function KHe({ model: e, el: t }) {
 		else if (t === "b" || t === "B") {
 			let e = w9.length - 1, t = w9.indexOf(r.s2Year);
 			be((t === e ? 0 : e) - t);
-		} else if ((t === "n" || t === "N") && j) j.next(r.s2Year), ye(), xe();
+		} else if ((t === "n" || t === "N") && j) e.shiftKey ? j.back(r.s2Year) : j.next(r.s2Year), ye(), xe();
 		else if (t === "/") m.focus();
 		else if (e.shiftKey && (t === "ArrowLeft" || t === "ArrowRight")) et = (S.isMoving() ? et : S.getBearing()) + (t === "ArrowRight" ? 15 : -15), S.easeTo({
 			bearing: et,
