@@ -20,7 +20,7 @@ export type Look = { src: "ours" | "wsf"; year: number | null };
  * see-through (45% opaque) but plainly there, the newest the darkest orange and solid. Each color as #rrggbbaa, its
  * alpha the raster's alpha. */
 export const RAMPS = [
-  { name: "oranges", cols: ["#fdc38d73", "#fda76287", "#fd8c3b9b", "#f3701baf", "#e25508c3", "#c54102d7", "#9e3303eb", "#7f2704ff"] },
+  { name: "oranges", cols: ["#fff5eb73", "#fee3c887", "#fdc6929b", "#fda057af", "#f67824c3", "#e05206d7", "#ad3803eb", "#7f2704ff"] },
   // the single orange tried before it (pale peach to #ff6d00, same alphas)
   // { name: "orange", cols: ["#f9c28f73", "#fab67b87", "#fbaa669b", "#fc9e52af", "#fc913dc3", "#fd8529d7", "#fe7914eb", "#ff6d00ff"] },
   // tried and set aside: imola, blues, pale yellow to blue, greens, browns, oranges, grays

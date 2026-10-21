@@ -108966,13 +108966,13 @@ function mnt(e) {
 var b7 = [...{
 	name: "oranges",
 	cols: [
-		"#fdc38d73",
-		"#fda76287",
-		"#fd8c3b9b",
-		"#f3701baf",
-		"#e25508c3",
-		"#c54102d7",
-		"#9e3303eb",
+		"#fff5eb73",
+		"#fee3c887",
+		"#fdc6929b",
+		"#fda057af",
+		"#f67824c3",
+		"#e05206d7",
+		"#ad3803eb",
 		"#7f2704ff"
 	]
 }.cols], x7 = 2018, S7 = [
