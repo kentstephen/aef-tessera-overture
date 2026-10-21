@@ -2,8 +2,36 @@ import * as zarr from "zarrita";
 
 import { type AefArray, NUM_BANDS, openMosaic, RES, X0, Y0 } from "./aef";
 import { cacheGet, cachePut, DiskCachedStore, fingerprint } from "./disk-cache";
-import { aefScores, crossCheckChunk, type LayerKind, scorePixel, type WorldModel } from "./earthwork-cpu";
+import { aefScores, crossCheckChunk, type LayerKind, type WorldModel } from "./earthwork-cpu";
+import ScoreWorker from "./score.worker.ts?worker&inline";
 import { TES_BANDS, TES_OK, tesseraOnChunk } from "./tessera";
+
+// the scoring math on a few workers of its own (score.worker.ts), the least busy first: several chunks score at once
+// on other cores, and the reads here never wait on it. Same functions on the same inputs, so the same scores
+type Sw = { w: Worker; busy: number; waiting: Map<number, (v: Float32Array) => void> };
+let sws: Sw[] | null = null;
+let swId = 0;
+function swRun(job: Record<string, unknown>, transfer: ArrayBuffer[] = []): Promise<Float32Array> {
+  if (!sws)
+    sws = Array.from({ length: Math.max(2, Math.min(4, (navigator.hardwareConcurrency || 4) - 2)) }, () => {
+      const w = new ScoreWorker();
+      w.postMessage({ type: "init", model });
+      const sw: Sw = { w, busy: 0, waiting: new Map() };
+      w.onmessage = (ev: MessageEvent<{ id: number; out: Float32Array }>) => {
+        sw.busy--;
+        sw.waiting.get(ev.data.id)?.(ev.data.out);
+        sw.waiting.delete(ev.data.id);
+      };
+      return sw;
+    });
+  const sw = sws.reduce((a, b) => (b.busy < a.busy ? b : a));
+  const id = ++swId;
+  sw.busy++;
+  return new Promise((ok) => {
+    sw.waiting.set(id, ok);
+    sw.w.postMessage({ ...job, id }, transfer);
+  });
+}
 
 /**
  * Every chunk is read here, off the page's thread: AlphaEarth's two years, its own scores (which say
@@ -123,17 +151,16 @@ async function pairScore(kind: LayerKind, lastIdx: number, g: { py0: number; px0
       aefChunk(arr, lastIdx, g.py0, g.px0, g.h, g.w, signal),
     ]);
     const aefFirst = f.data as Int8Array, aefLast = l.data as Int8Array;
-    const aef = aefScores(aefFirst, aefLast, plane, model!);
+    // copies of the kept AlphaEarth chunks go to the scoring workers
+    const aef = await swRun({ type: "aef", first: aefFirst, last: aefLast, plane });
     let t: Awaited<ReturnType<typeof tesseraOnChunk>> | null = null, sc = aef;
     if (kind !== "aef") {
       t = await tesseraOnChunk(g.px0, g.py0, g.w, g.h, lastIdx - 1, lastIdx, signal, aef);
-      const out = new Float32Array(plane), px = { aefFirst, aefLast, tesFirst: t.first, tesLast: t.last, tesFlags: t.flags, plane, at: 0 };
-      for (let at = 0; at < plane; at++) {
-        px.at = at;
-        const v = scorePixel(kind, model!, px);
-        out[at] = v == null ? -1 : v;
-      }
-      sc = out;
+      // TESSERA's arrays handed over when the cross-check does not need them after
+      sc = await swRun(
+        { type: "pair", kind, aefFirst, aefLast, tesFirst: t.first, tesLast: t.last, tesFlags: t.flags, plane },
+        wantCheck ? [] : ([t.first.buffer, t.last.buffer, t.flags.buffer] as ArrayBuffer[]),
+      );
     }
     let check: Uint8Array | null = null;
     if (wantCheck) {
