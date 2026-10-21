@@ -152,14 +152,14 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     protocolAdded = true;
   }
 
-  const st = { look: { src: "ours", year: null } as Look, fit: true, folded: false, area: null as [number, number, number, number] | null, readId: 0, labels: true, picking: true, pair: false, holding: false, s2Year: S2_YEARS[S2_YEARS.length - 1], lines: false, winMain: true, winPair: false, gap: 0 };
+  const st = { look: { src: "ours", year: null } as Look, fit: true, folded: false, area: null as [number, number, number, number] | null, readId: 0, labels: true, picking: true, pair: false, holding: false, s2Year: S2_YEARS[S2_YEARS.length - 1], lines: false, winMain: false, winPair: false, gap: 0 };
   const E = (t: string, c?: string, h?: string) => {
     const e = document.createElement(t);
     if (c) e.className = c;
     if (h != null) e.innerHTML = h;
     return e;
   };
-  const root = E("div", "sm clean"), mapEl = E("div", "map"), mapEl2 = E("div", "map2");
+  const root = E("div", "sm clean yrs"), mapEl = E("div", "map"), mapEl2 = E("div", "map2");
   const load = E("div", "load", "<i></i>"), loadTag = E("div", "loadtag glass");
   root.append(mapEl2, mapEl, load, loadTag);
   el.appendChild(root);
@@ -543,7 +543,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   const s2Shown = () => st.holding;
   // the patches as windows: the map, its footprints, and the year's imagery inside every patch (the view unless space
   // is held or the map is paired)
-  // S switches it, apart on the map alone (starting on) and on the pair's right (starting off, the year raster)
+  // S switches it, apart on the map alone and on the pair's right (both starting off, the year raster)
   const winShown = () => !st.holding && (st.pair ? st.winPair : st.winMain);
   // the year raster: on the pair's right always (under the imagery while S has it on), alone on the map while S has the
   // imagery off

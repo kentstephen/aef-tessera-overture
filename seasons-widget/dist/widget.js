@@ -115113,13 +115113,13 @@ function Jst({ model: e, el: t }) {
 		holding: !1,
 		s2Year: H9[H9.length - 1],
 		lines: !1,
-		winMain: !0,
+		winMain: !1,
 		winPair: !1,
 		gap: 0
 	}, i = (e, t, n) => {
 		let r = document.createElement(e);
 		return t && (r.className = t), n != null && (r.innerHTML = n), r;
-	}, a = i("div", "sm clean"), o = i("div", "map"), s = i("div", "map2"), c = i("div", "load", "<i></i>"), l = i("div", "loadtag glass");
+	}, a = i("div", "sm clean yrs"), o = i("div", "map"), s = i("div", "map2"), c = i("div", "load", "<i></i>"), l = i("div", "loadtag glass");
 	a.append(s, o, c, l), t.appendChild(a);
 	let u = i("div", "card glass"), d = i("div", "hd"), f = i("div", "ht"), m = i("button", "cb", Fst);
 	m.title = "fold the card (H)", d.append(f, m);
