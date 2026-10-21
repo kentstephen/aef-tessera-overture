@@ -12,7 +12,7 @@ import maplibreWorker from "maplibre-gl/dist/maplibre-gl-worker.mjs?raw";
 import { Protocol } from "pmtiles";
 
 import { MIN_ZOOM, RES, X0, Y0, YEAR_ORIGIN } from "./aef";
-import { createCodesLayer, HALF_COL, type Look, pixelCenter, pixelOf, SEASON_COL, UNCLEAR, Y0_RAMP, YEAR_COL } from "./codes-layer";
+import { createCodesLayer, HALF_COL, type Look, pixelCenter, pixelOf, RAMPS, SEASON_COL, setRamp, UNCLEAR, Y0_RAMP, YEAR_COL } from "./codes-layer";
 import decoderBin from "./decoder_month.bin?url";
 import { colorData, type FootJoin, joinColors, joinPixels, ringOf as footRing } from "./foot";
 // Earth Genome's yearly mosaics (eg-s2.ts) swapped for single scenes from Earth Search
@@ -45,10 +45,10 @@ const DUG_LINE: [number, number, number, number] = [240, 165, 255, 255];
 // or with protanopia), light enough to hold an edge on the dark basemap
 const FOOT_LINE: [number, number, number, number] = [184, 184, 184, 210];
 // the outline of a footprint with digging under it (C cycles it, to find one that reads over the raster and the
-// imagery): light orchid, white, cyan, electric blue, deep violet (the last three as the reveal branch's C)
+// imagery): white (the start), light orchid, cyan, electric blue, deep violet (the last three as the reveal branch's C)
 const DUG_COLS: { name: string; rgba: [number, number, number, number] }[] = [
-  { name: "light orchid", rgba: DUG_LINE },
   { name: "white", rgba: [255, 255, 255, 255] },
+  { name: "light orchid", rgba: DUG_LINE },
   { name: "cyan", rgba: [0, 229, 255, 255] },
   { name: "electric blue", rgba: [47, 107, 255, 255] },
   { name: "deep violet", rgba: [122, 60, 255, 255] },
@@ -199,11 +199,16 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   // the card: the years as one thin stepped line, the first and last at its ends, and no notes or keys
   const legend = E("div", "legend");
   const lline = E("div", "lline");
-  YEAR_COL.forEach((col) => {
-    const i = E("i");
-    i.style.background = col;
-    lline.appendChild(i);
-  });
+  // the legend's steps from the ramp in use (again when Y swaps it)
+  const drawLline = () =>
+    lline.replaceChildren(
+      ...YEAR_COL.map((col) => {
+        const i = E("i");
+        i.style.background = col;
+        return i;
+      }),
+    );
+  drawLline();
   legend.append(E("span", "", String(Y0_RAMP)), lline, E("span", "", String(Y0_RAMP + YEAR_COL.length - 1)));
   card.append(hd, legend, body);
   root.appendChild(card);
@@ -314,7 +319,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   // each footprint's year from the pixels under it (its outline's color), again as chunks and quarters come in (a few
   // times a second at most)
   const hexRgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-  const YEAR_RGB = YEAR_COL.map(hexRgb), QUARTER_RGB = SEASON_COL.map(hexRgb), UNCLEAR_RGB = hexRgb(UNCLEAR);
+  let YEAR_RGB = YEAR_COL.map(hexRgb);
+  const QUARTER_RGB = SEASON_COL.map(hexRgb), UNCLEAR_RGB = hexRgb(UNCLEAR);
   let joinT = 0;
   function joinSoon() {
     clearTimeout(joinT);
@@ -641,11 +647,11 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   }
   /** A click pins what is under it, so the years can be stepped with it held; with one pinned, any click lets go. */
   function pin(pt: { x: number; y: number }) {
-    // buildings light up under the pointer but are not picked by a click, for now
-    if (footAt(pt) >= 0) return;
-    // paired, a click is the spotlight: the left dims around the patch under it
+    // paired, a click is the spotlight: the left dims around the patch under it, a building there or not (buildings
+    // light up under the pointer but a click goes through them to the patch)
     if (st.pair) return spotAt(pt);
-    pinHi = pinHi ? null : hiAt(pt);
+    const ll = map.unproject([pt.x, pt.y]);
+    pinHi = pinHi ? null : patchHi(ll.lng, ll.lat);
     if (st.pair) setL2();
   }
   function render() {
@@ -1381,6 +1387,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
 
   // ---- keys
   let pivotTo = 0;
+  let rampI = 0;
   const onKey = (e: KeyboardEvent) => {
     if (e.metaKey || e.ctrlKey || e.altKey || e.target === q) return;
     const k = e.key;
@@ -1420,6 +1427,17 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       else st.winMain = !st.winMain;
       root.classList.toggle("yrs", rasterShown());
       render();
+    }
+    else if (k === "y" || k === "Y") {
+      // the year ramp: imola, blues, blue to pale yellow, greens
+      rampI = (rampI + 1) % RAMPS.length;
+      setRamp(RAMPS[rampI].cols);
+      YEAR_RGB = YEAR_COL.map(hexRgb);
+      drawLline();
+      drawCard();
+      codes?.setLook(st.look);
+      recolor();
+      note(`Years: ${RAMPS[rampI].name} (Y)`);
     }
     else if (k === "c" || k === "C") {
       // the outline color of the footprints with digging under them

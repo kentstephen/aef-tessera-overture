@@ -16,7 +16,16 @@ export type Look = { src: "ours" | "wsf"; year: number | null };
 // 2016 and 2017 commented out with WSF, the only source that dates them:
 // export const YEAR_COL = ["#1a33b3", "#2446a9", "#2d59a0", "#396b94", "#497b85", "#60927b", "#7bae74", "#99cc6d", "#c4ea67", "#ffff66"];
 // export const Y0_RAMP = 2016;
-export const YEAR_COL = ["#1a33b3", "#274ca6", "#346499", "#467987", "#64967a", "#87ba71", "#b5e268", "#ffff66"];
+/** The year ramps Y steps through, 2018 to 2025, the oldest darkest: imola; matplotlib's Blues and Greens (1.0 to 0.3);
+ * blue to pale yellow (cividis's first blue, its gray, then pale yellow) */
+export const RAMPS = [
+  { name: "imola", cols: ["#1a33b3", "#274ca6", "#346499", "#467987", "#64967a", "#87ba71", "#b5e268", "#ffff66"] },
+  { name: "blues", cols: ["#08306b", "#084a91", "#1764ab", "#2e7ebc", "#4a98c9", "#6aaed6", "#94c4df", "#b7d4ea"] },
+  { name: "blue to pale yellow", cols: ["#003070", "#224472", "#445973", "#666d75", "#8b897d", "#b1ac8b", "#d9cf98", "#fff2a6"] },
+  { name: "greens", cols: ["#00441b", "#006428", "#157f3b", "#2f974e", "#4bb062", "#73c476", "#98d594", "#b8e3b2"] },
+];
+/** The ramp in use (swapped in place by setRamp, so every reader sees the new one). */
+export const YEAR_COL = [...RAMPS[0].cols];
 export const Y0_RAMP = 2018;
 /** The quarters (Jan-Mar, Apr-Jun, Jul-Sep, Oct-Dec) and WSF's halves, steps of the same ramp; a quarter not made out, gray. */
 export const SEASON_COL = ["#1a33b3", "#396b94", "#7bae74", "#ffff66"];
@@ -24,6 +33,13 @@ export const HALF_COL = ["#356598", "#b2e068"];
 export const UNCLEAR = "#9aa1a9";
 const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 const YR = YEAR_COL.map(rgb), SE = SEASON_COL.map(rgb), UN = rgb(UNCLEAR);
+let rampV = 0;
+/** Swaps the year ramp in place; the raster repaints on its layer's next setLook. */
+export function setRamp(cols: string[]) {
+  YEAR_COL.splice(0, YEAR_COL.length, ...cols);
+  YR.splice(0, YR.length, ...cols.map(rgb));
+  rampV++;
+}
 // WSF commented out for now
 // const HF = HALF_COL.map(rgb);
 const ALPHA = 225;
@@ -139,7 +155,7 @@ export async function createCodesLayer(model: WorldModel, decoder: { w: Float32A
   let version = 0;
   const live = new Map<string, Tile>();
   const keyOf = (r: number, c: number) => `${r}-${c}`;
-  const lookKey = (l: Look, t: Tile) => `${l.src}:${l.year ?? "all"}:${l.year != null && l.src === "ours" && t.seasons.has(l.year - YEAR_ORIGIN) ? "s" : "-"}`;
+  const lookKey = (l: Look, t: Tile) => `${rampV}:${l.src}:${l.year ?? "all"}:${l.year != null && l.src === "ours" && t.seasons.has(l.year - YEAR_ORIGIN) ? "s" : "-"}`;
 
   function paint(t: Tile) {
     if (!device || t.gone) return;
