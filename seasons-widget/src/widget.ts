@@ -1247,14 +1247,25 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       render();
     }
   });
-  // close enough in, a view that reaches past the area read is read once the map has settled
+  // close enough in, every move asks the model again once the map has settled: a view that reaches past the area read
+  // is read whole (footprints too); one inside it asks only the model's chunks again, so a chunk that came back empty
+  // is tried once more (the ones scored before come from the worker's kept scores, so quickly) while the footprints
+  // already read stay
   let autoT = 0;
   map.on("moveend", () => {
     clearTimeout(autoT);
     if (map.getZoom() < AUTO_Z || !ready) return;
     const b = map.getBounds(), a = st.area;
-    if (a && b.getWest() >= a[0] && b.getEast() <= a[2] && b.getSouth() >= a[1] && b.getNorth() <= a[3]) return;
-    autoT = window.setTimeout(read, 500);
+    const inside = a && b.getWest() >= a[0] && b.getEast() <= a[2] && b.getSouth() >= a[1] && b.getNorth() <= a[3];
+    autoT = window.setTimeout(
+      inside
+        ? () => {
+            st.readId++;
+            update();
+          }
+        : read,
+      500,
+    );
   });
   map.on("zoom", drawZoom);
 

@@ -108245,14 +108245,21 @@ async function Ttt(e, t, n) {
 				g.reading++;
 				let T;
 				try {
-					T = await p({
-						type: "codes",
-						px0: u,
-						py0: l,
-						w: d,
-						h: f,
-						allIdx: P7
-					}, i.signal), g.readDone++;
+					for (let e = 0;; e++) try {
+						T = await p({
+							type: "codes",
+							px0: u,
+							py0: l,
+							w: d,
+							h: f,
+							allIdx: P7
+						}, i.signal);
+						break;
+					} catch (t) {
+						if (e >= 3 || i.signal?.aborted || t?.name === "AbortError") throw t;
+						console.warn(`chunk ${l / 256},${u / 256}: ${t?.message}; trying again`), await new Promise((t) => setTimeout(t, 2e3 * 2 ** e));
+					}
+					g.readDone++;
 				} finally {
 					g.reading--, e.onTile?.();
 				}
@@ -114526,8 +114533,10 @@ function jot({ model: e, el: t }) {
 	let Ut = 0;
 	return F.on("moveend", () => {
 		if (clearTimeout(Ut), F.getZoom() < Q9 || !Re) return;
-		let e = F.getBounds(), t = r.area;
-		t && e.getWest() >= t[0] && e.getEast() <= t[2] && e.getSouth() >= t[1] && e.getNorth() <= t[3] || (Ut = window.setTimeout(rt, 500));
+		let e = F.getBounds(), t = r.area, n = t && e.getWest() >= t[0] && e.getEast() <= t[2] && e.getSouth() >= t[1] && e.getNorth() <= t[3];
+		Ut = window.setTimeout(n ? () => {
+			r.readId++, Be();
+		} : rt, 500);
 	}), F.on("zoom", nt), F.on("load", async () => {
 		for (let e of F.getStyle().layers) /building/.test(e.id) && F.setLayoutProperty(e.id, "visibility", "none");
 		for (let e of F.getStyle().layers) /(^|_)(service|path)(_|$)/.test(e.id) && F.setLayoutProperty(e.id, "visibility", "none");
