@@ -72,6 +72,39 @@ class WindowMaskLayer extends BitmapLayer {
 }
 WindowMaskLayer.layerName = "WindowMaskLayer";
 
+// ---- the spotlight in the pair (from the reveal branch, itself aef-tessera-earthwork's year map ui.js): the left's
+// imagery darkened outside the patch clicked, deck.gl's mask extension with that patch's extent as the mask
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const MASK_MOD = (MaskExtension.prototype as any).getShaders.call({ getAttributeManager: () => ({ attributes: {} }), props: {}, state: {} }).modules[0];
+const { "fs:#main-start": _maskDiscard, ...maskInject } = MASK_MOD.inject;
+const SPOT_FILL = { name: "spotFill", fs: "layout(std140) uniform spotFillUniforms {\n  float k;\n} spotFill;\n", uniformTypes: { k: "f32" } };
+const SPOT_MOD = {
+  ...MASK_MOD,
+  inject: {
+    ...maskInject,
+    "fs:#main-end": `
+  if (mask.enabled && spotFill.k > 0.0 && !mask_isInBounds(mask_texCoords)) fragColor.rgb = mix(fragColor.rgb, fragColor.rgb * 0.3, spotFill.k);
+`,
+  },
+};
+/** how dim outside the patch (1: to 30% of its brightness) */
+const spot = { k: 1 };
+class SpotExtension extends MaskExtension {
+  getShaders() {
+    (this as unknown as { state: { maskByInstance: boolean } }).state.maskByInstance = false;
+    return { modules: [SPOT_MOD, SPOT_FILL] };
+  }
+  // called with the layer as `this`, as every extension's draw
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  draw(this: any, ...args: any[]) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (MaskExtension.prototype.draw as any).apply(this, args);
+    this.setShaderModuleProps({ spotFill: { k: spot.k } });
+  }
+}
+SpotExtension.extensionName = "SpotExtension";
+const SPOT = new SpotExtension();
+
 let protocolAdded = false;
 // maplibre's worker from the bundle itself, as a blob: the widget is one file with nothing beside it
 maplibregl.setWorkerUrl(URL.createObjectURL(new Blob([maplibreWorker], { type: "text/javascript" })));
@@ -109,7 +142,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     protocolAdded = true;
   }
 
-  const st = { look: { src: "ours", year: null } as Look, fit: true, folded: false, area: null as [number, number, number, number] | null, readId: 0, labels: true, picking: true, pair: false, holding: false, s2Year: S2_YEARS[S2_YEARS.length - 1], lines: false };
+  const st = { look: { src: "ours", year: null } as Look, fit: true, folded: false, area: null as [number, number, number, number] | null, readId: 0, labels: true, picking: true, pair: false, holding: false, s2Year: S2_YEARS[S2_YEARS.length - 1], lines: false, winMain: true, winPair: false };
   const E = (t: string, c?: string, h?: string) => {
     const e = document.createElement(t);
     if (c) e.className = c;
@@ -327,6 +360,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   function setS2(on: boolean) {
     if (on && st.pair) return;
     st.holding = on;
+    root.classList.toggle("yrs", rasterShown());
     if (imgShown()) s2?.discover(st.s2Year);
     drawS2Card();
     render();
@@ -374,6 +408,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     if (on) st.holding = false;
     st.pair = on;
     root.classList.toggle("pair", on);
+    root.classList.toggle("yrs", rasterShown());
     if (on) {
       boot2();
       map2!.jumpTo(camOf(map));
@@ -406,6 +441,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   let segSrc = new Float64Array(0), segTgt = new Float64Array(0), segN = 0, segV = 0;
   // every patch's extent (what its outline encloses, holes filled) by row: [start, end, ...], to tell a footprint on one
   let extRows = new Map<number, number[]>();
+  // the same by patch: [start, end, patch, ...] by row, and each patch's extent runs, to find the patch clicked
+  let extOwner = new Map<number, number[]>();
+  let extOf: number[][] = [];
   let patchT = 0;
   function patchesSoon() {
     clearTimeout(patchT);
@@ -422,7 +460,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     const kept = new Map<string, { edges: number[][]; ext: number[] }>();
     const edges: number[] = [];
     extRows = new Map();
-    for (const p of patches) {
+    extOwner = new Map();
+    extOf = [];
+    for (const [i, p] of patches.entries()) {
       const key = `${p.runs[0]}:${p.runs[1]}:${p.n}`;
       const out = outlines.get(key) ?? outerShape(p.runs);
       kept.set(key, out);
@@ -432,7 +472,11 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
         const r = extRows.get(x[k]);
         if (r) r.push(x[k + 1], x[k + 2]);
         else extRows.set(x[k], [x[k + 1], x[k + 2]]);
+        const o = extOwner.get(x[k]);
+        if (o) o.push(x[k + 1], x[k + 2], i);
+        else extOwner.set(x[k], [x[k + 1], x[k + 2], i]);
       }
+      extOf.push(x);
     }
     outlines = kept;
     winMask = maskOfRuns([...kept.values()].map((o) => o.ext));
@@ -483,7 +527,11 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   const s2Shown = () => st.holding;
   // the patches as windows: the map, its footprints, and the year's imagery inside every patch (the view unless space
   // is held or the map is paired)
-  const winShown = () => !st.holding && !st.pair;
+  // S switches it, apart on the map alone (starting on) and on the pair's right (starting off, the year raster)
+  const winShown = () => !st.holding && (st.pair ? st.winPair : st.winMain);
+  // the year raster: on the pair's right always (under the imagery while S has it on), alone on the map while S has the
+  // imagery off
+  const rasterShown = () => !st.holding && (st.pair || !st.winMain);
   // the imagery anywhere: held, on the pair's left, or through the patches
   const imgShown = () => true;
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -516,7 +564,32 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     const hi = st.pair && h
       ? [new PathLayer({ id: "hi", data: h.paths, getPath: (r: number[][]) => r as never, getColor: DUG_LINE, getWidth: 2.5, widthUnits: "pixels", jointRounded: true, capRounded: true })]
       : [];
-    overlay2.setProps({ layers: [...l2, ...hi] as never });
+    // the patch clicked as the mask, first, so the imagery after it is dimmed outside it
+    const mask = st.pair && spotMask ? [new WindowMaskLayer({ id: "spot-mask", image: spotMask.image, bounds: spotMask.bounds, operation: "mask", extensions: [DISCARD_CLEAR], _imageCoordinateSystem: COORDINATE_SYSTEM.LNGLAT } as never)] : [];
+    overlay2.setProps({ layers: [...mask, ...l2, ...hi] as never });
+  }
+  // the patch clicked on the right (or the same point on the left): the left's imagery dimmed around it, no outline
+  let spotMask: { image: HTMLCanvasElement; bounds: [number, number, number, number] } | null = null;
+  // the patch clicked, by its extent's first run (kept as chunks come in and the patches are found again)
+  let spotKey = "";
+  /** The patch under a point, by its extent (holes filled): its index, or -1. */
+  function patchIdxAt(pt: { x: number; y: number }) {
+    const ll = map.unproject([pt.x, pt.y]);
+    const [x, y] = pixelOf(ll.lng, ll.lat), r = extOwner.get(y);
+    if (r) for (let k = 0; k < r.length; k += 3) if (x >= r[k] && x < r[k + 1]) return r[k + 2];
+    return -1;
+  }
+  /** A click on a patch dims the left around it; on the same patch again, or off every patch, the dim goes. */
+  function spotAt(pt: { x: number; y: number }) {
+    const i = patchIdxAt(pt), key = i >= 0 ? extOf[i].slice(0, 3).join(":") : "";
+    if (!key || key === spotKey) {
+      spotMask = null;
+      spotKey = "";
+    } else {
+      spotMask = maskOfRuns([extOf[i]]);
+      spotKey = key;
+    }
+    setL2();
   }
   function setHi(h: Hi | null) {
     if ((h?.key ?? "") === (hoverHi?.key ?? "")) return;
@@ -558,6 +631,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   }
   /** A click pins what is under it, so the years can be stepped with it held; with one pinned, any click lets go. */
   function pin(pt: { x: number; y: number }) {
+    // paired, a click is the spotlight: the left dims around the patch under it
+    if (st.pair) return spotAt(pt);
     pinHi = pinHi ? null : hiAt(pt);
     if (st.pair) setL2();
   }
@@ -576,7 +651,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       layers.push(...s2.layers(st.s2Year, !!winMask, "foot", "w", { extensions: [WINDOW], maskId: "win-mask", maskByInstance: false }));
     }
     if (map2 && overlay2) {
-      l2 = st.pair && s2 ? s2.layers(st.s2Year, true, undefined, "l") : [];
+      // each scene's layer given the spotlight's mask (with no mask layer, nothing is dimmed)
+      l2 = st.pair && s2 ? s2.layers(st.s2Year, true, undefined, "l", { extensions: [SPOT], maskId: "spot-mask", maskByInstance: false }) : [];
       setL2();
       if (!map2.isStyleLoaded()) map2.once("idle", setL2);
     }
@@ -614,8 +690,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
         minZoom: MIN_ZOOM,
         area: st.area,
         readId: st.readId,
-        // drawn only on the pair's right; elsewhere it only gives the patches
-        visible: st.pair,
+        // elsewhere it only gives the patches
+        visible: rasterShown(),
         beforeId: groundId,
         onTile: () => {
           progressSoon();
@@ -638,7 +714,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
           // on the imagery the outlines carry the years: solid, a pixel and a half; on the map, orchid where digging
           // is under the building, silver where not
           // through the patches, silver, none on a patch
-          getColor: (s2Shown() ? (line ?? FOOT_LINE) : winShown() ? (winLine ?? FOOT_LINE) : (mapLine ?? FOOT_LINE)) as never,
+          // (on the pair's right the joined buildings stay over the imagery, orchid)
+          getColor: (s2Shown() ? (line ?? FOOT_LINE) : winShown() && !st.pair ? (winLine ?? FOOT_LINE) : (mapLine ?? FOOT_LINE)) as never,
           // in meters, so zoomed in they thicken up to four pixels; zoomed out they hold at their floor (a pixel and a
           // half on the imagery, half a pixel on the map, where they thin instead of adding up to a glare)
           getWidth: s2Shown() ? 3 : 2,
@@ -646,7 +723,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
           widthMinPixels: s2Shown() ? 1.5 : 0.5,
           widthMaxPixels: 4,
           _pathType: "loop",
-          updateTriggers: { getColor: [lineN, mapLineN, winLineN, s2Shown(), st.pair] },
+          updateTriggers: { getColor: [lineN, mapLineN, winLineN, s2Shown(), winShown(), st.pair] },
           // read by the MapLibre overlay
           beforeId: "foot",
         } as never),
@@ -1322,6 +1399,13 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     // WSF commented out for now
     // else if (k === "c" || k === "C") setLook({ ...st.look, src: st.look.src === "ours" ? "wsf" : "ours" });
     else if (k === "h" || k === "H") setFold(!st.folded);
+    else if (k === "s" || k === "S") {
+      // the patches filled by the year's imagery, or by the year raster's colors
+      if (st.pair) st.winPair = !st.winPair;
+      else st.winMain = !st.winMain;
+      root.classList.toggle("yrs", rasterShown());
+      render();
+    }
     else if (k === "o" || k === "O") {
       // the patches' outlines on or off
       st.lines = !st.lines;
@@ -1340,7 +1424,11 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     else if (k === "k" || k === "K") snap();
     else if (k === "/") q.focus();
     else if (k === "Escape") {
-      if (st.look.year != null) setLook({ ...st.look, year: null });
+      if (st.pair && spotMask) {
+        spotMask = null;
+        spotKey = "";
+        setL2();
+      } else if (st.look.year != null) setLook({ ...st.look, year: null });
       else if (st.fit) {
         st.fit = false;
         sizes();
