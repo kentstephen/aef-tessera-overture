@@ -416,15 +416,15 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
 
   /**
    * The year's imagery (hidden but loading when not `visible`), with the last few years asked for kept loaded and
-   * hidden beside it. `tag` keeps a second map's layer ids apart.
+   * hidden beside it. `tag` keeps a second map's layer ids apart; `extra` goes on each scene's layer (a mask).
    */
-  function layers(year: number, visible: boolean, beforeId?: string, tag = "") {
+  function layers(year: number, visible: boolean, beforeId?: string, tag = "", extra: Record<string, unknown> = {}) {
     poolGet();
     const ys = [...recent.filter((y) => y !== year).slice(-WARM), year];
     const out = [];
     for (const y of ys) {
       const s = years.get(y), p = s && shownOf(s);
-      if (p) out.push(layerOf(y, p, visible && y === year, beforeId, tag));
+      if (p) out.push(layerOf(y, p, visible && y === year, beforeId, tag, extra));
     }
     return out;
   }

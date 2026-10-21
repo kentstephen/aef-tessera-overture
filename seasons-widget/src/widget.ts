@@ -86,6 +86,18 @@ class SpotExtension extends MaskExtension {
 }
 SpotExtension.extensionName = "SpotExtension";
 const SPOT = new SpotExtension();
+/** around every patch on the map: how dim (0 not at all, 0.5 half), D toggles it */
+const mapSpot = { k: 0 };
+class MapSpotExtension extends SpotExtension {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  draw(this: any, ...args: any[]) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (MaskExtension.prototype.draw as any).apply(this, args);
+    this.setShaderModuleProps({ spotFill: { k: mapSpot.k, gray: 0 } });
+  }
+}
+MapSpotExtension.extensionName = "MapSpotExtension";
+const MAP_SPOT = new MapSpotExtension();
 // the reveal: the latest year drawn only inside the patches (deck.gl's mask extension, the patches' extents the mask)
 const REVEAL = new MaskExtension();
 // the mask: a bitmap of the patch's pixels, its clear pixels dropped so only the patch counts
@@ -137,7 +149,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     document.head.appendChild(s);
   }
 
-  const st = { fit: true, area: null as [number, number, number, number] | null, readId: 0, s2Year: S2_YEARS[0], open: null as Patch | null, lines: true, panelLines: true, reveal: true };
+  const st = { fit: true, area: null as [number, number, number, number] | null, readId: 0, s2Year: S2_YEARS[0], open: null as Patch | null, lines: true, panelLines: true, reveal: false };
   // the reveal (R): the map in st.s2Year (2017 to start), and inside every patch in view this year instead
   const REVEAL_YEAR = S2_YEARS[S2_YEARS.length - 1];
   const E = (t: string, c?: string, h?: string) => {
@@ -338,13 +350,15 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   function draw() {
     if (!ready || !codes) return;
     const layers: unknown[] = [];
-    if (s2) layers.push(...s2.layers(st.s2Year, true));
-    // the reveal: the latest year over it, only inside the patches (the mask first; the masked layers given it from
-    // their first tile)
-    if (s2 && st.reveal && revealMask) {
+    // every patch's extent as the mask (first, so the imagery after it can use it), while the map is dimmed around them
+    // or the reveal is on
+    if (s2 && revealMask && (mapSpot.k > 0 || st.reveal))
       layers.push(new SpotMaskLayer({ id: "reveal-mask", image: revealMask.image, bounds: revealMask.bounds, operation: "mask", extensions: [DISCARD_CLEAR], _imageCoordinateSystem: COORDINATE_SYSTEM.LNGLAT } as never));
-      layers.push(...s2.layerFor(REVEAL_YEAR, "rv", { extensions: [REVEAL], maskId: "reveal-mask", maskByInstance: false }));
-    }
+    // the imagery, dimmed outside the patches by mapSpot.k (D); each scene's layer given the mask from its first tile,
+    // so it is there before D is first pressed (with no mask layer, nothing is dimmed)
+    if (s2) layers.push(...s2.layers(st.s2Year, true, undefined, "", { extensions: [MAP_SPOT], maskId: "reveal-mask", maskByInstance: false }));
+    // the reveal: the latest year over it, only inside the patches
+    if (s2 && st.reveal && revealMask) layers.push(...s2.layerFor(REVEAL_YEAR, "rv", { extensions: [REVEAL], maskId: "reveal-mask", maskByInstance: false }));
     if (st.area)
       layers.push(
         codes.layer({
@@ -867,11 +881,17 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       draw();
       if (st.open) drawPanels();
       note(`Outline: ${LINE_COLS[lineCol].name} (C)`);
-    } else if (k === "d" || k === "D") {
+    } else if ((k === "d" || k === "D") && st.open) {
       // how dim around the patch in the panels: half, a quarter, none, full
       spot.k = SPOT_STEPS[(SPOT_STEPS.indexOf(spot.k) + 1) % SPOT_STEPS.length];
       for (const pn of panels) pn.map?.triggerRepaint();
       note(spot.k ? `Around the patch: dimmed ${spot.k === 1 ? "fully" : spot.k === 0.5 ? "half" : "a quarter"} (D)` : "Around the patch: not dimmed (D)");
+    } else if (k === "d" || k === "D") {
+      // the map dimmed by half outside every patch, or not
+      mapSpot.k = mapSpot.k ? 0 : 0.5;
+      draw();
+      map.triggerRepaint();
+      note(mapSpot.k ? "Outside the patches: dimmed half (D)" : "Outside the patches: not dimmed (D)");
     }
     // J, dark or gray around the patch: commented out
     // else if (k === "j" || k === "J") {
@@ -885,13 +905,15 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       sizes();
     } else if (st.open) return;
     // the rest move the map or its imagery: not while the panels are open
-    else if (k === "r" || k === "R") {
-      // the reveal on or off: the latest year inside every patch, the year shown around them
-      st.reveal = !st.reveal;
-      drawS2Card();
-      draw();
-      note(st.reveal ? `Reveal: ${REVEAL_YEAR} inside the patches (R)` : "Reveal off (R)");
-    } else if (k === "[" || k === "]") stepS2(k === "]" ? 1 : -1);
+    // R, the reveal (the latest year inside every patch, the year shown around them): commented out, the map dims
+    // around the patches (D) and B goes to the latest year instead
+    // else if (k === "r" || k === "R") {
+    //   st.reveal = !st.reveal;
+    //   drawS2Card();
+    //   draw();
+    //   note(st.reveal ? `Reveal: ${REVEAL_YEAR} inside the patches (R)` : "Reveal off (R)");
+    // }
+    else if (k === "[" || k === "]") stepS2(k === "]" ? 1 : -1);
     else if (k === "b" || k === "B") {
       // from any year to the latest, then back and forth between the first and the latest
       const last = S2_YEARS.length - 1, i = S2_YEARS.indexOf(st.s2Year);
