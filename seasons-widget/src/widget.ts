@@ -513,11 +513,12 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
           // on the imagery the outlines carry the years: solid, a pixel and a half; on the map, orchid where digging
           // is under the building, silver where not
           getColor: (s2Shown() ? (line ?? FOOT_LINE) : (mapLine ?? FOOT_LINE)) as never,
-          // in meters, held between half a pixel and two: zoomed out the outlines thin instead of adding up to a glare
-          getWidth: s2Shown() ? 1.5 : 2,
-          widthUnits: s2Shown() ? "pixels" : "meters",
-          widthMinPixels: s2Shown() ? 1 : 0.5,
-          widthMaxPixels: 2,
+          // in meters, so zoomed in they thicken up to four pixels; zoomed out they hold at their floor (a pixel and a
+          // half on the imagery, half a pixel on the map, where they thin instead of adding up to a glare)
+          getWidth: s2Shown() ? 3 : 2,
+          widthUnits: "meters",
+          widthMinPixels: s2Shown() ? 1.5 : 0.5,
+          widthMaxPixels: 4,
           _pathType: "loop",
           updateTriggers: { getColor: [lineN, mapLineN, s2Shown()] },
           // read by the MapLibre overlay
