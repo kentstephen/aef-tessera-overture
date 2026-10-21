@@ -44,16 +44,19 @@ const DUG_LINE: [number, number, number, number] = [240, 165, 255, 255];
 // a footprint with no digging under it: a neutral gray with no hue to mix up with any year of the ramp (seen normally
 // or with protanopia), light enough to hold an edge on the dark basemap
 const FOOT_LINE: [number, number, number, number] = [184, 184, 184, 210];
-// the outline of a footprint with digging under it (C cycles it, to find one that reads over the raster and the
-// imagery): white (the start), light orchid, cyan, electric blue, deep violet (the last three as the reveal branch's C)
-const DUG_COLS: { name: string; rgba: [number, number, number, number] }[] = [
-  { name: "white", rgba: [255, 255, 255, 255] },
-  { name: "light orchid", rgba: DUG_LINE },
-  { name: "cyan", rgba: [0, 229, 255, 255] },
-  { name: "electric blue", rgba: [47, 107, 255, 255] },
-  { name: "deep violet", rgba: [122, 60, 255, 255] },
-];
-let dugCol = 0;
+// the outline of a footprint with digging under it (C cycled it, to find one that reads over the raster and the
+// imagery): white, light orchid, cyan, electric blue, deep violet. Set aside for a faint fill (JOIN_FILL)
+// const DUG_COLS: { name: string; rgba: [number, number, number, number] }[] = [
+//   { name: "white", rgba: [255, 255, 255, 255] },
+//   { name: "light orchid", rgba: DUG_LINE },
+//   { name: "cyan", rgba: [0, 229, 255, 255] },
+//   { name: "electric blue", rgba: [47, 107, 255, 255] },
+//   { name: "deep violet", rgba: [122, 60, 255, 255] },
+// ];
+// let dugCol = 0;
+// a footprint with digging under it, on the map: the same silver outline as the rest, and a faint white fill over the
+// year raster. No outline color reads over every year of the ramp (cream to dark brown) and the dark basemap at once
+const JOIN_FILL: [number, number, number, number] = [255, 255, 255, 70];
 // a footprint with no year, on the Sentinel-2 imagery: solid, so it reads on bright ground
 const S2_LINE = [79, 214, 255];
 // the fold chevron, as aef-earthwork-web's cards
@@ -297,6 +300,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   // on the map with the patches as windows: silver, and none where the footprint touches a patch (the imagery shows
   // that ground instead)
   let winLine: ReturnType<typeof colorData> | null = null, winLineRgba: Uint8Array | null = null, winLineN = 0;
+  // on the map: the faint fill of a footprint with digging under it, clear where not
+  let mapFill: ReturnType<typeof colorData> | null = null, mapFillRgba: Uint8Array | null = null, mapFillN = 0;
   // the basemap layer our raster, the footprints and their fade go under: its first road, so the streets stay over both
   let groundId = "foot";
   function loadFoot() {
@@ -309,7 +314,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     if (pinHi?.key.startsWith("a:")) pinHi = null;
     setL2();
     join = footBatch ? joinPixels(footBatch) : null;
-    line = mapLine = lineRgba = mapLineRgba = winLine = winLineRgba = null;
+    line = mapLine = lineRgba = mapLineRgba = winLine = winLineRgba = mapFill = mapFillRgba = null;
     recolor();
   }
   model.on("change:foot", loadFoot);
@@ -330,10 +335,11 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     if (!codes || !join) return render();
     const at = codes.at;
     const rgba = joinColors(join, at, st.look.year, (y) => YEAR_RGB[y - Y0_RAMP] ?? [0, 0, 0], QUARTER_RGB, UNCLEAR_RGB);
-    const ln = new Uint8Array(rgba.length), ml = new Uint8Array(rgba.length), wl = new Uint8Array(rgba.length);
+    const ln = new Uint8Array(rgba.length), ml = new Uint8Array(rgba.length), wl = new Uint8Array(rgba.length), mf = new Uint8Array(rgba.length);
     for (let r = 0; r < join.rows; r++) {
       const o = 4 * r, has = rgba[o + 3] > 0;
-      ml.set(has ? DUG_COLS[dugCol].rgba : FOOT_LINE, o);
+      ml.set(FOOT_LINE, o);
+      if (has) mf.set(JOIN_FILL, o);
       if (!inPatch(r)) wl.set(FOOT_LINE, o);
       ln[o] = has ? rgba[o] : S2_LINE[0];
       ln[o + 1] = has ? rgba[o + 1] : S2_LINE[1];
@@ -353,6 +359,12 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       mapLineRgba = ml;
       mapLine = colorData(ml, join.rows);
       mapLineN++;
+      changed = true;
+    }
+    if (!mapFill || !same(mapFillRgba, mf)) {
+      mapFillRgba = mf;
+      mapFill = colorData(mf, join.rows);
+      mapFillN++;
       changed = true;
     }
     if (!winLine || !same(winLineRgba, wl)) {
@@ -689,23 +701,6 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       // triangulated here, not in a worker fetched from a CDN
       earcutWorkerUrl: null,
     };
-    if (footBatch)
-      layers.push(
-        // the buildings as the pointer's target: not drawn (filled clear), so the whole footprint picks, not only its
-        // outline
-        new GeoArrowPolygonLayer({
-          ...footProps,
-          id: "foot-poly",
-          filled: true,
-          stroked: false,
-          getFillColor: [0, 0, 0, 0],
-          pickable: true,
-          // the building under the pointer lit, light orchid; not a building hidden on a patch (its ground shows instead)
-          autoHighlight: true,
-          highlightColor: (info: { index: number }) => (winShown() && !st.pair && inPatch(info.index) ? [0, 0, 0, 0] : [240, 165, 255, 110]),
-          beforeId: groundId,
-        } as never),
-      );
     layers.push(
       codes.layer({
         minZoom: MIN_ZOOM,
@@ -721,6 +716,24 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
         },
       }),
     );
+    if (footBatch)
+      layers.push(
+        // the buildings as the pointer's target, over the raster: filled clear, so the whole footprint picks, not only
+        // its outline; on the map a faint fill where digging is under the building
+        new GeoArrowPolygonLayer({
+          ...footProps,
+          id: "foot-poly",
+          filled: true,
+          stroked: false,
+          getFillColor: (!(winShown() && !st.pair) && mapFill ? mapFill : [0, 0, 0, 0]) as never,
+          updateTriggers: { getFillColor: [mapFillN, winShown(), st.pair] },
+          pickable: true,
+          // the building under the pointer lit, light orchid; not a building hidden on a patch (its ground shows instead)
+          autoHighlight: true,
+          highlightColor: (info: { index: number }) => (winShown() && !st.pair && inPatch(info.index) ? [0, 0, 0, 0] : [240, 165, 255, 110]),
+          beforeId: groundId,
+        } as never),
+      );
     if (footBatch)
       layers.push(
         // an outline each (orchid where digging is under the building, silver where not), over everything of ours and
@@ -1446,12 +1459,12 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     //   recolor();
     //   note(`Years: ${RAMPS[rampI].name} (Y)`);
     // }
-    else if (k === "c" || k === "C") {
-      // the outline color of the footprints with digging under them
-      dugCol = (dugCol + 1) % DUG_COLS.length;
-      note(`Buildings on dug ground: ${DUG_COLS[dugCol].name} (C)`);
-      recolor();
-    }
+    // C cycled the outline color of the footprints with digging under them; they are a faint fill now
+    // else if (k === "c" || k === "C") {
+    //   dugCol = (dugCol + 1) % DUG_COLS.length;
+    //   note(`Buildings on dug ground: ${DUG_COLS[dugCol].name} (C)`);
+    //   recolor();
+    // }
     else if (k === "o" || k === "O") {
       // the patches' outlines on or off
       st.lines = !st.lines;
