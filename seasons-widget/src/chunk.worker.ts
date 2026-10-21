@@ -119,7 +119,7 @@ function encodeScores(sc: Float32Array): Uint8Array {
 const yearCheckKept = new Map<string, Promise<Uint8Array>>();
 // the scores and cross-checks are kept on disk too (disk-cache.ts), so a reload draws them without reading the
 // embeddings again (64 KB a chunk and year, against 8 MB of embeddings). SCORE_V goes up when the scoring changes
-const SCORE_V = 1;
+const SCORE_V = 2;
 const SCORE_TTL = 30 * 864e5;
 const diskKey = (part: "s" | "c", k: string) => `score:v${SCORE_V}:${modelFp}:${part}:${k}`;
 const kept_ = <T,>(m: Map<string, T>, k: string) => {

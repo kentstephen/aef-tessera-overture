@@ -82,10 +82,18 @@ function cosine(b: Float64Array, a: Float64Array, d: number): number {
 const bA = new Float64Array(NUM_BANDS), aA = new Float64Array(NUM_BANDS);
 const bT = new Float64Array(TES_BANDS), aT = new Float64Array(TES_BANDS);
 
+/** AlphaEarth's own score moved onto the aggregate's scale, piecewise linear: 0, its cutoff and 1 to 0, the
+ * aggregate's cutoff and 1, so a pixel over AlphaEarth's cutoff is over the aggregate's. */
+function onAggregateScale(s: number, m: WorldModel): number {
+  const ca = m.cut.aef, cg = m.cut.aggregate;
+  return s < ca ? (s * cg) / ca : cg + ((s - ca) * (1 - cg)) / (1 - ca);
+}
+
 /**
  * One layer's score at a pixel, as the shaders (earthwork-score.ts) and the
  * notebook's score_layers compute it; null where the layer has none there (a
- * year missing, or TESSERA not read or not embedded for a layer that needs it).
+ * year missing, or TESSERA not embedded for TESSERA's own layer). The aggregate
+ * where TESSERA is missing a year takes AlphaEarth's own score instead.
  */
 export function scorePixel(kind: LayerKind, m: WorldModel, p: PixelInputs): number | null {
   const { plane, at } = p;
@@ -95,7 +103,13 @@ export function scorePixel(kind: LayerKind, m: WorldModel, p: PixelInputs): numb
   // TESSERA not read here (AlphaEarth saw nothing worth it, see aefScores): the aggregate scores none
   if (kind === "aggregate" && p.tesFlags && p.tesFlags[at] & TES_SKIP) return 0;
   if (needTes) {
-    if (!p.tesFirst || !p.tesLast || !p.tesFlags || !(p.tesFlags[at] & TES_OK)) return null;
+    if (!p.tesFirst || !p.tesLast || !p.tesFlags || !(p.tesFlags[at] & TES_OK)) {
+      // TESSERA missing a year here (not embedded, or outside its store): the aggregate falls back to AlphaEarth's
+      // own score, put on the aggregate's scale so that AlphaEarth's cutoff lands on the aggregate's
+      if (kind !== "aggregate") return null;
+      const ga = clip01((1 - cosine(bA, aA, NUM_BANDS) - GATE_LO) / (GATE_HI - GATE_LO));
+      return onAggregateScale(sig(half(bA, aA, m.aef.w, 0, NUM_BANDS) + m.aef.b) * ga, m);
+    }
     unitTes(p.tesFirst, plane, at, bT);
     unitTes(p.tesLast, plane, at, aT);
   }
