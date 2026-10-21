@@ -220,13 +220,14 @@ def _(HOLD, asyncio, footprints_arrow, json, time, traceback, view):
             return
         HOLD["busy"] = True
         try:
+            # only a failure is told; the progress notes are set aside
             while area is not None:
                 t = time.time()
-                view.foot_status = "Reading the footprints from Overture's GeoParquet..."
+                # view.foot_status = "Reading the footprints from Overture's GeoParquet..."
                 data, n, cut, nf = await asyncio.get_running_loop().run_in_executor(None, footprints_arrow, area)
                 if data:
                     view.foot = data
-                view.foot_status = f"{n:,} footprints from {nf} GeoParquet file{'s' if nf != 1 else ''} in {time.time() - t:.0f} s" + (" (cut short: zoom in)" if cut else "")
+                # view.foot_status = f"{n:,} footprints from {nf} GeoParquet file{'s' if nf != 1 else ''} in {time.time() - t:.0f} s" + (" (cut short: zoom in)" if cut else "")
                 area, HOLD["pending"] = HOLD["pending"], None
         except Exception as exc:
             tb = traceback.extract_tb(exc.__traceback__)
