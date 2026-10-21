@@ -1434,17 +1434,18 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       note(st.gap ? "Patches joined across a 1 pixel gap (G)" : "Patches joined by touching only (G)");
       findPatches();
     }
-    else if (k === "y" || k === "Y") {
-      // the year ramp: imola, blues, pale yellow to blue, greens, browns, oranges, grays
-      rampI = (rampI + 1) % RAMPS.length;
-      setRamp(RAMPS[rampI].cols);
-      YEAR_RGB = YEAR_COL.map(hexRgb);
-      drawLline();
-      drawCard();
-      codes?.setLook(st.look);
-      recolor();
-      note(`Years: ${RAMPS[rampI].name} (Y)`);
-    }
+    // one ramp now (the others set aside), so Y has nothing to step
+    // else if (k === "y" || k === "Y") {
+    //   // the year ramp: imola, blues, pale yellow to blue, greens, browns, oranges, grays
+    //   rampI = (rampI + 1) % RAMPS.length;
+    //   setRamp(RAMPS[rampI].cols);
+    //   YEAR_RGB = YEAR_COL.map(hexRgb);
+    //   drawLline();
+    //   drawCard();
+    //   codes?.setLook(st.look);
+    //   recolor();
+    //   note(`Years: ${RAMPS[rampI].name} (Y)`);
+    // }
     else if (k === "c" || k === "C") {
       // the outline color of the footprints with digging under them
       dugCol = (dugCol + 1) % DUG_COLS.length;

@@ -16,19 +16,12 @@ export type Look = { src: "ours" | "wsf"; year: number | null };
 // 2016 and 2017 commented out with WSF, the only source that dates them:
 // export const YEAR_COL = ["#1a33b3", "#2446a9", "#2d59a0", "#396b94", "#497b85", "#60927b", "#7bae74", "#99cc6d", "#c4ea67", "#ffff66"];
 // export const Y0_RAMP = 2016;
-/** The year ramps Y steps through, 2018 to 2025: imola (oldest darkest); then the single ramps, the most recent darkest
- * and most saturated: matplotlib's Blues and Greens (0.3 to 1.0), pale yellow to blue (pale yellow, cividis's gray,
- * then its first blue) */
+/** The year ramp, 2018 to 2025: one orange, the year in its opacity and saturation. The oldest pale and see-through
+ * (45% opaque) but plainly there, the newest vivid and solid. Each color as #rrggbbaa, its alpha the raster's alpha. */
 export const RAMPS = [
-  { name: "imola", cols: ["#1a33b3", "#274ca6", "#346499", "#467987", "#64967a", "#87ba71", "#b5e268", "#ffff66"] },
-  { name: "blues", cols: ["#b7d4ea", "#94c4df", "#6aaed6", "#4a98c9", "#2e7ebc", "#1764ab", "#084a91", "#08306b"] },
-  { name: "pale yellow to blue", cols: ["#fff2a6", "#d9cf98", "#b1ac8b", "#8b897d", "#666d75", "#445973", "#224472", "#003070"] },
-  { name: "greens", cols: ["#b8e3b2", "#98d594", "#73c476", "#4bb062", "#2f974e", "#157f3b", "#006428", "#00441b"] },
-  // the ground's own colors: matplotlib's YlOrBr (0.3 to 1.0), Oranges (0.3 to 1.0) and Greys (0.2 to 0.8, its darkest
-  // left off so 2025 still stands off the dark basemap)
-  { name: "browns", cols: ["#fed778", "#febb47", "#fe9829", "#f07818", "#d85a09", "#b84203", "#8e3104", "#662506"] },
-  { name: "oranges", cols: ["#fdc38d", "#fda762", "#fd8c3b", "#f3701b", "#e25508", "#c54102", "#9e3303", "#7f2704"] },
-  { name: "grays", cols: ["#e2e2e2", "#d1d1d1", "#bebebe", "#a3a3a3", "#8a8a8a", "#727272", "#5c5c5c", "#404040"] },
+  { name: "orange", cols: ["#f9c28f73", "#fab67b87", "#fbaa669b", "#fc9e52af", "#fc913dc3", "#fd8529d7", "#fe7914eb", "#ff6d00ff"] },
+  // tried and set aside: imola, blues, pale yellow to blue, greens, browns, oranges, grays
+  // { name: "imola", cols: ["#1a33b3", "#274ca6", "#346499", "#467987", "#64967a", "#87ba71", "#b5e268", "#ffff66"] },
 ];
 /** The ramp in use (swapped in place by setRamp, so every reader sees the new one). */
 export const YEAR_COL = [...RAMPS[0].cols];
@@ -38,17 +31,20 @@ export const SEASON_COL = ["#1a33b3", "#396b94", "#7bae74", "#ffff66"];
 export const HALF_COL = ["#356598", "#b2e068"];
 export const UNCLEAR = "#9aa1a9";
 const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-const YR = YEAR_COL.map(rgb), SE = SEASON_COL.map(rgb), UN = rgb(UNCLEAR);
+const ALPHA = 225;
+// a color's alpha from its #rrggbbaa, else the raster's own
+const alphaOf = (h: string) => (h.length >= 9 ? parseInt(h.slice(7, 9), 16) : ALPHA);
+const YR = YEAR_COL.map(rgb), YA = YEAR_COL.map(alphaOf), SE = SEASON_COL.map(rgb), UN = rgb(UNCLEAR);
 let rampV = 0;
 /** Swaps the year ramp in place; the raster repaints on its layer's next setLook. */
 export function setRamp(cols: string[]) {
   YEAR_COL.splice(0, YEAR_COL.length, ...cols);
   YR.splice(0, YR.length, ...cols.map(rgb));
+  YA.splice(0, YA.length, ...cols.map(alphaOf));
   rampV++;
 }
 // WSF commented out for now
 // const HF = HALF_COL.map(rgb);
-const ALPHA = 225;
 
 /** The pairs of years scored: 2018 (from 2017) to 2025, as indices into YEARS. */
 const ALL_IDX = YEARS.slice(1).map((y) => y - YEAR_ORIGIN);
@@ -176,11 +172,14 @@ export async function createCodesLayer(model: WorldModel, decoder: { w: Float32A
     for (let i = 0; i < n; i++) {
       const gx = t.px0 + (i % t.width), gy = t.py0 + Math.floor(i / t.width);
       if (gx < ax0 || gx > ax1 || gy < ay0 || gy > ay1) continue;
-      let c: number[] | null = null;
+      let c: number[] | null = null, a = ALPHA;
       if (look.src === "ours") {
         const idx = t.ours[i];
         if (!idx) continue;
-        if (yIdx < 0) c = YR[YEAR_ORIGIN + idx - Y0_RAMP];
+        if (yIdx < 0) {
+          c = YR[YEAR_ORIGIN + idx - Y0_RAMP];
+          a = YA[YEAR_ORIGIN + idx - Y0_RAMP];
+        }
         else if (t.bits[i] & yBit) {
           // still decoding: not drawn (gray is only for a quarter not made out)
           if (!sea) continue;
@@ -199,7 +198,7 @@ export async function createCodesLayer(model: WorldModel, decoder: { w: Float32A
       out[4 * i] = c[0];
       out[4 * i + 1] = c[1];
       out[4 * i + 2] = c[2];
-      out[4 * i + 3] = ALPHA;
+      out[4 * i + 3] = a;
     }
     t.tex?.destroy();
     t.tex = device.createTexture({
