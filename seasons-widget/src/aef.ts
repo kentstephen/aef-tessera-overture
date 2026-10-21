@@ -7,6 +7,14 @@ import { DiskCachedStore } from "./disk-cache";
 
 /** The AlphaEarth Foundations GeoZarr mosaic on Source Cooperative. */
 export const ZARR_URL = "https://data.source.coop/tge-labs/aef-mosaic";
+
+/**
+ * The same bytes as a data.source.coop URL, straight from the S3 bucket behind it (open, CORS for any origin). The
+ * gateway can throttle many requests at once; the bucket does not. Disk cache keys stay on the gateway URL, so what
+ * is kept under it still reads.
+ */
+export const fromS3 = (url: string) =>
+  url.replace("https://data.source.coop/", "https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/");
 export const VARIABLE = "embeddings";
 export const NUM_BANDS = 64;
 export const YEAR_ORIGIN = 2017;

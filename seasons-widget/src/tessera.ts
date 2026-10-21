@@ -1,6 +1,6 @@
 import * as zarr from "zarrita";
 
-import { RES, X0, Y0 } from "./aef";
+import { fromS3, RES, X0, Y0 } from "./aef";
 import { cacheGet, cachePut, DiskCachedStore, ZARR_TTL } from "./disk-cache";
 import { toUtm, zoneOf } from "./utm";
 
@@ -39,7 +39,6 @@ type Zone = {
   rows: number;
   cols: number;
   emb: zarr.Array<"int8", zarr.Readable>;
-  scales: zarr.Array<"float32", zarr.Readable>;
   asc: U16;
   desc: U16;
 };
@@ -47,7 +46,7 @@ type Zone = {
 /**
  * TESSERA's store as zarrita reads it, with fewer requests: zarrita asks for
  * each 32 x 32 inner chunk on its own (about 650 requests per AlphaEarth chunk,
- * counting the scales and radar counts, more than a browser keeps in flight).
+ * counting the radar counts, more than a browser keeps in flight).
  * The ranges asked of one shard in one turn of the event loop are sorted and
  * neighbors merged into one request, as the notebook's reader does, and at most
  * MAX_IN_FLIGHT requests are out at once across every zone. A failed request is
@@ -95,6 +94,9 @@ const isAbort = (e: unknown) => (e as { name?: string })?.name === "AbortError";
 
 class MergingStore implements zarr.AsyncReadable {
   private inner: zarr.FetchStore;
+  /** the same bucket under three S3 host names: a browser keeps six HTTP/1.1 connections per host, so 18 in all */
+  private shards: zarr.FetchStore[];
+  private turn = 0;
   /** The disk's cache: zarr.json from the network (its fingerprint keys the chunks under it), the rest kept. */
   private disk: DiskCachedStore;
   private asks = new Map<zarr.AbsolutePath, Ask[]>();
@@ -103,7 +105,11 @@ class MergingStore implements zarr.AsyncReadable {
   private sizes = new Map<string, number>();
 
   constructor(url: string) {
-    const inner = (this.inner = new zarr.FetchStore(url));
+    // read from S3, kept on disk under the gateway's URL
+    const inner = (this.inner = new zarr.FetchStore(fromS3(url)));
+    this.shards = ["s3.us-west-2", "s3-us-west-2", "s3.dualstack.us-west-2"].map(
+      (h) => new zarr.FetchStore(fromS3(url).replace("s3.us-west-2", h)),
+    );
     this.disk = new DiskCachedStore(url, {
       get: (key, opts) => retried(() => inner.get(key, opts), opts?.signal),
       getRange: (key, range, opts) => retried(() => inner.getRange(key, range, opts)),
@@ -186,7 +192,8 @@ class MergingStore implements zarr.AsyncReadable {
     for (const g of groups) {
       // a request serving several reads is let go only when all of them share one signal
       const sig = g.asks.every((a) => a.signal === g.asks[0].signal) ? g.asks[0].signal : undefined;
-      retried(() => this.inner.getRange(key, { offset: g.start, length: g.end - g.start }, { signal: sig }), sig).then(
+      const via = this.shards[this.turn++ % this.shards.length];
+      retried(() => via.getRange(key, { offset: g.start, length: g.end - g.start }, { signal: sig }), sig).then(
         // copies, so a kept inner chunk does not hold the whole merged response
         (buf) => g.asks.forEach((a) => a.resolve(buf && buf.slice(a.offset - g.start, a.offset - g.start + a.length))),
         (e) => g.asks.forEach((a) => a.reject(e)),
@@ -205,14 +212,14 @@ function openZone(zone: number): Promise<Zone | null> {
       const root = await zarr.open.v3(store, { kind: "group" });
       const tr = root.attrs["spatial:transform"] as number[];
       const arr = (name: string) => zarr.open.v3(root.resolve(name), { kind: "array" });
-      const [emb, scales, asc, desc] = await Promise.all(
-        ["embeddings", "scales", "s1_asc_obs_count", "s1_desc_obs_count"].map(arr),
-      );
-      if (!emb.is("int8") || !scales.is("float32") || !asc.is("uint16") || !desc.is("uint16")) {
+      // the scales are not read: an embedding's 128 values are scaled to unit length where it is used, and a pixel
+      // with no embedding is all zeros (the store's fill value), so the scales add nothing
+      const [emb, asc, desc] = await Promise.all(["embeddings", "s1_asc_obs_count", "s1_desc_obs_count"].map(arr));
+      if (!emb.is("int8") || !asc.is("uint16") || !desc.is("uint16")) {
         throw new Error(`TESSERA zone ${zone}: unexpected data types`);
       }
       const [, , rows, cols] = emb.shape;
-      return { x0: tr[2], y0: tr[5], rows, cols, emb, scales, asc, desc };
+      return { x0: tr[2], y0: tr[5], rows, cols, emb, asc, desc };
     })();
     // a failed open is tried again on the next chunk
     p.catch(() => zones.delete(zone));
@@ -225,7 +232,8 @@ function openZone(zone: number): Promise<Zone | null> {
  * TESSERA at each pixel center of the AlphaEarth chunk whose top left pixel is
  * (px0, py0) on the mosaic's grid, w x h pixels: the TESSERA pixel holding the
  * center (r = floor((y0 - N) / 10), c = floor((E - x0) / 10)), each pixel in
- * the UTM zone of its own longitude. Not embedded, or outside the store: flags 0.
+ * the UTM zone of its own longitude. Not embedded (all 128 values zero), or
+ * outside the store: flags 0.
  *
  * With AlphaEarth's own scores (aefScores, -1 where AlphaEarth is missing), only the
  * TESSERA blocks (32 x 32) holding a pixel that scores TES_READ_AT or more are read;
@@ -316,14 +324,18 @@ export async function tesseraOnChunk(
         return out;
       };
       const year = (t: number) =>
-        Promise.all([
-          emb(t),
-          zarr.get(zn.scales, [t, ys, xs], { signal }),
-          zarr.get(zn.asc, [t, ys, xs], { signal }),
-          zarr.get(zn.desc, [t, ys, xs], { signal }),
-        ]);
-      const [[embF, sf, af, df], [embL, sl, al, dl]] = await Promise.all([year(firstIdx), year(lastIdx)]);
-      const scF = sf.data as Float32Array, scL = sl.data as Float32Array;
+        Promise.all([emb(t), zarr.get(zn.asc, [t, ys, xs], { signal }), zarr.get(zn.desc, [t, ys, xs], { signal })]);
+      const [[embF, af, df], [embL, al, dl]] = await Promise.all([year(firstIdx), year(lastIdx)]);
+      // embedded: any of the pixel's 128 values not zero
+      const embedded = (e: Int8Array) => {
+        const has = new Uint8Array(wplane);
+        for (let b = 0; b < TES_BANDS; b++) {
+          const o = b * wplane;
+          for (let s = 0; s < wplane; s++) if (e[o + s] !== 0) has[s] = 1;
+        }
+        return has;
+      };
+      const hasF = embedded(embF), hasL = embedded(embL);
       const ascF = af.data as Uint16Array, descF = df.data as Uint16Array;
       const ascL = al.data as Uint16Array, descL = dl.data as Uint16Array;
       // the window's pixel under each chunk pixel (-1: outside the store or not embedded)
@@ -338,7 +350,7 @@ export async function tesseraOnChunk(
             if (aef && aef[dst[k]] >= 0) flags[dst[k]] = TES_SKIP;
             continue;
           }
-          const okF = scF[s] > 0, okL = scL[s] > 0; // false for NaN
+          const okF = hasF[s] === 1, okL = hasL[s] === 1;
           const radarF = ascF[s] + descF[s] > 0, radarL = ascL[s] + descL[s] > 0;
           flags[dst[k]] = (okF && okL ? TES_OK : 0) | (radarF !== radarL ? TES_FLIP : 0);
           src[k] = s;
