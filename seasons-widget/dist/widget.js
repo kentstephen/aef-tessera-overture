@@ -90243,7 +90243,23 @@ function kHe(e, t) {
 	}), i = new o9({ maxRequests: 16 }), a = /* @__PURE__ */ new Map(), o = (e) => {
 		let t = a.get(e);
 		return t || (t = l9.fromUrl(e, { concurrencyLimiter: i }), a.set(e, t), t.catch(() => a.get(e) === t && a.delete(e))), t;
-	}, s = /* @__PURE__ */ new Map(), c = [], l = () => {
+	}, s = /* @__PURE__ */ new Map(), c = null, l = (e) => {
+		let t = Date.parse(e);
+		return Math.floor((t - Date.UTC(new Date(t).getUTCFullYear(), 0, 1)) / 864e5) + 1;
+	}, u = (e) => {
+		if (c == null) return 0;
+		let t = Math.abs(l(e) - c);
+		return Math.min(t, 365 - t);
+	}, d = (e) => c == null ? e : [...e].sort((e, t) => u(e.date) - u(t.date));
+	function f(e) {
+		let t = s.get(e), n = t && S(t);
+		if (n) {
+			c = l(n.date);
+			for (let t of [...s.keys()]) t !== e && s.delete(t);
+			D(e);
+		}
+	}
+	let p = [], m = () => {
 		let t = e.getBounds();
 		return [
 			t.getWest(),
@@ -90251,7 +90267,7 @@ function kHe(e, t) {
 			t.getEast(),
 			Math.min(85, t.getNorth())
 		];
-	}, u = (e, t) => {
+	}, h = (e, t) => {
 		let n = (e[2] - e[0]) * t, r = (e[3] - e[1]) * t;
 		return [
 			e[0] - n,
@@ -90259,8 +90275,8 @@ function kHe(e, t) {
 			e[2] + n,
 			e[3] + r
 		];
-	}, d = (e, t, n) => f(e.scl, e, t, n, 1);
-	async function f(e, t, n, i, a) {
+	}, g = (e, t, n) => _(e.scl, e, t, n, 1);
+	async function _(e, t, n, i, a) {
 		let s = await o(e), c = t.epsg % 100, l = Math.floor(t.epsg / 100) === 327, u = n.length / 2, d = new Float64Array(n.length);
 		for (let e = 0; e < u; e++) {
 			let [t, r] = O9(n[2 * e], n[2 * e + 1], c, l);
@@ -90299,10 +90315,10 @@ function kHe(e, t) {
 		}
 		return v;
 	}
-	async function p(e, t) {
+	async function v(e, t) {
 		let n = /* @__PURE__ */ new Float64Array(4608);
 		for (let e = 0; e < T9; e++) for (let r = 0; r < T9; r++) n[2 * (e * T9 + r)] = t[0] + (r + .5) / T9 * (t[2] - t[0]), n[2 * (e * T9 + r) + 1] = t[1] + (e + .5) / T9 * (t[3] - t[1]);
-		let r = (t[1] + t[3]) / 2 * (Math.PI / 180), i = Math.max((t[2] - t[0]) * 111320 * Math.cos(r), (t[3] - t[1]) * 110540), a = e.scenes.filter((e) => e.bbox[0] < t[2] && e.bbox[2] > t[0] && e.bbox[1] < t[3] && e.bbox[3] > t[1]), o = await Promise.all(a.map((e) => d(e, n, i).catch(() => /* @__PURE__ */ new Uint8Array(2304)))), s = 0, c = 0;
+		let r = (t[1] + t[3]) / 2 * (Math.PI / 180), i = Math.max((t[2] - t[0]) * 111320 * Math.cos(r), (t[3] - t[1]) * 110540), a = e.scenes.filter((e) => e.bbox[0] < t[2] && e.bbox[2] > t[0] && e.bbox[1] < t[3] && e.bbox[3] > t[1]), o = await Promise.all(a.map((e) => g(e, n, i).catch(() => /* @__PURE__ */ new Uint8Array(2304)))), s = 0, c = 0;
 		for (let e = 0; e < 2304; e++) {
 			let t = 0;
 			for (let n of o) if (n[e]) {
@@ -90317,8 +90333,8 @@ function kHe(e, t) {
 			bad: s ? c / s : 1
 		};
 	}
-	let m = (e) => e.cover >= CHe && e.bad <= wHe;
-	async function h(e, n, r) {
+	let y = (e) => e.cover >= CHe && e.bad <= wHe;
+	async function b(e, n, r) {
 		if (n.busy) return;
 		n.busy = !0;
 		let i = 0;
@@ -90326,28 +90342,28 @@ function kHe(e, t) {
 			for (; n.clear.length < r && n.queue.length && i < E9 && s.get(e) === n;) {
 				let r = n.queue.splice(0, THe);
 				i += r.length;
-				let a = await Promise.all(r.map((e) => p(e, n.view)));
+				let a = await Promise.all(r.map((e) => v(e, n.view)));
 				if (s.get(e) !== n) return;
 				for (let e of a) (!n.best || e.cover - e.bad > n.best.cover - n.best.bad) && (n.best = e);
-				let o = a.filter(m).sort((e, t) => e.bad - t.bad);
+				let o = a.filter(y).sort((e, t) => u(e.date) - u(t.date) || e.bad - t.bad);
 				if (o.length) {
 					let e = n.clear.length;
-					n.clear.push(...o), e || t();
+					n.clear.push(...o), c ??= l(o[0].date), e || t();
 				}
 			}
-			(!n.queue.length || i >= E9) && (n.done = !0), n.clear.length || t();
+			(!n.queue.length || i >= E9) && (n.done = !0), n.done && !n.clear.length && c == null && n.best && (c = l(n.best.date)), n.clear.length || t();
 		} finally {
 			n.busy = !1;
 		}
 	}
-	async function g(e) {
-		let n = l();
+	async function x(e) {
+		let n = m();
 		if (n[2] - n[0] > 4 || n[3] - n[1] > 4) return;
 		let r = s.get(e);
-		if (r && OHe(n, r.hold)) return;
-		let i = r ? _(r) : null, a = {
+		if (r && OHe(n, r.hold)) return r.filling;
+		let i = r ? S(r) : null, a = {
 			view: n,
-			hold: u(n, .25),
+			hold: h(n, .25),
 			clear: [],
 			look: 0,
 			queue: [],
@@ -90357,28 +90373,29 @@ function kHe(e, t) {
 			done: !1
 		};
 		if (i) {
-			let r = await p(i, n).catch(() => null);
-			if (r && m(r)) {
-				a.clear.push(r), s.set(e, a), k9(e, a.hold).then((e) => a.queue = e.filter((e) => e.key !== i.key), () => {}), t();
+			let r = await v(i, n).catch(() => null);
+			if (r && y(r)) {
+				a.clear.push(r), s.set(e, a), k9(e, a.hold).then((e) => a.queue = d(e.filter((e) => e.key !== i.key)), () => {}), t();
 				return;
 			}
 		}
-		s.set(e, a);
-		try {
-			a.queue = await k9(e, a.hold);
-		} catch {
-			s.delete(e);
-			return;
-		}
-		await h(e, a, 1);
+		s.set(e, a), a.filling = (async () => {
+			try {
+				a.queue = d(await k9(e, a.hold));
+			} catch {
+				s.delete(e);
+				return;
+			}
+			await b(e, a, 1);
+		})(), await a.filling;
 	}
-	let _ = (e) => e.clear.length ? e.clear[e.look % e.clear.length] : e.done ? e.best : e.prev;
-	async function v(e, t) {
-		let n = s.get(e), r = n && _(n), i = l();
+	let S = (e) => e.clear.length ? e.clear[e.look % e.clear.length] : e.done ? e.best : e.prev;
+	async function C(e, t) {
+		let n = s.get(e), r = n && S(n), i = m();
 		if (r) for (let e of r.scenes) {
 			if (!(e.bbox[0] < i[2] && e.bbox[2] > i[0] && e.bbox[1] < i[3] && e.bbox[3] > i[1])) continue;
 			let n = await o(e.url);
-			if (t !== b) return;
+			if (t !== E) return;
 			let r = e.epsg % 100, a = Math.floor(e.epsg / 100) === 327, [s, , c, , l, u] = n.transform, d = Infinity, f = -Infinity, p = Infinity, m = -Infinity;
 			for (let [e, t] of [
 				[i[0], i[1]],
@@ -90392,35 +90409,35 @@ function kHe(e, t) {
 				d = Math.min(d, o), f = Math.max(f, o), p = Math.min(p, h), m = Math.max(m, h);
 			}
 			let h = Math.max(0, Math.floor(d / n.tileWidth)), g = Math.min(Math.ceil(n.width / n.tileWidth) - 1, Math.floor(f / n.tileWidth)), _ = Math.max(0, Math.floor(p / n.tileHeight)), v = Math.min(Math.ceil(n.height / n.tileHeight) - 1, Math.floor(m / n.tileHeight));
-			for (let e = _; e <= v; e++) for (let r = h; r <= g; r++) if (await S9(n, r, e).catch(() => {}), t !== b) return;
+			for (let e = _; e <= v; e++) for (let r = h; r <= g; r++) if (await S9(n, r, e).catch(() => {}), t !== E) return;
 		}
 	}
-	let y = Promise.resolve(), b = 0;
-	function x(e) {
-		let t = c.indexOf(e);
-		t >= 0 && c.splice(t, 1), c.push(e);
-		let n = ++b;
-		g(e).then(() => {
-			y = y.then(async () => {
+	let w = Promise.resolve(), T = Promise.resolve(), E = 0;
+	function D(e) {
+		let t = p.indexOf(e);
+		t >= 0 && p.splice(t, 1), p.push(e);
+		let n = ++E, r = x(e);
+		T = r.catch(() => {}), r.then(() => {
+			w = w.then(async () => {
 				for (let t of [e, ...w9.filter((t) => t !== e)]) {
-					if (n !== b) return;
-					await g(t).catch(() => {}), await v(t, n).catch(() => {});
+					if (n !== E) return;
+					await x(t).catch(() => {}), await C(t, n).catch(() => {});
 				}
 			});
 		});
 	}
-	function S(e) {
-		let n = l();
+	function O(e) {
+		let n = m();
 		if (n[2] - n[0] > 4 || n[3] - n[1] > 4) return;
-		let r = s.get(e), i = r && _(r);
+		let r = s.get(e), i = r && S(r);
 		if (i) {
-			let t = C.get(e) ?? [];
-			t[t.length - 1]?.key !== i.key && t.push(i), t.length > 20 && t.shift(), C.set(e, t);
+			let t = k.get(e) ?? [];
+			t[t.length - 1]?.key !== i.key && t.push(i), t.length > 20 && t.shift(), k.set(e, t);
 		}
 		if (!r || r.view.some((e, t) => e !== n[t])) {
-			let i = r ? _(r) : null, a = {
+			let i = r ? S(r) : null, a = {
 				view: n,
-				hold: u(n, .25),
+				hold: h(n, .25),
 				clear: [],
 				look: 0,
 				queue: [],
@@ -90430,30 +90447,30 @@ function kHe(e, t) {
 				done: !1
 			};
 			s.set(e, a), t(), k9(e, a.hold).then((t) => {
-				if (s.get(e) === a) return a.queue = i ? [...t.filter((e) => e.key !== i.key), ...t.filter((e) => e.key === i.key)] : t, h(e, a, 1);
+				if (s.get(e) === a) return a.queue = i ? [...t.filter((e) => e.key !== i.key), ...t.filter((e) => e.key === i.key)] : t, b(e, a, 1).then(() => f(e));
 			}, () => s.get(e) === a && s.delete(e));
-		} else r.look + 1 < r.clear.length ? r.look++ : !r.done && r.queue.length ? h(e, r, r.clear.length + 1).then(() => {
-			r.look + 1 < r.clear.length ? r.look++ : r.look = 0, t();
-		}) : r.look = 0;
+		} else r.look + 1 < r.clear.length ? (r.look++, f(e)) : !r.done && r.queue.length ? b(e, r, r.clear.length + 1).then(() => {
+			r.look + 1 < r.clear.length ? r.look++ : r.look = 0, t(), f(e);
+		}) : (r.look = 0, f(e));
 	}
-	let C = /* @__PURE__ */ new Map();
-	function w(e) {
-		let n = C.get(e)?.pop();
+	let k = /* @__PURE__ */ new Map();
+	function A(e) {
+		let n = k.get(e)?.pop();
 		if (!n) return;
 		let r = s.get(e);
 		if (!r) return;
 		let i = r.clear.findIndex((e) => e.key === n.key);
-		i >= 0 ? r.look = i : r.clear.splice(r.look = r.clear.length ? r.look % r.clear.length : 0, 0, n), t();
+		i >= 0 ? r.look = i : r.clear.splice(r.look = r.clear.length ? r.look % r.clear.length : 0, 0, n), t(), f(e);
 	}
-	function T(e, t, n) {
+	function j(e, t, n) {
 		let r = s.get(e);
-		return r && _(r)?.date || "";
+		return r && S(r)?.date || "";
 	}
-	function E(e) {
+	function M(e) {
 		let t = s.get(e);
 		return !t || !t.clear.length && !t.done ? "finding" : t.clear.length ? "clear" : "cloudy";
 	}
-	function D(e, t, r, i, a, s = {}) {
+	function ee(e, t, r, i, a, s = {}) {
 		return new cHe({
 			id: `s2${a}-${e}-${t.key}`,
 			sources: t.scenes,
@@ -90475,36 +90492,36 @@ function kHe(e, t) {
 			}) : null
 		});
 	}
-	function O(e, t, n, i = "", a = {}) {
+	function te(e, t, n, i = "", a = {}) {
 		r();
-		let o = [...c.filter((t) => t !== e).slice(-3), e], l = [];
+		let o = [...p.filter((t) => t !== e).slice(-3), e], c = [];
 		for (let r of o) {
-			let o = s.get(r), c = o && _(o);
-			c && l.push(D(r, c, t && r === e, n, i, a));
+			let o = s.get(r), l = o && S(o);
+			l && c.push(ee(r, l, t && r === e, n, i, a));
 		}
-		return l;
+		return c;
 	}
-	async function k(e, t) {
-		await g(e).catch(() => {});
+	async function ne(e, t) {
+		await x(e).catch(() => {});
 		let n = s.get(e);
 		if (!n) return [];
 		for (; n.busy;) await new Promise((e) => setTimeout(e, 150));
-		s.get(e) === n && await h(e, n, t).catch(() => {});
-		let r = _(n), i = n.clear.length ? [...n.clear] : r ? [r] : [];
+		s.get(e) === n && await b(e, n, t).catch(() => {});
+		let r = S(n), i = n.clear.length ? [...n.clear] : r ? [r] : [];
 		return r && i.sort((e, t) => e === r ? -1 : +(t === r)), i.slice(0, t);
 	}
-	async function A(e) {
-		await g(e).catch(() => {});
+	async function re(e) {
+		await x(e).catch(() => {});
 		let t = s.get(e);
 		if (!t) return null;
-		for (let e = 0; e < 200 && !_(t); e++) await new Promise((e) => setTimeout(e, 150));
-		return _(t);
+		for (let e = 0; e < 200 && !S(t); e++) await new Promise((e) => setTimeout(e, 150));
+		return S(t);
 	}
-	async function j(e, t, n) {
+	async function ie(e, t, n) {
 		let r = t.length / 2, i = new Uint8Array(3 * r), a = new Uint8Array(r), o = Infinity, s = Infinity, c = -Infinity, l = -Infinity;
 		for (let e = 0; e < r; e++) o = Math.min(o, t[2 * e]), c = Math.max(c, t[2 * e]), s = Math.min(s, t[2 * e + 1]), l = Math.max(l, t[2 * e + 1]);
 		let u = e.scenes.filter((e) => e.bbox[0] < c && e.bbox[2] > o && e.bbox[1] < l && e.bbox[3] > s), d = await Promise.all(u.map(async (e) => {
-			let [r, i] = await Promise.all([f(e.url, e, t, n, 3), f(e.scl, e, t, n, 1)]).catch(() => [null, null]);
+			let [r, i] = await Promise.all([_(e.url, e, t, n, 3), _(e.scl, e, t, n, 1)]).catch(() => [null, null]);
 			return r && i ? {
 				c: r,
 				l: i
@@ -90519,32 +90536,32 @@ function kHe(e, t) {
 			cls: a
 		};
 	}
-	let M = (e) => D9.has(e);
-	function ee(e) {
-		for (let t of e) g(t).catch(() => {});
+	let ae = (e) => D9.has(e);
+	function oe(e) {
+		for (let t of e) T.then(() => x(t)).catch(() => {});
 	}
-	function te(e, t, n, i = {}) {
-		return r(), [D(e, t, !0, void 0, n, i)];
+	function se(e, t, n, i = {}) {
+		return r(), [ee(e, t, !0, void 0, n, i)];
 	}
-	function ne(e, t, n = {}) {
+	function ce(e, t, n = {}) {
 		r();
-		let i = s.get(e), a = i && _(i);
-		return a ? [D(e, a, !0, void 0, t, n)] : [];
+		let i = s.get(e), a = i && S(i);
+		return a ? [ee(e, a, !0, void 0, t, n)] : [];
 	}
 	return {
-		discover: x,
-		layers: O,
-		layerFor: ne,
-		layerForPass: te,
-		want: ee,
-		candidates: k,
-		shownPass: A,
-		sample: j,
-		isBad: M,
-		dateAt: T,
-		status: E,
-		next: S,
-		back: w
+		discover: D,
+		layers: te,
+		layerFor: ce,
+		layerForPass: se,
+		want: oe,
+		candidates: ne,
+		shownPass: re,
+		sample: ie,
+		isBad: ae,
+		dateAt: j,
+		status: M,
+		next: O,
+		back: A
 	};
 }
 function AHe(e) {

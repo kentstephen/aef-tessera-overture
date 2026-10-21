@@ -72,6 +72,8 @@ type YearState = {
   prev: Rated | null;
   busy: boolean;
   done: boolean;
+  /** the first look being found, for the years chosen after it to wait on (their target day comes from it) */
+  filling?: Promise<void>;
 };
 
 const MONTH_WINTER_N = new Set([12, 1, 2]);
@@ -157,6 +159,31 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
   };
 
   const years = new Map<number, YearState>();
+  /**
+   * The day of the year every year's pass is matched to, so the years compare in the same season: the first pass
+   * shown sets it, and a new look (N, Shift+N) moves it to that look's day. Null until the first pass is chosen.
+   */
+  let target: number | null = null;
+  const dayOf = (date: string) => {
+    const t = Date.parse(date);
+    return Math.floor((t - Date.UTC(new Date(t).getUTCFullYear(), 0, 1)) / 864e5) + 1;
+  };
+  // days apart within the year, around the new year
+  const apart = (date: string) => {
+    if (target == null) return 0;
+    const d = Math.abs(dayOf(date) - target);
+    return Math.min(d, 365 - d);
+  };
+  /** Passes nearest the target day first (the order the search gave them, clearest first, without a target). */
+  const nearest = <T extends Pass>(ps: T[]) => (target == null ? ps : [...ps].sort((a, b) => apart(a.date) - apart(b.date)));
+  /** The target moved to the year's look on screen; every other year chooses again, near it. */
+  function matchTo(year: number) {
+    const s = years.get(year), p = s && shownOf(s);
+    if (!p) return;
+    target = dayOf(p.date);
+    for (const y of [...years.keys()]) if (y !== year) years.delete(y);
+    discover(year);
+  }
   /** years asked for lately, the latest last: their layers stay loaded */
   const recent: number[] = [];
 
@@ -266,14 +293,17 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
         if (years.get(year) !== s) return;
         for (const r of rated) if (!s.best || r.cover - r.bad > s.best.cover - s.best.bad) s.best = r;
         // within a batch the least cloudy first, so the one shown is the best of those checked together
-        const ok = rated.filter(isClear).sort((a, b) => a.bad - b.bad);
+        const ok = rated.filter(isClear).sort((a, b) => apart(a.date) - apart(b.date) || a.bad - b.bad);
         if (ok.length) {
           const had = s.clear.length;
           s.clear.push(...ok);
+          if (target == null) target = dayOf(ok[0].date);
           if (!had) onChange();
         }
       }
       if (!s.queue.length || checked >= MAX_CHECKED) s.done = true;
+      // no clear pass: the least cloudy one shown sets the target all the same
+      if (s.done && !s.clear.length && target == null && s.best) target = dayOf(s.best.date);
       if (!s.clear.length) onChange();
     } finally {
       s.busy = false;
@@ -285,7 +315,7 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
     const v = viewBox();
     if (v[2] - v[0] > 4 || v[3] - v[1] > 4) return;
     const old = years.get(year);
-    if (old && inside(v, old.hold)) return;
+    if (old && inside(v, old.hold)) return old.filling;
     const shown = old ? shownOf(old) : null;
     const s: YearState = { view: v, hold: grow(v, 0.25), clear: [], look: 0, queue: [], best: null, prev: shown, busy: false, done: false };
     // the pass on screen checked first over the new view: if it is still clear there, it stays
@@ -294,19 +324,22 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
       if (r && isClear(r)) {
         s.clear.push(r);
         years.set(year, s);
-        passes(year, s.hold).then((ps) => (s.queue = ps.filter((p) => p.key !== shown.key)), () => {});
+        passes(year, s.hold).then((ps) => (s.queue = nearest(ps.filter((p) => p.key !== shown.key))), () => {});
         onChange();
         return;
       }
     }
     years.set(year, s);
-    try {
-      s.queue = await passes(year, s.hold);
-    } catch {
-      years.delete(year);
-      return;
-    }
-    await fill(year, s, 1);
+    s.filling = (async () => {
+      try {
+        s.queue = nearest(await passes(year, s.hold));
+      } catch {
+        years.delete(year);
+        return;
+      }
+      await fill(year, s, 1);
+    })();
+    await s.filling;
   }
   const shownOf = (s: YearState): Rated | null => (s.clear.length ? s.clear[s.look % s.clear.length] : s.done ? s.best : s.prev);
 
@@ -340,6 +373,8 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
   }
 
   let chain: Promise<void> = Promise.resolve();
+  /** the pick for the year on screen, the latest asked: the other years' picks wait on it */
+  let lead: Promise<void> = Promise.resolve();
   let warmGen = 0;
   /**
    * Finds the year's pass for the view, then every other year's after it, one year at a time, each read ahead for the
@@ -350,7 +385,9 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
     if (i >= 0) recent.splice(i, 1);
     recent.push(year);
     const gen = ++warmGen;
-    choose(year).then(() => {
+    const first = choose(year);
+    lead = first.catch(() => {});
+    first.then(() => {
       chain = chain.then(async () => {
         for (const y of [year, ...S2_YEARS.filter((v) => v !== year)]) {
           if (gen !== warmGen) return;
@@ -387,20 +424,26 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
         (ps) => {
           if (years.get(year) !== ns) return;
           ns.queue = shown ? [...ps.filter((p) => p.key !== shown.key), ...ps.filter((p) => p.key === shown.key)] : ps;
-          return fill(year, ns, 1);
+          return fill(year, ns, 1).then(() => matchTo(year));
         },
         () => years.get(year) === ns && years.delete(year),
       );
       return;
     }
-    if (s.look + 1 < s.clear.length) s.look++;
-    else if (!s.done && s.queue.length)
+    if (s.look + 1 < s.clear.length) {
+      s.look++;
+      matchTo(year);
+    } else if (!s.done && s.queue.length)
       fill(year, s, s.clear.length + 1).then(() => {
         if (s.look + 1 < s.clear.length) s.look++;
         else s.look = 0;
         onChange();
+        matchTo(year);
       });
-    else s.look = 0;
+    else {
+      s.look = 0;
+      matchTo(year);
+    }
   }
 
   /** The looks N stepped away from, by year, the latest last. */
@@ -417,6 +460,7 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
     if (i >= 0) s.look = i;
     else s.clear.splice((s.look = s.clear.length ? s.look % s.clear.length : 0), 0, p);
     onChange();
+    matchTo(year);
   }
 
   /** The day of the year's pass, or "" before one is chosen. */
@@ -524,7 +568,8 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
 
   /** The years given chosen for the view now, side by side, ahead of the rest (each kept if already chosen near here). */
   function want(ys: number[]) {
-    for (const y of ys) choose(y).catch(() => {});
+    // after the year on screen has its pass, so these are chosen near its day
+    for (const y of ys) lead.then(() => choose(y)).catch(() => {});
   }
 
   /** A given pass of the year, shown. */
