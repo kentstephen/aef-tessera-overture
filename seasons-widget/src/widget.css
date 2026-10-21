@@ -30,7 +30,7 @@
 /* the Sentinel-2 card: small, top left while the imagery shows; the year first */
 /* the Sentinel-2 card (aef-earthwork-web's): the search's width, under it; the year first, so the pair always says which
    year; the zoom in the gap at the right of its head, two lines as the words beside it */
-.sm .s2card{width:240px;padding:13px 14px 13px 15px;border-radius:12px}
+.sm .s2card{width:var(--top-w);padding:13px 14px 13px 15px;border-radius:12px}
 .sm .s2hd{display:flex;align-items:center;gap:9px}
 .sm .s2hd b{font-size:34px;line-height:1;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .sm .s2card:not(.showing) .s2hd b{color:var(--muted)}
@@ -41,12 +41,12 @@
 .sm .s2card .keys{display:flex;flex-wrap:wrap;gap:3px 9px;margin:9px 0 0;font-size:12px;line-height:1.5}
 .sm .s2card .keys>span{white-space:nowrap}
 /* top left, as in aef-earthwork-web: the search, and under it the Sentinel-2 card while the imagery shows */
-.sm .top{position:absolute;left:12px;top:12px;z-index:6;display:flex;flex-direction:column;gap:8px;align-items:flex-start;width:var(--col);max-width:calc(50% - 24px)}
+.sm .top{--top-w:240px;position:absolute;left:12px;top:12px;z-index:6;display:flex;flex-direction:column;gap:8px;align-items:flex-start;width:var(--col);max-width:calc(50% - 24px)}
 /* search (aef-earthwork-web's): small until it is used, then the column's width; its places drop over the card */
-.sm .search{position:relative;z-index:2;display:flex;align-items:center;gap:8px;width:212px;height:34px;padding:0 10px;background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:width .15s ease}
+.sm .search{position:relative;z-index:2;display:flex;align-items:center;gap:8px;width:var(--top-w);height:34px;padding:0 10px;background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:width .15s ease}
 .sm .search input:focus-visible{outline:none}
 .sm .search svg{flex:0 0 auto;opacity:.6}
-.sm .search:focus-within{width:var(--col);border-color:rgba(255,255,255,.3)}
+.sm .search:focus-within{border-color:rgba(255,255,255,.3)}
 .sm .search input{flex:1;min-width:0;background:none;border:0;color:var(--text);font:inherit;outline:none}
 .sm .search input::-webkit-search-cancel-button{display:none}
 .sm .search input::placeholder{color:var(--muted)}

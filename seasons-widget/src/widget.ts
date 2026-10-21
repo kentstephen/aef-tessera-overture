@@ -318,10 +318,11 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     void ends;
     const z = map.getZoom();
     s2Card.innerHTML =
-      `<div class="s2hd"><b>${st.s2Year}</b><span>Sentinel-2<br>${day}</span><span class="zw">z<br><i class="z">${z.toFixed(1)}</i></span></div>` +
-      // the keys' hints commented out for now
-      // `<div class="keys"><span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${ends}</span><span><kbd>N</kbd> new look</span><span><kbd>R</kbd> reveal</span><span><kbd>O</kbd> outlines</span><span><kbd>C</kbd> color</span></div>` +
-      `<div class="pnote">${z < AUTO_Z ? `Zoom in to ${AUTO_Z} to outline the dug ground` : (st.reveal ? `<i></i>Dug ground, 2018 to 2025: ${REVEAL_YEAR} inside, ${st.s2Year} around. Click a patch for both` : `<i></i>Dug ground, 2018 to 2025. Click a patch for its years`)}</div>`;
+      `<div class="s2hd"><b>${st.s2Year}</b><span>Sentinel-2<br>${day}</span><span class="zw">z<br><i class="z">${z.toFixed(1)}</i></span></div>`;
+    // the keys' hints commented out for now
+    // `<div class="keys"><span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${ends}</span><span><kbd>N</kbd> new look</span><span><kbd>R</kbd> reveal</span><span><kbd>O</kbd> outlines</span><span><kbd>C</kbd> color</span></div>` +
+    // the note under it commented out: the card is the year, Sentinel-2, the day and the zoom alone
+    // `<div class="pnote">${z < AUTO_Z ? `Zoom in to ${AUTO_Z} to outline the dug ground` : (st.reveal ? `<i></i>Dug ground, 2018 to 2025: ${REVEAL_YEAR} inside, ${st.s2Year} around. Click a patch for both` : `<i></i>Dug ground, 2018 to 2025. Click a patch for its years`)}</div>`;
   }
   function stepS2(d: number) {
     const i = Math.max(0, Math.min(S2_YEARS.length - 1, S2_YEARS.indexOf(st.s2Year) + d));
