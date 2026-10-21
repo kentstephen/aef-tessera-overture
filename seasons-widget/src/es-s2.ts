@@ -361,10 +361,30 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
     });
   }
 
-  /** The year's next clear pass (another is looked for when none is left). */
+  /**
+   * The year's next clear pass over the view as it is now (another is looked for when none is left). When the view
+   * has changed since the year's passes were checked, they are checked again over this view, the pass on screen last,
+   * so the next look is another pass that is clear here.
+   */
   function next(year: number) {
+    const v = viewBox();
+    if (v[2] - v[0] > 4 || v[3] - v[1] > 4) return;
     const s = years.get(year);
-    if (!s) return;
+    if (!s || s.view.some((x, i) => x !== v[i])) {
+      const shown = s ? shownOf(s) : null;
+      const ns: YearState = { view: v, hold: grow(v, 0.25), clear: [], look: 0, queue: [], best: null, prev: shown, busy: false, done: false };
+      years.set(year, ns);
+      onChange();
+      passes(year, ns.hold).then(
+        (ps) => {
+          if (years.get(year) !== ns) return;
+          ns.queue = shown ? [...ps.filter((p) => p.key !== shown.key), ...ps.filter((p) => p.key === shown.key)] : ps;
+          return fill(year, ns, 1);
+        },
+        () => years.get(year) === ns && years.delete(year),
+      );
+      return;
+    }
     if (s.look + 1 < s.clear.length) s.look++;
     else if (!s.done && s.queue.length)
       fill(year, s, s.clear.length + 1).then(() => {

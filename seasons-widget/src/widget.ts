@@ -112,7 +112,7 @@ class SpotExtension extends MaskExtension {
 }
 SpotExtension.extensionName = "SpotExtension";
 const SPOT = new SpotExtension();
-/** around every patch on the map: how dim (0 not at all, 0.5 half), D toggles it, S steps its strength */
+/** around every patch on the map: how dim (0 not at all, 0.5 half), V toggles it, S steps its strength */
 const mapSpot = { k: 0 };
 const MAP_DIM_STEPS = [0.25, 0.5, 0.75, 1];
 let mapDimK = 0.5;
@@ -178,7 +178,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     document.head.appendChild(s);
   }
 
-  const st = { fit: true, area: null as [number, number, number, number] | null, readId: 0, s2Year: S2_YEARS[0], open: null as Patch | null, lines: true, panelLines: true, reveal: false };
+  const st = { fit: true, area: null as [number, number, number, number] | null, readId: 0, s2Year: S2_YEARS[0], open: null as Patch | null, lines: false, panelLines: true, reveal: false };
   // the reveal (R): the map in st.s2Year (2017 to start), and inside every patch in view this year instead
   const REVEAL_YEAR = S2_YEARS[S2_YEARS.length - 1];
   const E = (t: string, c?: string, h?: string) => {
@@ -437,8 +437,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     // or the reveal is on
     if (s2 && revealMask && (mapSpot.k > 0 || st.reveal))
       layers.push(new SpotMaskLayer({ id: "reveal-mask", image: revealMask.image, bounds: revealMask.bounds, operation: "mask", extensions: [DISCARD_CLEAR], _imageCoordinateSystem: COORDINATE_SYSTEM.LNGLAT } as never));
-    // the imagery, dimmed outside the patches by mapSpot.k (D); each scene's layer given the mask from its first tile,
-    // so it is there before D is first pressed (with no mask layer, nothing is dimmed)
+    // the imagery, dimmed outside the patches by mapSpot.k (V); each scene's layer given the mask from its first tile,
+    // so it is there before V is first pressed (with no mask layer, nothing is dimmed)
     if (s2) layers.push(...s2.layers(st.s2Year, true, undefined, "", { extensions: [MAP_SPOT], maskId: "reveal-mask", maskByInstance: false }));
     // the reveal: the latest year over it, only inside the patches
     if (s2 && st.reveal && revealMask) layers.push(...s2.layerFor(REVEAL_YEAR, "rv", { extensions: [REVEAL], maskId: "reveal-mask", maskByInstance: false }));
@@ -616,7 +616,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   }
 
   // ---- the pointer: a hand over a patch, and a click opens it in the panels (2017 and 2025 side by side): commented
-  // out, the map dims around the patches (D) and flips the year (B) instead
+  // out, the map dims around the patches (V) and flips the year (B) instead
   // map.on("mousemove", (e) => {
   //   map.getCanvas().style.cursor = patchAt(e.lngLat.lng, e.lngLat.lat) ? "pointer" : "";
   // });
@@ -971,12 +971,12 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       spot.k = SPOT_STEPS[(SPOT_STEPS.indexOf(spot.k) + 1) % SPOT_STEPS.length];
       for (const pn of panels) pn.map?.triggerRepaint();
       note(spot.k ? `Around the patch: dimmed ${spot.k === 1 ? "fully" : spot.k === 0.5 ? "half" : "a quarter"} (D)` : "Around the patch: not dimmed (D)");
-    } else if (k === "d" || k === "D") {
+    } else if (k === "v" || k === "V") {
       // the map dimmed outside every patch (by the strength S chose, half to start), or not
       mapSpot.k = mapSpot.k ? 0 : mapDimK;
       draw();
       map.triggerRepaint();
-      note(mapSpot.k ? `Outside the patches: dimmed ${dimName(mapSpot.k)} (D, S for how much)` : "Outside the patches: not dimmed (D)");
+      note(mapSpot.k ? `Outside the patches: dimmed ${dimName(mapSpot.k)} (V, S for how much)` : "Outside the patches: not dimmed (V)");
     } else if (k === "s" || k === "S") {
       // how dim outside the patches: a quarter, half, three quarters, fully (to 30% of its brightness); on if it was off
       mapDimK = MAP_DIM_STEPS[(MAP_DIM_STEPS.indexOf(mapDimK) + 1) % MAP_DIM_STEPS.length];
@@ -998,7 +998,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     } else if (st.open) return;
     // the rest move the map or its imagery: not while the panels are open
     // R, the reveal (the latest year inside every patch, the year shown around them): commented out, the map dims
-    // around the patches (D) and B goes to the latest year instead
+    // around the patches (V) and B goes to the latest year instead
     // else if (k === "r" || k === "R") {
     //   st.reveal = !st.reveal;
     //   drawS2Card();
@@ -1037,13 +1037,12 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     drawS2Card();
     draw();
   });
-  // close enough in, a view that reaches past the area read is read once the map has settled
+  // close enough in, every move reads the view again once the map has settled, also inside the area read before: a
+  // chunk that came back empty is asked again (the ones scored before come from the worker's kept scores, so quickly)
   let autoT = 0;
   map.on("moveend", () => {
     clearTimeout(autoT);
     if (map.getZoom() < AUTO_Z || !ready) return;
-    const b = map.getBounds(), a = st.area;
-    if (a && b.getWest() >= a[0] && b.getEast() <= a[2] && b.getSouth() >= a[1] && b.getNorth() <= a[3]) return;
     autoT = window.setTimeout(read, 500);
   });
   // a flung drag's glide sometimes stalls part way (seen twice, cause not found): the map stays "moving", moveend never
