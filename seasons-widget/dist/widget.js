@@ -91796,9 +91796,7 @@ function KHe({ model: e, el: t }) {
 		};
 	}), y = a("div", "back glass");
 	_.appendChild(y), o.append(f, _, u);
-	let b = 0, x = (e) => {
-		u.textContent = e, u.classList.add("on"), clearTimeout(b), b = window.setTimeout(() => u.classList.remove("on"), 1600);
-	}, S = new RTe({
+	let b = new RTe({
 		container: s,
 		style: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
 		center: [n.home.lon, n.home.lat],
@@ -91810,82 +91808,82 @@ function KHe({ model: e, el: t }) {
 		canvasContextAttributes: { antialias: !0 },
 		maxCanvasSize: [8192, 8192]
 	});
-	S.addControl(new pZ({
+	b.addControl(new pZ({
 		compact: !0,
 		customAttribution: "AlphaEarth Foundations, Google DeepMind (CC BY 4.0) · TESSERA v1.1, University of Cambridge · Sentinel-2: Copernicus, via Element 84 Earth Search"
 	}), "bottom-right");
-	let C = () => o.querySelectorAll(".maplibregl-ctrl-attrib.maplibregl-compact-show").forEach((e) => e.classList.remove("maplibregl-compact-show"));
-	S.once("load", C), S.once("idle", C), S.keyboard.disable();
-	let w = new Kfe({
+	let x = () => o.querySelectorAll(".maplibregl-ctrl-attrib.maplibregl-compact-show").forEach((e) => e.classList.remove("maplibregl-compact-show"));
+	b.once("load", x), b.once("idle", x), b.keyboard.disable();
+	let S = new Kfe({
 		interleaved: !0,
 		layers: []
 	});
-	S.addControl(w);
-	let T = () => {
+	b.addControl(S);
+	let C = () => {
 		try {
-			S.resize();
+			b.resize();
 			for (let e of v) e.map?.resize();
 		} catch {}
 	};
-	function E() {
+	function w() {
 		o.classList.toggle("fit", r.fit), document.documentElement.classList.toggle(V9, r.fit), setTimeout(() => {
-			T(), r.open && Se();
+			C(), r.open && be();
 		}, 30);
 	}
-	let D = () => !!document.fullscreenElement, O = () => D() ? document.exitFullscreen() : o.requestFullscreen?.(), k = () => setTimeout(() => {
-		T(), r.open && Se();
+	let T = () => !!document.fullscreenElement, E = () => T() ? document.exitFullscreen() : o.requestFullscreen?.(), D = () => setTimeout(() => {
+		C(), r.open && be();
 	}, 60);
-	document.addEventListener("fullscreenchange", k), new ResizeObserver(() => S.resize()).observe(s);
-	let A = null, j = null, M = !1, ee = fetch(dze).then((e) => e.arrayBuffer()).then((e) => ({
+	document.addEventListener("fullscreenchange", D), new ResizeObserver(() => b.resize()).observe(s);
+	let O = null, k = null, A = !1, j = fetch(dze).then((e) => e.arrayBuffer()).then((e) => ({
 		w: new Float32Array(e),
 		layers: PHe.net.layers
-	})), te = [], ne = /* @__PURE__ */ new Float64Array(), re = /* @__PURE__ */ new Float64Array(), ie = 0, ae = 0, oe = /* @__PURE__ */ new Map(), se = 0;
-	function ce() {
-		clearTimeout(se), se = window.setTimeout(de, 400);
+	})), M = [], ee = /* @__PURE__ */ new Float64Array(), te = /* @__PURE__ */ new Float64Array(), ne = 0, re = 0, ie = /* @__PURE__ */ new Map(), ae = 0;
+	function oe() {
+		clearTimeout(ae), ae = window.setTimeout(le, 400);
 	}
-	let le = /* @__PURE__ */ new Map(), ue = null;
-	function de() {
-		if (!A || !r.area) return;
-		te = jHe(r.area, A.chunk);
+	let se = /* @__PURE__ */ new Map(), ce = null;
+	function le() {
+		if (!O || !r.area) return;
+		M = jHe(r.area, O.chunk);
 		let e = /* @__PURE__ */ new Map(), t = [];
-		oe = /* @__PURE__ */ new Map();
+		ie = /* @__PURE__ */ new Map();
 		let n = [];
-		fe = [], te.forEach((r, i) => {
+		ue = [], M.forEach((r, i) => {
 			let a = `${r.runs[0]}:${r.runs[1]}:${r.n}`;
-			fe.push(a);
-			let o = le.get(a) ?? NHe(r.runs);
+			ue.push(a);
+			let o = se.get(a) ?? NHe(r.runs);
 			e.set(a, o);
 			for (let e of o.edges) t.push(e[0], e[1], e[2], e[3]), n.push(i);
 			for (let e = 0; e < r.runs.length; e += 3) {
-				let t = oe.get(r.runs[e]);
-				t ? t.push(r.runs[e + 1], r.runs[e + 2], i) : oe.set(r.runs[e], [
+				let t = ie.get(r.runs[e]);
+				t ? t.push(r.runs[e + 1], r.runs[e + 2], i) : ie.set(r.runs[e], [
 					r.runs[e + 1],
 					r.runs[e + 2],
 					i
 				]);
 			}
-		}), le = e, ue = Te([...e.values()].map((e) => e.ext)), ie = t.length / 4, ne = new Float64Array(2 * ie), re = new Float64Array(2 * ie);
-		for (let e = 0; e < ie; e++) ne[2 * e] = t[4 * e], ne[2 * e + 1] = t[4 * e + 1], re[2 * e] = t[4 * e + 2], re[2 * e + 1] = t[4 * e + 3];
-		pe = Int32Array.from(n), ae++, ve(), xe();
+		}), se = e, ce = Ce([...e.values()].map((e) => e.ext)), ne = t.length / 4, ee = new Float64Array(2 * ne), te = new Float64Array(2 * ne);
+		for (let e = 0; e < ne; e++) ee[2 * e] = t[4 * e], ee[2 * e + 1] = t[4 * e + 1], te[2 * e] = t[4 * e + 2], te[2 * e + 1] = t[4 * e + 3];
+		de = Int32Array.from(n), re++, ge(), ye();
 	}
-	let fe = [], pe = /* @__PURE__ */ new Int32Array(), me = /* @__PURE__ */ new Uint8Array(), he = 0, ge = /* @__PURE__ */ new Map(), _e = (e) => e.n * (a$ * 111320) ** 2 * Math.cos((e.box[1] + e.box[3]) / 2 * Math.PI / 180) / 1e4;
-	function ve() {
-		let e = te.length, t = RHe(), n = Array(e);
+	let ue = [], de = /* @__PURE__ */ new Int32Array(), fe = /* @__PURE__ */ new Uint8Array(), pe = 0, me = /* @__PURE__ */ new Map(), he = (e) => e.n * (a$ * 111320) ** 2 * Math.cos((e.box[1] + e.box[3]) / 2 * Math.PI / 180) / 1e4;
+	function ge() {
+		let e = M.length, t = RHe(), n = Array(e);
 		if (t === "one") n.fill(R9().slice(0, 3));
-		else if (t === "size") for (let t = 0; t < e; t++) n[t] = LHe(_e(te[t]));
+		else if (t === "size") for (let t = 0; t < e; t++) n[t] = LHe(he(M[t]));
 		else {
 			let t = 3 * a$, r = 64 * a$, i = /* @__PURE__ */ new Map(), a = (e, n) => {
 				for (let i = Math.floor((e[1] - t) / r); i <= Math.floor((e[3] + t) / r); i++) for (let a = Math.floor((e[0] - t) / r); a <= Math.floor((e[2] + t) / r); a++) n(`${a}:${i}`);
 			};
-			te.forEach((e, t) => a(e.box, (e) => (i.get(e) ?? i.set(e, []).get(e)).push(t)));
+			M.forEach((e, t) => a(e.box, (e) => (i.get(e) ?? i.set(e, []).get(e)).push(t)));
 			let o = (e, n) => {
-				let r = te[e].box, i = te[n].box;
+				let r = M[e].box, i = M[n].box;
 				return r[0] - t <= i[2] && i[0] - t <= r[2] && r[1] - t <= i[3] && i[1] - t <= r[3];
-			}, s = new Int8Array(e).fill(-1), c = /* @__PURE__ */ new Map(), l = [...te.keys()].sort((e, t) => Number(!ge.has(fe[e])) - Number(!ge.has(fe[t])));
+			}, s = new Int8Array(e).fill(-1), c = /* @__PURE__ */ new Map(), l = [...M.keys()].sort((e, t) => Number(!me.has(ue[e])) - Number(!me.has(ue[t])));
 			for (let e of l) {
 				let t = /* @__PURE__ */ new Set();
-				a(te[e].box, (n) => i.get(n).forEach((n) => n !== e && s[n] >= 0 && o(e, n) && t.add(s[n])));
-				let r = ge.get(fe[e]);
+				a(M[e].box, (n) => i.get(n).forEach((n) => n !== e && s[n] >= 0 && o(e, n) && t.add(s[n])));
+				let r = me.get(ue[e]);
 				if (r == null || t.has(r)) {
 					r = -1;
 					for (let n = 0; n < F9.length; n++) if (!t.has((e + n) % F9.length)) {
@@ -91894,68 +91892,68 @@ function KHe({ model: e, el: t }) {
 					}
 					r < 0 && (r = e % F9.length);
 				}
-				s[e] = r, c.set(fe[e], r), n[e] = F9[r];
+				s[e] = r, c.set(ue[e], r), n[e] = F9[r];
 			}
-			ge = c;
+			me = c;
 		}
-		me = new Uint8Array(4 * ie);
-		for (let e = 0; e < ie; e++) {
-			let t = n[pe[e]];
-			me.set(t, 4 * e), me[4 * e + 3] = 255;
+		fe = new Uint8Array(4 * ne);
+		for (let e = 0; e < ne; e++) {
+			let t = n[de[e]];
+			fe.set(t, 4 * e), fe[4 * e + 3] = 255;
 		}
-		he++;
+		pe++;
 	}
-	function ye() {
-		let e = S.getCenter(), t = j?.dateAt(r.s2Year, e.lng, e.lat) ?? "", n = j?.status(r.s2Year) ?? "finding", i = t ? `${H9[t.slice(5, 7) - 1]} ${+t.slice(8, 10)}` + (n === "cloudy" ? ", cloudy" : "") : n === "cloudy" ? "no scene" : "finding…";
+	function _e() {
+		let e = b.getCenter(), t = k?.dateAt(r.s2Year, e.lng, e.lat) ?? "", n = k?.status(r.s2Year) ?? "finding", i = t ? `${H9[t.slice(5, 7) - 1]} ${+t.slice(8, 10)}` + (n === "cloudy" ? ", cloudy" : "") : n === "cloudy" ? "no scene" : "finding…";
 		`${String(w9[0]).slice(2)}${String(w9[w9.length - 1]).slice(2)}`;
-		let a = S.getZoom();
+		let a = b.getZoom();
 		g.innerHTML = `<div class="s2hd"><b>${r.s2Year}</b><span>Sentinel-2<br>${i}</span><span class="zw">z<br><i class="z">${a.toFixed(1)}</i></span></div>`;
 	}
-	function be(e) {
+	function ve(e) {
 		let t = Math.max(0, Math.min(w9.length - 1, w9.indexOf(r.s2Year) + e));
-		w9[t] !== r.s2Year && (r.s2Year = w9[t], j?.discover(r.s2Year), ye(), xe());
+		w9[t] !== r.s2Year && (r.s2Year = w9[t], k?.discover(r.s2Year), _e(), ye());
 	}
-	function xe() {
-		if (!M || !A) return;
+	function ye() {
+		if (!A || !O) return;
 		let e = [];
-		j && ue && (q9.k > 0 || r.reveal) && e.push(new $9({
+		k && ce && (q9.k > 0 || r.reveal) && e.push(new $9({
 			id: "reveal-mask",
-			image: ue.image,
-			bounds: ue.bounds,
+			image: ce.image,
+			bounds: ce.bounds,
 			operation: "mask",
 			extensions: [GHe],
 			_imageCoordinateSystem: vp.LNGLAT
-		})), j && e.push(...j.layers(r.s2Year, !0, void 0, "", {
+		})), k && e.push(...k.layers(r.s2Year, !0, void 0, "", {
 			extensions: [UHe],
 			maskId: "reveal-mask",
 			maskByInstance: !1
-		})), j && r.reveal && ue && e.push(...j.layerFor(i, "rv", {
+		})), k && r.reveal && ce && e.push(...k.layerFor(i, "rv", {
 			extensions: [WHe],
 			maskId: "reveal-mask",
 			maskByInstance: !1
-		})), r.area && e.push(A.layer({
+		})), r.area && e.push(O.layer({
 			minZoom: 12,
 			area: r.area,
 			readId: r.readId,
 			visible: !1,
 			onTile: () => {
-				Ae(), ce();
+				Oe(), oe();
 			}
-		})), ie && r.lines && e.push(new Hw({
+		})), ne && r.lines && e.push(new Hw({
 			id: "patches",
 			data: {
-				length: ie,
+				length: ne,
 				attributes: {
 					getSourcePosition: {
-						value: ne,
+						value: ee,
 						size: 2
 					},
 					getTargetPosition: {
-						value: re,
+						value: te,
 						size: 2
 					},
 					getColor: {
-						value: me,
+						value: fe,
 						size: 4,
 						normalized: !0
 					}
@@ -91964,13 +91962,13 @@ function KHe({ model: e, el: t }) {
 			getWidth: 1.5,
 			widthUnits: "pixels",
 			updateTriggers: {
-				getSourcePosition: ae,
-				getTargetPosition: ae,
-				getColor: he
+				getSourcePosition: re,
+				getTargetPosition: re,
+				getColor: pe
 			}
-		})), w.setProps({ layers: e }), Ae();
+		})), S.setProps({ layers: e }), Oe();
 	}
-	function Se() {
+	function be() {
 		let e = r.open, t = v[0].map;
 		if (!e || !t) return;
 		let [n, i, a, o] = e.box, s = t.getContainer().clientWidth, c = t.getContainer().clientHeight, l = t.cameraForBounds([[n, i], [a, o]], { padding: {
@@ -91987,8 +91985,8 @@ function KHe({ model: e, el: t }) {
 			bearing: 0
 		});
 	}
-	let Ce = [];
-	function we() {
+	let xe = [];
+	function Se() {
 		let e = r.open;
 		if (!e) return;
 		let t = Math.max(1, ...e.lastYears), n = e.lastYears.map((e, n) => {
@@ -91997,7 +91995,7 @@ function KHe({ model: e, el: t }) {
 		}).join("");
 		y.innerHTML = `<b></b><span class="hist" title="the share of the patch last dug each year">${n}</span>`;
 	}
-	function Te(e) {
+	function Ce(e) {
 		let t = Infinity, n = -Infinity, r = Infinity, i = -Infinity;
 		for (let a of e) for (let e = 0; e < a.length; e += 3) r = Math.min(r, a[e]), i = Math.max(i, a[e] + 1), t = Math.min(t, a[e + 1]), n = Math.max(n, a[e + 2]);
 		if (!(n > t)) return null;
@@ -92018,12 +92016,12 @@ function KHe({ model: e, el: t }) {
 			]
 		};
 	}
-	function Ee() {
-		r.open && j && (v.forEach((e, t) => {
+	function we() {
+		r.open && k && (v.forEach((e, t) => {
 			if (!e.year || !e.map || !e.overlay) return;
 			let n = new IT({
 				id: "patch",
-				data: Ce,
+				data: xe,
 				getPath: (e) => e,
 				getColor: R9(),
 				getWidth: 2.5,
@@ -92031,45 +92029,45 @@ function KHe({ model: e, el: t }) {
 				jointRounded: !0,
 				capRounded: !0,
 				updateTriggers: { getColor: L9 }
-			}), i = {}, a = e.wait ? [] : e.pass ? j.layerForPass(e.year, e.pass, `t${t}`, i) : j.layerFor(e.year, `t${t}`, i);
+			}), i = {}, a = e.wait ? [] : e.pass ? k.layerForPass(e.year, e.pass, `t${t}`, i) : k.layerFor(e.year, `t${t}`, i);
 			if (e.overlay.setProps({ layers: [...a, ...r.panelLines ? [n] : []] }), e.wait) {
 				e.label.innerHTML = "<b>Dug</b><span>finding the pass that shows it…</span>";
 				return;
 			}
-			let o = e.pass?.date ?? j.dateAt(e.year), s = e.pass ? "clear" : j.status(e.year), c = o ? `${H9[o.slice(5, 7) - 1]} ${+o.slice(8, 10)}` + (s === "cloudy" ? ", cloudy" : "") : s === "cloudy" ? "no scene" : "finding…";
+			let o = e.pass?.date ?? k.dateAt(e.year), s = e.pass ? "clear" : k.status(e.year), c = o ? `${H9[o.slice(5, 7) - 1]} ${+o.slice(8, 10)}` + (s === "cloudy" ? ", cloudy" : "") : s === "cloudy" ? "no scene" : "finding…";
 			e.label.innerHTML = `<b>${e.year}</b><span>${e.role}<br>Sentinel-2 · ${c}</span>`;
-		}), we());
+		}), Se());
 	}
-	function De() {
+	function Te() {
 		r.open = null, _.classList.remove("on");
 		for (let e of v) e.overlay?.setProps({ layers: [] });
 	}
-	_.addEventListener("click", De);
-	function Oe() {
-		if (S.getZoom() < 12) return ye();
-		let e = S.getBounds();
+	_.addEventListener("click", Te);
+	function Ee() {
+		if (b.getZoom() < 12) return _e();
+		let e = b.getBounds();
 		r.area = [
 			e.getWest(),
 			e.getSouth(),
 			e.getEast(),
 			e.getNorth()
-		], r.readId++, xe(), ce();
+		], r.readId++, ye(), oe();
 	}
-	let ke = 0;
-	function Ae() {
-		clearTimeout(ke), ke = window.setTimeout(je, 150);
+	let De = 0;
+	function Oe() {
+		clearTimeout(De), De = window.setTimeout(ke, 150);
 	}
-	function je() {
-		if (!A || S.getZoom() < 12) {
+	function ke() {
+		if (!O || b.getZoom() < 12) {
 			c.classList.remove("on"), l.classList.remove("on");
 			return;
 		}
-		let e = A.work(), t = e.reading > 0;
+		let e = O.work(), t = e.reading > 0;
 		if (c.classList.toggle("on", t), l.classList.toggle("on", t), !t) return;
 		let n = e.readDone, r = e.readDone + e.reading;
-		c.firstChild.style.width = (100 * n / Math.max(1, r)).toFixed(1) + "%", l.innerHTML = `Scoring chunks: ${n} of ${r}, every year 2017 to 2025` + (r > 30 ? " <span>zoom in to load faster</span>" : ""), Ae();
+		c.firstChild.style.width = (100 * n / Math.max(1, r)).toFixed(1) + "%", l.innerHTML = `Scoring chunks: ${n} of ${r}, every year 2017 to 2025` + (r > 30 ? " <span>zoom in to load faster</span>" : ""), Oe();
 	}
-	let Me = [], Ne = -1, Pe = 0, Fe = 0, Ie = null, Le = null, Re = 0, ze = (e) => {
+	let Ae = [], je = -1, Me = 0, Ne = 0, Pe = null, Fe = null, Ie = 0, Le = (e) => {
 		let t = e.properties;
 		return [
 			t.name,
@@ -92078,50 +92076,50 @@ function KHe({ model: e, el: t }) {
 			t.state,
 			t.country
 		].filter(Boolean).join(", ");
-	}, Be = (e) => {
+	}, Re = (e) => {
 		let t = e.properties;
 		return [t.osm_value, t.type].filter((e) => e && e !== "yes").join(", ");
-	}, Ve = () => {
-		h.style.display = "none", h.replaceChildren(), Ne = -1;
-	}, He = () => {
-		if (h.replaceChildren(), !Me.length) return Ve();
-		Me.forEach((e, t) => {
-			let n = a("div", "hit" + (t === Ne ? " sel" : ""));
-			n.textContent = ze(e);
+	}, ze = () => {
+		h.style.display = "none", h.replaceChildren(), je = -1;
+	}, Be = () => {
+		if (h.replaceChildren(), !Ae.length) return ze();
+		Ae.forEach((e, t) => {
+			let n = a("div", "hit" + (t === je ? " sel" : ""));
+			n.textContent = Le(e);
 			let r = a("small");
-			r.textContent = Be(e), n.appendChild(r), n.onmousedown = (t) => {
-				t.preventDefault(), qe(e);
+			r.textContent = Re(e), n.appendChild(r), n.onmousedown = (t) => {
+				t.preventDefault(), Ge(e);
 			}, n.onmouseenter = () => {
-				Ne = t, He();
+				je = t, Be();
 			}, h.appendChild(n);
 		}), h.style.display = "block";
-	}, Ue = (e) => {
-		h.replaceChildren(), Ne = -1;
+	}, Ve = (e) => {
+		h.replaceChildren(), je = -1;
 		let t = a("div", "hit wait");
 		t.textContent = e, h.appendChild(t), h.style.display = "block";
-	}, We = async (e, t) => {
+	}, He = async (e, t) => {
 		let n = new URLSearchParams({
 			q: e,
 			limit: "6",
 			lang: "en"
-		}), r = S.getCenter();
-		n.set("lon", r.lng.toFixed(4)), n.set("lat", r.lat.toFixed(4)), Le?.abort();
-		let i = Le = new AbortController(), a = setTimeout(() => i.abort(), t);
+		}), r = b.getCenter();
+		n.set("lon", r.lng.toFixed(4)), n.set("lat", r.lat.toFixed(4)), Fe?.abort();
+		let i = Fe = new AbortController(), a = setTimeout(() => i.abort(), t);
 		try {
 			return ((await (await fetch("https://photon.komoot.io/api/?" + n.toString(), { signal: i.signal })).json()).features || []).filter((e) => e.geometry && e.geometry.coordinates);
 		} finally {
 			clearTimeout(a);
 		}
-	}, Ge = async (e) => {
-		let t = Re + 1100 - Date.now();
-		t > 0 && await new Promise((e) => setTimeout(e, t)), Re = Date.now();
+	}, Ue = async (e) => {
+		let t = Ie + 1100 - Date.now();
+		t > 0 && await new Promise((e) => setTimeout(e, t)), Ie = Date.now();
 		let n = new URLSearchParams({
 			q: e,
 			format: "jsonv2",
 			addressdetails: "1",
 			limit: "6",
 			"accept-language": "en"
-		}), r = S.getBounds();
+		}), r = b.getBounds();
 		return n.set("viewbox", [
 			r.getWest(),
 			r.getNorth(),
@@ -92147,39 +92145,39 @@ function KHe({ model: e, el: t }) {
 				}
 			};
 		});
-	}, Ke = async (e = !1) => {
+	}, We = async (e = !1) => {
 		let t = m.value.trim();
-		if (t.length < 2) return Me = [], Ie = null, Ve();
-		let n = ++Fe, r = e && Ie === t;
-		r && (Le?.abort(), Ie = null), Ue("searching…");
+		if (t.length < 2) return Ae = [], Pe = null, ze();
+		let n = ++Ne, r = e && Pe === t;
+		r && (Fe?.abort(), Pe = null), Ve("searching…");
 		let i = [], a = "";
 		if (!r) {
-			Ie = t;
+			Pe = t;
 			try {
-				i = await We(t, e ? 2500 : 6e3);
+				i = await He(t, e ? 2500 : 6e3);
 			} catch (e) {
 				a = e.name === "AbortError" ? "slow" : "down";
 			}
-			if (n !== Fe) return;
-			Ie = null;
+			if (n !== Ne) return;
+			Pe = null;
 		}
 		if (!i.length && e) {
-			Ue("searching Nominatim…");
+			Ve("searching Nominatim…");
 			try {
-				i = await Ge(t);
+				i = await Ue(t);
 			} catch {
 				a = "down";
 			}
-			if (n !== Fe) return;
+			if (n !== Ne) return;
 		}
-		Me = i, Ne = i.length ? 0 : -1, i.length ? He() : Ue(e ? a ? "search is not answering, try again in a moment" : "no match" : a === "slow" ? "Photon is slow: press Enter to search Nominatim" : a ? "Photon is not answering: press Enter to search Nominatim" : "no match: press Enter to search Nominatim");
-	}, qe = (e) => {
+		Ae = i, je = i.length ? 0 : -1, i.length ? Be() : Ve(e ? a ? "search is not answering, try again in a moment" : "no match" : a === "slow" ? "Photon is slow: press Enter to search Nominatim" : a ? "Photon is not answering: press Enter to search Nominatim" : "no match: press Enter to search Nominatim");
+	}, Ge = (e) => {
 		let [t, n] = e.geometry.coordinates, r = e.properties.extent, i = 13.5;
 		if (r && r.length === 4) {
 			let e = Math.max(Math.abs(r[2] - r[0]), Math.abs(r[1] - r[3]) * 2, .01);
 			i = Math.log2(360 * ((s.clientWidth || 1200) / 512) / e) - .3;
 		}
-		i = Math.max(z9, Math.min(16, i)), m.value = ze(e), Me = [], Ve(), m.blur(), S.flyTo({
+		i = Math.max(z9, Math.min(16, i)), m.value = Le(e), Ae = [], ze(), m.blur(), b.flyTo({
 			center: [t, n],
 			zoom: i,
 			duration: 2200,
@@ -92187,15 +92185,15 @@ function KHe({ model: e, el: t }) {
 		});
 	};
 	m.addEventListener("input", () => {
-		clearTimeout(Pe), Pe = window.setTimeout(Ke, 250);
-	}), m.addEventListener("focus", () => Me.length && He()), m.addEventListener("blur", () => setTimeout(Ve, 120)), m.addEventListener("keydown", (e) => {
-		e.stopPropagation(), e.key === "ArrowDown" && Me.length ? (Ne = (Ne + 1) % Me.length, He(), e.preventDefault()) : e.key === "ArrowUp" && Me.length ? (Ne = (Ne - 1 + Me.length) % Me.length, He(), e.preventDefault()) : e.key === "Enter" ? (e.preventDefault(), Me.length ? qe(Me[Math.max(0, Ne)]) : (clearTimeout(Pe), Ke(!0).then(() => Me.length && qe(Me[0])))) : e.key === "Escape" && (Ve(), m.blur());
+		clearTimeout(Me), Me = window.setTimeout(We, 250);
+	}), m.addEventListener("focus", () => Ae.length && Be()), m.addEventListener("blur", () => setTimeout(ze, 120)), m.addEventListener("keydown", (e) => {
+		e.stopPropagation(), e.key === "ArrowDown" && Ae.length ? (je = (je + 1) % Ae.length, Be(), e.preventDefault()) : e.key === "ArrowUp" && Ae.length ? (je = (je - 1 + Ae.length) % Ae.length, Be(), e.preventDefault()) : e.key === "Enter" ? (e.preventDefault(), Ae.length ? Ge(Ae[Math.max(0, je)]) : (clearTimeout(Me), We(!0).then(() => Ae.length && Ge(Ae[0])))) : e.key === "Escape" && (ze(), m.blur());
 	});
-	let Je = !1, Ye = (e, t) => {
+	let Ke = !1, qe = (e, t) => {
 		let n = t._deck?.device?.canvasContext, r = e.getCanvas();
 		n?.setDrawingBufferSize(r.width, r.height);
 	};
-	async function Xe(e) {
+	async function Je(e) {
 		return await new Promise((t) => {
 			e.once("idle", () => t()), e.triggerRepaint();
 		}), new Promise((t) => {
@@ -92205,7 +92203,7 @@ function KHe({ model: e, el: t }) {
 			}), e.triggerRepaint();
 		});
 	}
-	async function N(e) {
+	async function Ye(e) {
 		for (let t = 2048;; t -= 128) {
 			let n = Math.min(1, t / Math.max(e.width, e.height)), r = Math.round(e.width * n), i = Math.round(e.height * n), a = e;
 			for (; a.width / 2 >= r;) {
@@ -92226,108 +92224,106 @@ function KHe({ model: e, el: t }) {
 			};
 		}
 	}
-	let Ze = "'Instrument Sans', system-ui, sans-serif";
-	function Qe(e, t, n, r, i, a, o) {
-		e.save(), e.shadowColor = "rgba(0,0,0,.9)", e.shadowBlur = 5 * r, e.textBaseline = "top", e.font = `600 ${34 * r}px ${Ze}`, e.fillStyle = "#e6e9ec", e.fillText(String(i), t, n), e.font = `600 ${14 * r}px ${Ze}`, e.fillStyle = "#f2f4f6";
+	let Xe = "'Instrument Sans', system-ui, sans-serif";
+	function N(e, t, n, r, i, a, o) {
+		e.save(), e.shadowColor = "rgba(0,0,0,.9)", e.shadowBlur = 5 * r, e.textBaseline = "top", e.font = `600 ${34 * r}px ${Xe}`, e.fillStyle = "#e6e9ec", e.fillText(String(i), t, n), e.font = `600 ${14 * r}px ${Xe}`, e.fillStyle = "#f2f4f6";
 		let s = n + 40 * r;
 		a && (e.fillText(a[0].toUpperCase() + a.slice(1), t, s), s += 18 * r), e.fillText("Sentinel-2" + (o ? ` · ${H9[o.slice(5, 7) - 1]} ${+o.slice(8, 10)}` : ""), t, s), e.restore();
 	}
-	async function $e() {
-		if (Je) return;
-		Je = !0, x("Exporting a 4x PNG...");
+	async function Ze() {
+		if (Ke) return;
+		Ke = !0;
 		let t = r.open ? v.filter((e) => e.year && e.map && e.overlay) : [], n = t.length ? t.map((e) => [
 			e.map,
 			e.overlay,
 			e.year,
 			e.role,
-			e.pass?.date ?? j?.dateAt(e.year) ?? ""
+			e.pass?.date ?? k?.dateAt(e.year) ?? ""
 		]) : [[
+			b,
 			S,
-			w,
 			r.s2Year,
 			"",
-			j?.dateAt(r.s2Year) ?? ""
+			k?.dateAt(r.s2Year) ?? ""
 		]];
 		try {
-			for (let [e, t] of n) e.setPixelRatio(4), Ye(e, t);
-			let i = await Promise.all(n.map(([e]) => Xe(e))), a = i[0].width / n[0][0].getContainer().clientWidth, o = i.length > 1 ? Math.round(2 * a) : 0, s = document.createElement("canvas");
+			for (let [e, t] of n) e.setPixelRatio(4), qe(e, t);
+			let i = await Promise.all(n.map(([e]) => Je(e))), a = i[0].width / n[0][0].getContainer().clientWidth, o = i.length > 1 ? Math.round(2 * a) : 0, s = document.createElement("canvas");
 			s.width = i.reduce((e, t) => e + t.width, 0) + o * (i.length - 1), s.height = Math.max(...i.map((e) => e.height));
 			let c = s.getContext("2d"), l = 0, u = 14 * a;
 			i.forEach((e, t) => {
-				c.drawImage(e, l, 0), Qe(c, l + u, u, a, n[t][2], n[t][3], n[t][4]), l += e.width, t < i.length - 1 && (c.fillStyle = "rgba(255,255,255,.35)", c.fillRect(l, 0, o, s.height), l += o);
+				c.drawImage(e, l, 0), N(c, l + u, u, a, n[t][2], n[t][3], n[t][4]), l += e.width, t < i.length - 1 && (c.fillStyle = "rgba(255,255,255,.35)", c.fillRect(l, 0, o, s.height), l += o);
 			});
 			let d = await new Promise((e) => s.toBlob(e, "image/png"));
 			if (!d) throw Error("the canvas gave no PNG");
-			let f = await N(s), p = t.length ? t[0].map.getCenter() : S.getCenter(), m = `z${(t.length ? t[0].map.getZoom() : S.getZoom()).toFixed(1)}_${p.lat.toFixed(4)}_${p.lng.toFixed(4)}` + (t.length ? `_patch-${t.map((e) => e.year).join("-")}` : `_s2-${r.s2Year}`) + `_${+a.toFixed(1)}x`;
+			let f = await Ye(s), p = t.length ? t[0].map.getCenter() : b.getCenter(), m = `z${(t.length ? t[0].map.getZoom() : b.getZoom()).toFixed(1)}_${p.lat.toFixed(4)}_${p.lng.toFixed(4)}` + (t.length ? `_patch-${t.map((e) => e.year).join("-")}` : `_s2-${r.s2Year}`) + `_${+a.toFixed(1)}x`;
 			e.set("snap_name", m), e.set("snap_small", new DataView(await f.png.arrayBuffer())), e.set("snap_small_size", f.size), e.set("snap", new DataView(await d.arrayBuffer())), e.save_changes();
 		} catch (e) {
-			x(`Export failed: ${e.message}`);
+			`${e.message}`;
 		} finally {
-			for (let [e, t] of n) e.setPixelRatio(null), Ye(e, t);
-			Je = !1;
+			for (let [e, t] of n) e.setPixelRatio(null), qe(e, t);
+			Ke = !1;
 		}
 	}
-	e.on("change:snap_status", () => x(String(e.get("snap_status") || "")));
-	let et = 0, tt = (e) => {
+	e.on("change:snap_status", () => (String(e.get("snap_status") || ""), void 0));
+	let Qe = 0, $e = (e) => {
 		if (e.metaKey || e.ctrlKey || e.altKey || e.target === m) return;
 		let t = e.key;
-		if (t === "k" || t === "K") $e();
-		else if (t === "o" || t === "O") {
-			let e = r.open ? r.panelLines = !r.panelLines : r.lines = !r.lines;
-			r.open ? Ee() : xe(), x(e ? "Outlines on" : "Outlines off");
-		} else if (t === "Escape") r.open ? De() : r.fit && (r.fit = !1, E());
-		else if (t === "c" || t === "C") L9 = (L9 + 1) % P9.length, o.style.setProperty("--line-col", `rgb(${R9().slice(0, 3).join(",")})`), ve(), xe(), r.open && Ee(), x(`Outline: ${P9[L9].name} (C)`);
+		if (t === "k" || t === "K") Ze();
+		else if (t === "o" || t === "O") r.open ? r.panelLines = !r.panelLines : r.lines = !r.lines, r.open ? we() : ye();
+		else if (t === "Escape") r.open ? Te() : r.fit && (r.fit = !1, w());
+		else if (t === "c" || t === "C") L9 = (L9 + 1) % P9.length, o.style.setProperty("--line-col", `rgb(${R9().slice(0, 3).join(",")})`), ge(), ye(), r.open && we(), `${P9[L9].name}`;
 		else if ((t === "d" || t === "D") && r.open) {
 			W9.k = G9[(G9.indexOf(W9.k) + 1) % G9.length];
 			for (let e of v) e.map?.triggerRepaint();
-			x(W9.k ? `Around the patch: dimmed ${W9.k === 1 ? "fully" : W9.k === .5 ? "half" : "a quarter"} (D)` : "Around the patch: not dimmed (D)");
-		} else if (t === "v" || t === "V") q9.k = q9.k ? 0 : Y9, xe(), S.triggerRepaint(), x(q9.k ? `Outside the patches: dimmed ${X9(q9.k)} (V, S for how much)` : "Outside the patches: not dimmed (V)");
-		else if (t === "s" || t === "S") Y9 = J9[(J9.indexOf(Y9) + 1) % J9.length], q9.k = Y9, xe(), S.triggerRepaint(), x(`Outside the patches: dimmed ${X9(Y9)} (S)`);
-		else if (t === "f" || t === "F") O();
-		else if (t === "x" || t === "X") r.fit = !r.fit, E();
+			W9.k && (W9.k === 1 || W9.k);
+		} else if (t === "v" || t === "V") q9.k = q9.k ? 0 : Y9, ye(), b.triggerRepaint(), q9.k && `${X9(q9.k)}`;
+		else if (t === "s" || t === "S") Y9 = J9[(J9.indexOf(Y9) + 1) % J9.length], q9.k = Y9, ye(), b.triggerRepaint(), `${X9(Y9)}`;
+		else if (t === "f" || t === "F") E();
+		else if (t === "x" || t === "X") r.fit = !r.fit, w();
 		else if (r.open) return;
-		else if (t === "[" || t === "]") be(t === "]" ? 1 : -1);
+		else if (t === "[" || t === "]") ve(t === "]" ? 1 : -1);
 		else if (t === "b" || t === "B") {
 			let e = w9.length - 1, t = w9.indexOf(r.s2Year);
-			be((t === e ? 0 : e) - t);
-		} else if ((t === "n" || t === "N") && j) e.shiftKey ? j.back(r.s2Year) : j.next(r.s2Year), ye(), xe();
+			ve((t === e ? 0 : e) - t);
+		} else if ((t === "n" || t === "N") && k) e.shiftKey ? k.back(r.s2Year) : k.next(r.s2Year), _e(), ye();
 		else if (t === "/") m.focus();
-		else if (e.shiftKey && (t === "ArrowLeft" || t === "ArrowRight")) et = (S.isMoving() ? et : S.getBearing()) + (t === "ArrowRight" ? 15 : -15), S.easeTo({
-			bearing: et,
+		else if (e.shiftKey && (t === "ArrowLeft" || t === "ArrowRight")) Qe = (b.isMoving() ? Qe : b.getBearing()) + (t === "ArrowRight" ? 15 : -15), b.easeTo({
+			bearing: Qe,
 			duration: 250
 		});
-		else if (t === "ArrowLeft") S.panBy([-120, 0]);
-		else if (t === "ArrowRight") S.panBy([120, 0]);
-		else if (t === "ArrowUp") S.panBy([0, -120]);
-		else if (t === "ArrowDown") S.panBy([0, 120]);
-		else if (t === "+" || t === "=") S.zoomIn();
-		else if (t === "-" || t === "_") S.zoomOut();
+		else if (t === "ArrowLeft") b.panBy([-120, 0]);
+		else if (t === "ArrowRight") b.panBy([120, 0]);
+		else if (t === "ArrowUp") b.panBy([0, -120]);
+		else if (t === "ArrowDown") b.panBy([0, 120]);
+		else if (t === "+" || t === "=") b.zoomIn();
+		else if (t === "-" || t === "_") b.zoomOut();
 		else return;
 		e.preventDefault();
 	};
-	window.addEventListener("keydown", tt), S.on("moveend", Ae), S.on("moveend", () => {
-		j?.discover(r.s2Year), j?.want([i]), ye(), xe();
+	window.addEventListener("keydown", $e), b.on("moveend", Oe), b.on("moveend", () => {
+		k?.discover(r.s2Year), k?.want([i]), _e(), ye();
 	});
-	let nt = 0;
-	S.on("moveend", () => {
-		clearTimeout(nt), !(S.getZoom() < z9 || !M) && (nt = window.setTimeout(Oe, 500));
+	let et = 0;
+	b.on("moveend", () => {
+		clearTimeout(et), !(b.getZoom() < z9 || !A) && (et = window.setTimeout(Ee, 500));
 	});
-	let rt = !1, it = "", at = 0;
-	return s.addEventListener("pointerdown", () => rt = !0, !0), window.addEventListener("pointerup", () => rt = !1, !0), window.setInterval(() => {
-		let e = S.getCenter(), t = `${e.lng.toFixed(7)},${e.lat.toFixed(7)},${S.getZoom().toFixed(3)}`;
-		at = t === it ? at + 1 : 0, it = t, S.isMoving() && !rt && at >= 3 && (console.warn("the map's move stalled; ending it"), S.stop(), at = 0);
-	}, 500), S.on("zoom", () => {
+	let tt = !1, nt = "", rt = 0;
+	return s.addEventListener("pointerdown", () => tt = !0, !0), window.addEventListener("pointerup", () => tt = !1, !0), window.setInterval(() => {
+		let e = b.getCenter(), t = `${e.lng.toFixed(7)},${e.lat.toFixed(7)},${b.getZoom().toFixed(3)}`;
+		rt = t === nt ? rt + 1 : 0, nt = t, b.isMoving() && !tt && rt >= 3 && (console.warn("the map's move stalled; ending it"), b.stop(), rt = 0);
+	}, 500), b.on("zoom", () => {
 		let e = g.querySelector(".z");
-		e && (e.textContent = S.getZoom().toFixed(1));
-	}), S.on("load", async () => {
-		j = kHe(S, () => {
-			ye(), xe(), r.open && Ee();
-		}), j.discover(r.s2Year), j.want([i]), ye(), A = await uze(FHe, await ee, () => xe()), M = !0, Oe();
-	}), E(), () => {
-		window.removeEventListener("keydown", tt), document.removeEventListener("fullscreenchange", k), document.documentElement.classList.remove(V9);
+		e && (e.textContent = b.getZoom().toFixed(1));
+	}), b.on("load", async () => {
+		k = kHe(b, () => {
+			_e(), ye(), r.open && we();
+		}), k.discover(r.s2Year), k.want([i]), _e(), O = await uze(FHe, await j, () => ye()), A = !0, Ee();
+	}), w(), () => {
+		window.removeEventListener("keydown", $e), document.removeEventListener("fullscreenchange", D), document.documentElement.classList.remove(V9);
 		try {
 			for (let e of v) e.map?.remove();
-			S.remove();
+			b.remove();
 		} catch {}
 	};
 }

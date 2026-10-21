@@ -217,11 +217,13 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   tri.appendChild(back);
   root.append(top, tri, toast);
   let toastT = 0;
+  // the popups at the bottom (what a key just did): commented out, nothing shows
   const note = (t: string) => {
-    toast.textContent = t;
-    toast.classList.add("on");
-    clearTimeout(toastT);
-    toastT = window.setTimeout(() => toast.classList.remove("on"), 1600);
+    void t, toastT;
+    // toast.textContent = t;
+    // toast.classList.add("on");
+    // clearTimeout(toastT);
+    // toastT = window.setTimeout(() => toast.classList.remove("on"), 1600);
   };
 
   // ---- the map
