@@ -1564,9 +1564,10 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   map.on("load", async () => {
     // the basemap's own buildings off; the data over its roads, under its labels
     for (const l of map.getStyle().layers) if (/building/.test(l.id)) map.setLayoutProperty(l.id, "visibility", "none");
-    // and its roads below side streets (Carto's "service": parking lot aisles, driveways, alleys; "path" and "track"),
-    // on the ground, in tunnels and on bridges: they draw over the raster and would only crowd it
-    for (const l of map.getStyle().layers) if (/(^|_)(service|path)(_|$)/.test(l.id)) map.setLayoutProperty(l.id, "visibility", "none");
+    // and its side streets and everything below them, on the ground, in tunnels and on bridges: they draw over the
+    // raster and would only crowd it. Carto's "minor" (residential, unclassified, living streets, and by kind_detail
+    // also alleys, driveways and parking lot aisles), "service" and "path" (paths and tracks)
+    for (const l of map.getStyle().layers) if (/(^|_)(minor|service|path)(_|$)/.test(l.id)) map.setLayoutProperty(l.id, "visibility", "none");
     const ls = map.getStyle().layers;
     const lastNon = ls.reduce((a, l, i) => (l.type !== "symbol" ? i : a), -1);
     const below = ls.slice(lastNon + 1).find((l) => l.type === "symbol")?.id;

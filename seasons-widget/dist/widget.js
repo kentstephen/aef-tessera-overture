@@ -115934,7 +115934,7 @@ function qst({ model: e, el: t }) {
 		} : kt, 500);
 	}), F.on("zoom", Ot), F.on("load", async () => {
 		for (let e of F.getStyle().layers) /building/.test(e.id) && F.setLayoutProperty(e.id, "visibility", "none");
-		for (let e of F.getStyle().layers) /(^|_)(service|path)(_|$)/.test(e.id) && F.setLayoutProperty(e.id, "visibility", "none");
+		for (let e of F.getStyle().layers) /(^|_)(minor|service|path)(_|$)/.test(e.id) && F.setLayoutProperty(e.id, "visibility", "none");
 		let e = F.getStyle().layers, t = e.reduce((e, t, n) => t.type === "symbol" ? e : n, -1), i = e.slice(t + 1).find((e) => e.type === "symbol")?.id;
 		Ce = e.find((e) => e.type === "line" && /aeroway|tunnel|road|bridge|rail|transport/.test(e.id))?.id ?? "foot", F.addSource("overture", {
 			type: "vector",
