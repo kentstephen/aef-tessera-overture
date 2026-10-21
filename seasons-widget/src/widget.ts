@@ -36,8 +36,34 @@ const LINE_COLS: { name: string; rgb: [number, number, number, number] }[] = [
   { name: "electric blue", rgb: [47, 107, 255, 255] },
   { name: "deep violet", rgb: [122, 60, 255, 255] },
 ];
+// two more ways, first in C's turn: each patch its own color (no two neighbors alike), or a color by its size
+type LineMode = "mixed" | "size" | "one";
+const LINE_MODES: { name: string; mode: LineMode }[] = [
+  { name: "mixed", mode: "mixed" },
+  { name: "by size, small blue to large yellow", mode: "size" },
+  ...LINE_COLS.map((c) => ({ name: c.name, mode: "one" as LineMode })),
+];
+// mixed: light colors, apart in lightness and along blue to yellow so they stay apart with protanopia; a color only
+// tells one patch from the next
+const MIXED: [number, number, number][] = [
+  [240, 165, 255], // orchid
+  [110, 225, 255], // light cyan
+  [255, 224, 102], // yellow
+  [140, 160, 255], // periwinkle
+  [255, 170, 80], // light orange
+  [170, 245, 200], // mint
+];
+// by size: light blue (0.1 ha or less) through lavender to yellow (100 ha or more), on a log scale
+const SIZE_STOPS: [number, number, number][] = [[110, 170, 255], [200, 180, 255], [255, 225, 80]];
+const sizeRgb = (ha: number): [number, number, number] => {
+  const t = Math.min(1, Math.max(0, (Math.log10(Math.max(ha, 1e-6)) + 1) / 3)) * (SIZE_STOPS.length - 1);
+  const i = Math.min(SIZE_STOPS.length - 2, Math.floor(t)), f = t - i, a = SIZE_STOPS[i], b = SIZE_STOPS[i + 1];
+  return [0, 1, 2].map((k) => Math.round(a[k] + (b[k] - a[k]) * f)) as [number, number, number];
+};
 let lineCol = 0;
-const lineRgb = () => LINE_COLS[lineCol].rgb;
+const lineMode = () => LINE_MODES[lineCol].mode;
+// one color for what has one (the panels, the readout's bars): the chosen one, orchid for mixed and by size
+const lineRgb = () => (lineCol >= 2 ? LINE_COLS[lineCol - 2].rgb : ORCHID);
 // from this zoom the view reads by itself once the map settles; below it nothing is read
 const AUTO_Z = MIN_ZOOM;
 // the panels come no closer than this (aef-tessera-earthwork's spotlight flies to a patch no closer either): Sentinel-2's
@@ -86,8 +112,11 @@ class SpotExtension extends MaskExtension {
 }
 SpotExtension.extensionName = "SpotExtension";
 const SPOT = new SpotExtension();
-/** around every patch on the map: how dim (0 not at all, 0.5 half), D toggles it */
+/** around every patch on the map: how dim (0 not at all, 0.5 half), D toggles it, S steps its strength */
 const mapSpot = { k: 0 };
+const MAP_DIM_STEPS = [0.25, 0.5, 0.75, 1];
+let mapDimK = 0.5;
+const dimName = (k: number) => (k === 1 ? "fully" : k === 0.75 ? "three quarters" : k === 0.5 ? "half" : "a quarter");
 class MapSpotExtension extends SpotExtension {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   draw(this: any, ...args: any[]) {
@@ -281,11 +310,14 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     const kept = new Map<string, { edges: number[][]; ext: number[] }>();
     const edges: number[] = [];
     rowsOf = new Map();
+    const owner: number[] = [];
+    patchKeys = [];
     patches.forEach((p, i) => {
       const key = `${p.runs[0]}:${p.runs[1]}:${p.n}`;
+      patchKeys.push(key);
       const out = outlines.get(key) ?? outerShape(p.runs);
       kept.set(key, out);
-      for (const e of out.edges) edges.push(e[0], e[1], e[2], e[3]);
+      for (const e of out.edges) edges.push(e[0], e[1], e[2], e[3]), owner.push(i);
       for (let k = 0; k < p.runs.length; k += 3) {
         const r = rowsOf.get(p.runs[k]);
         if (r) r.push(p.runs[k + 1], p.runs[k + 2], i);
@@ -303,8 +335,59 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       segTgt[2 * i] = edges[4 * i + 2];
       segTgt[2 * i + 1] = edges[4 * i + 3];
     }
+    segOwner = Int32Array.from(owner);
     segV++;
+    colorSegments();
     draw();
+  }
+  // each outline segment's color (RGBA), from its patch's: C's way of coloring
+  let patchKeys: string[] = [];
+  let segOwner = new Int32Array(0), segCol = new Uint8Array(0), colV = 0;
+  // mixed: each patch's color kept by its key, so a patch keeps its color as chunks come in unless a neighbor takes it
+  let mixedOf = new Map<string, number>();
+  const haOf = (p: Patch) => (p.n * (RES * 111320) ** 2 * Math.cos((((p.box[1] + p.box[3]) / 2) * Math.PI) / 180)) / 1e4;
+  function colorSegments() {
+    const n = patches.length, mode = lineMode();
+    const cols: [number, number, number][] = new Array(n);
+    if (mode === "one") cols.fill(lineRgb().slice(0, 3) as [number, number, number]);
+    else if (mode === "size") for (let i = 0; i < n; i++) cols[i] = sizeRgb(haOf(patches[i]));
+    else {
+      // neighbors: boxes within three pixels of each other, found through a grid of 64-pixel cells
+      const pad = 3 * RES, cell = 64 * RES, grid = new Map<string, number[]>();
+      const cellsOf = (b: number[], f: (k: string) => void) => {
+        for (let y = Math.floor((b[1] - pad) / cell); y <= Math.floor((b[3] + pad) / cell); y++)
+          for (let x = Math.floor((b[0] - pad) / cell); x <= Math.floor((b[2] + pad) / cell); x++) f(`${x}:${y}`);
+      };
+      patches.forEach((p, i) => cellsOf(p.box, (k) => (grid.get(k) ?? grid.set(k, []).get(k)!).push(i)));
+      const near = (i: number, j: number) => {
+        const a = patches[i].box, b = patches[j].box;
+        return a[0] - pad <= b[2] && b[0] - pad <= a[2] && a[1] - pad <= b[3] && b[1] - pad <= a[3];
+      };
+      const got = new Int8Array(n).fill(-1), next = new Map<string, number>();
+      // the patches with a color already first (largest first, as patches come), then the new ones
+      const order = [...patches.keys()].sort((a, b) => Number(!mixedOf.has(patchKeys[a])) - Number(!mixedOf.has(patchKeys[b])));
+      for (const i of order) {
+        const used = new Set<number>();
+        cellsOf(patches[i].box, (k) => grid.get(k)!.forEach((j) => j !== i && got[j] >= 0 && near(i, j) && used.add(got[j])));
+        let c = mixedOf.get(patchKeys[i]);
+        if (c == null || used.has(c)) {
+          c = -1;
+          for (let m = 0; m < MIXED.length; m++) if (!used.has((i + m) % MIXED.length)) { c = (i + m) % MIXED.length; break; }
+          if (c < 0) c = i % MIXED.length;
+        }
+        got[i] = c;
+        next.set(patchKeys[i], c);
+        cols[i] = MIXED[c];
+      }
+      mixedOf = next;
+    }
+    segCol = new Uint8Array(4 * segN);
+    for (let s = 0; s < segN; s++) {
+      const c = cols[segOwner[s]];
+      segCol.set(c, 4 * s);
+      segCol[4 * s + 3] = 255;
+    }
+    colV++;
   }
   /** The patch at a point: the one under it, else the nearest within two pixels (so a click on an outline finds it). */
   function patchAt(lng: number, lat: number): Patch | null {
@@ -376,11 +459,10 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       layers.push(
         new LineLayer({
           id: "patches",
-          data: { length: segN, attributes: { getSourcePosition: { value: segSrc, size: 2 }, getTargetPosition: { value: segTgt, size: 2 } } } as never,
-          getColor: lineRgb(),
+          data: { length: segN, attributes: { getSourcePosition: { value: segSrc, size: 2 }, getTargetPosition: { value: segTgt, size: 2 }, getColor: { value: segCol, size: 4, normalized: true } } } as never,
           getWidth: 1.5,
           widthUnits: "pixels",
-          updateTriggers: { getSourcePosition: segV, getTargetPosition: segV, getColor: lineCol },
+          updateTriggers: { getSourcePosition: segV, getTargetPosition: segV, getColor: colV },
         }),
       );
     overlay.setProps({ layers: layers as never });
@@ -877,23 +959,31 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       }
     }
     else if (k === "c" || k === "C") {
-      // the outline's color, on the map and in the panels
-      lineCol = (lineCol + 1) % LINE_COLS.length;
+      // the outlines' colors: mixed, by size, then each single color (the panels take the single one, orchid otherwise)
+      lineCol = (lineCol + 1) % LINE_MODES.length;
       root.style.setProperty("--line-col", `rgb(${lineRgb().slice(0, 3).join(",")})`);
+      colorSegments();
       draw();
       if (st.open) drawPanels();
-      note(`Outline: ${LINE_COLS[lineCol].name} (C)`);
+      note(`Outline: ${LINE_MODES[lineCol].name} (C)`);
     } else if ((k === "d" || k === "D") && st.open) {
       // how dim around the patch in the panels: half, a quarter, none, full
       spot.k = SPOT_STEPS[(SPOT_STEPS.indexOf(spot.k) + 1) % SPOT_STEPS.length];
       for (const pn of panels) pn.map?.triggerRepaint();
       note(spot.k ? `Around the patch: dimmed ${spot.k === 1 ? "fully" : spot.k === 0.5 ? "half" : "a quarter"} (D)` : "Around the patch: not dimmed (D)");
     } else if (k === "d" || k === "D") {
-      // the map dimmed by half outside every patch, or not
-      mapSpot.k = mapSpot.k ? 0 : 0.5;
+      // the map dimmed outside every patch (by the strength S chose, half to start), or not
+      mapSpot.k = mapSpot.k ? 0 : mapDimK;
       draw();
       map.triggerRepaint();
-      note(mapSpot.k ? "Outside the patches: dimmed half (D)" : "Outside the patches: not dimmed (D)");
+      note(mapSpot.k ? `Outside the patches: dimmed ${dimName(mapSpot.k)} (D, S for how much)` : "Outside the patches: not dimmed (D)");
+    } else if (k === "s" || k === "S") {
+      // how dim outside the patches: a quarter, half, three quarters, fully (to 30% of its brightness); on if it was off
+      mapDimK = MAP_DIM_STEPS[(MAP_DIM_STEPS.indexOf(mapDimK) + 1) % MAP_DIM_STEPS.length];
+      mapSpot.k = mapDimK;
+      draw();
+      map.triggerRepaint();
+      note(`Outside the patches: dimmed ${dimName(mapDimK)} (S)`);
     }
     // J, dark or gray around the patch: commented out
     // else if (k === "j" || k === "J") {
@@ -956,6 +1046,22 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     if (a && b.getWest() >= a[0] && b.getEast() <= a[2] && b.getSouth() >= a[1] && b.getNorth() <= a[3]) return;
     autoT = window.setTimeout(read, 500);
   });
+  // a flung drag's glide sometimes stalls part way (seen twice, cause not found): the map stays "moving", moveend never
+  // comes, and the view is not read until the next drag. A camera still "moving" but not moved for 1.5 s, with no
+  // button held, is stopped, which ends the move as usual (moveend: the read, the imagery, the address)
+  let held = false, lastC = "", stillFor = 0;
+  mapEl.addEventListener("pointerdown", () => (held = true), true);
+  window.addEventListener("pointerup", () => (held = false), true);
+  window.setInterval(() => {
+    const c = map.getCenter(), key = `${c.lng.toFixed(7)},${c.lat.toFixed(7)},${map.getZoom().toFixed(3)}`;
+    stillFor = key === lastC ? stillFor + 1 : 0;
+    lastC = key;
+    if (map.isMoving() && !held && stillFor >= 3) {
+      console.warn("the map's move stalled; ending it");
+      map.stop();
+      stillFor = 0;
+    }
+  }, 500);
   map.on("zoom", () => {
     const ze = s2Card.querySelector(".z");
     if (ze) ze.textContent = map.getZoom().toFixed(1);
