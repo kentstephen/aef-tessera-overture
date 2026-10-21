@@ -44,15 +44,16 @@ const DUG_LINE: [number, number, number, number] = [240, 165, 255, 255];
 // a footprint with no digging under it: a neutral gray with no hue to mix up with any year of the ramp (seen normally
 // or with protanopia), light enough to hold an edge on the dark basemap
 const FOOT_LINE: [number, number, number, number] = [184, 184, 184, 210];
-// the footprints' outline on the map (C cycles it, to find one that reads): silver, cyan, pale yellow, white, light blue
-const FOOT_COLS: { name: string; rgba: [number, number, number, number] }[] = [
-  { name: "silver", rgba: FOOT_LINE },
-  { name: "cyan", rgba: [79, 214, 255, 255] },
-  { name: "pale yellow", rgba: [255, 230, 128, 255] },
+// the outline of a footprint with digging under it (C cycles it, to find one that reads over the raster and the
+// imagery): light orchid, white, cyan, electric blue, deep violet (the last three as the reveal branch's C)
+const DUG_COLS: { name: string; rgba: [number, number, number, number] }[] = [
+  { name: "light orchid", rgba: DUG_LINE },
   { name: "white", rgba: [255, 255, 255, 255] },
-  { name: "light blue", rgba: [158, 203, 255, 255] },
+  { name: "cyan", rgba: [0, 229, 255, 255] },
+  { name: "electric blue", rgba: [47, 107, 255, 255] },
+  { name: "deep violet", rgba: [122, 60, 255, 255] },
 ];
-let footCol = 0;
+let dugCol = 0;
 // a footprint with no year, on the Sentinel-2 imagery: solid, so it reads on bright ground
 const S2_LINE = [79, 214, 255];
 // the fold chevron, as aef-earthwork-web's cards
@@ -326,8 +327,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     const ln = new Uint8Array(rgba.length), ml = new Uint8Array(rgba.length), wl = new Uint8Array(rgba.length);
     for (let r = 0; r < join.rows; r++) {
       const o = 4 * r, has = rgba[o + 3] > 0;
-      ml.set(has ? DUG_LINE : FOOT_COLS[footCol].rgba, o);
-      if (!inPatch(r)) wl.set(FOOT_COLS[footCol].rgba, o);
+      ml.set(has ? DUG_COLS[dugCol].rgba : FOOT_LINE, o);
+      if (!inPatch(r)) wl.set(FOOT_LINE, o);
       ln[o] = has ? rgba[o] : S2_LINE[0];
       ln[o + 1] = has ? rgba[o + 1] : S2_LINE[1];
       ln[o + 2] = has ? rgba[o + 2] : S2_LINE[2];
@@ -1421,9 +1422,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       render();
     }
     else if (k === "c" || k === "C") {
-      // the footprints' outline color on the map
-      footCol = (footCol + 1) % FOOT_COLS.length;
-      note(`Footprints: ${FOOT_COLS[footCol].name} (C)`);
+      // the outline color of the footprints with digging under them
+      dugCol = (dugCol + 1) % DUG_COLS.length;
+      note(`Buildings on dug ground: ${DUG_COLS[dugCol].name} (C)`);
       recolor();
     }
     else if (k === "o" || k === "O") {

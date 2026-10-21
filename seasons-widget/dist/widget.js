@@ -114989,26 +114989,8 @@ var Dst = {
 	210
 ], J9 = [
 	{
-		name: "silver",
-		rgba: q9
-	},
-	{
-		name: "cyan",
-		rgba: [
-			79,
-			214,
-			255,
-			255
-		]
-	},
-	{
-		name: "pale yellow",
-		rgba: [
-			255,
-			230,
-			128,
-			255
-		]
+		name: "light orchid",
+		rgba: K9
 	},
 	{
 		name: "white",
@@ -115020,10 +115002,28 @@ var Dst = {
 		]
 	},
 	{
-		name: "light blue",
+		name: "cyan",
 		rgba: [
-			158,
-			203,
+			0,
+			229,
+			255,
+			255
+		]
+	},
+	{
+		name: "electric blue",
+		rgba: [
+			47,
+			107,
+			255,
+			255
+		]
+	},
+	{
+		name: "deep violet",
+		rgba: [
+			122,
+			60,
 			255,
 			255
 		]
@@ -115195,7 +115195,7 @@ function Gst({ model: e, el: t }) {
 		], Te, Ee), n = new Uint8Array(t.length), i = new Uint8Array(t.length), a = new Uint8Array(t.length);
 		for (let e = 0; e < ue.rows; e++) {
 			let r = 4 * e, o = t[r + 3] > 0;
-			i.set(o ? K9 : J9[Y9].rgba, r), nt(e) || a.set(J9[Y9].rgba, r), n[r] = o ? t[r] : X9[0], n[r + 1] = o ? t[r + 1] : X9[1], n[r + 2] = o ? t[r + 2] : X9[2], n[r + 3] = 255;
+			i.set(o ? J9[Y9].rgba : q9, r), nt(e) || a.set(q9, r), n[r] = o ? t[r] : X9[0], n[r + 1] = o ? t[r + 1] : X9[1], n[r + 2] = o ? t[r + 2] : X9[2], n[r + 3] = 255;
 		}
 		let o = !1;
 		(!de || !Ae(pe, n)) && (pe = n, de = D7(n, ue.rows), he++, o = !0), (!fe || !Ae(me, i)) && (me = i, fe = D7(i, ue.rows), ge++, o = !0), (!_e || !Ae(ve, a)) && (ve = a, _e = D7(a, ue.rows), ye++, o = !0), o && wt();
@@ -115919,7 +115919,7 @@ function Gst({ model: e, el: t }) {
 		} else if (t === "q" || t === "Q") r.picking = !r.picking, r.picking || It(""), te(r.picking ? "Picking on" : "Picking off");
 		else if (t === "h" || t === "H") kt(!r.folded);
 		else if (t === "s" || t === "S") r.pair ? r.winPair = !r.winPair : r.winMain = !r.winMain, a.classList.toggle("yrs", ot()), wt();
-		else if (t === "c" || t === "C") Y9 = (Y9 + 1) % J9.length, te(`Footprints: ${J9[Y9].name} (C)`), ke();
+		else if (t === "c" || t === "C") Y9 = (Y9 + 1) % J9.length, te(`Buildings on dug ground: ${J9[Y9].name} (C)`), ke();
 		else if (t === "o" || t === "O") r.lines = !r.lines, wt();
 		else if ((t === "n" || t === "N") && st() && Me) Me.next(r.s2Year), lt(), wt();
 		else if (t === "x" || t === "X") r.fit = !r.fit, ae();
