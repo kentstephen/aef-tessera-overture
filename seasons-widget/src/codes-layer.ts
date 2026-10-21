@@ -16,11 +16,10 @@ export type Look = { src: "ours" | "wsf"; year: number | null };
 // 2016 and 2017 commented out with WSF, the only source that dates them:
 // export const YEAR_COL = ["#1a33b3", "#2446a9", "#2d59a0", "#396b94", "#497b85", "#60927b", "#7bae74", "#99cc6d", "#c4ea67", "#ffff66"];
 // export const Y0_RAMP = 2016;
-/** The year ramp, 2018 to 2025: matplotlib's Oranges (0.3 to 1.0), the year also in its opacity. The oldest pale and
- * see-through (45% opaque) but plainly there, the newest the darkest orange and solid. Each color as #rrggbbaa, its
- * alpha the raster's alpha. */
+/** The year ramp, 2018 to 2025: matplotlib's full Oranges (0 to 1), solid, the oldest palest and the newest darkest.
+ * Each color as #rrggbbaa, its alpha the raster's alpha (see-through years turn gray over dark ground). */
 export const RAMPS = [
-  { name: "oranges", cols: ["#fff5eb73", "#fee3c887", "#fdc6929b", "#fda057af", "#f67824c3", "#e05206d7", "#ad3803eb", "#7f2704ff"] },
+  { name: "oranges", cols: ["#fff5ebff", "#fee3c8ff", "#fdc692ff", "#fda057ff", "#f67824ff", "#e05206ff", "#ad3803ff", "#7f2704ff"] },
   // the single orange tried before it (pale peach to #ff6d00, same alphas)
   // { name: "orange", cols: ["#f9c28f73", "#fab67b87", "#fbaa669b", "#fc9e52af", "#fc913dc3", "#fd8529d7", "#fe7914eb", "#ff6d00ff"] },
   // tried and set aside: imola, blues, pale yellow to blue, greens, browns, oranges, grays
