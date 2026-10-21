@@ -155,7 +155,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     protocolAdded = true;
   }
 
-  const st = { look: { src: "ours", year: null } as Look, fit: true, folded: false, area: null as [number, number, number, number] | null, readId: 0, labels: true, picking: true, pair: false, holding: false, s2Year: S2_YEARS[S2_YEARS.length - 1], lines: false, winMain: false, winPair: false, gap: 1 };
+  const st = { look: { src: "ours", year: null } as Look, fit: true, folded: false, area: null as [number, number, number, number] | null, readId: 0, labels: true, picking: true, pair: false, holding: false, s2Year: S2_YEARS[S2_YEARS.length - 1], lines: false, winMain: false, winPair: false, gap: 1, tips: true };
   const E = (t: string, c?: string, h?: string) => {
     const e = document.createElement(t);
     if (c) e.className = c;
@@ -989,7 +989,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   }
   let lastPoint = { x: 0, y: 0 };
   function showTip(html: string) {
-    if (!html) {
+    if (!html || !st.tips) {
       tip.style.display = "none";
       return;
     }
@@ -1418,6 +1418,11 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       st.labels = !st.labels;
       for (const l of map.getStyle().layers) if (l.type === "symbol") map.setLayoutProperty(l.id, "visibility", st.labels ? "visible" : "none");
       note(st.labels ? "Labels on" : "Labels off");
+    } else if (k === "t" || k === "T") {
+      // the tooltip alone on or off; hovering and clicking stay
+      st.tips = !st.tips;
+      if (!st.tips) showTip("");
+      note(st.tips ? "Tooltip on" : "Tooltip off");
     } else if (k === "q" || k === "Q") {
       // picking and the tooltip on or off
       st.picking = !st.picking;

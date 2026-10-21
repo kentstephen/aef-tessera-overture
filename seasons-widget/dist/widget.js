@@ -115079,7 +115079,8 @@ function qst({ model: e, el: t }) {
 		lines: !1,
 		winMain: !1,
 		winPair: !1,
-		gap: 1
+		gap: 1,
+		tips: !0
 	}, i = (e, t, n) => {
 		let r = document.createElement(e);
 		return t && (r.className = t), n != null && (r.innerHTML = n), r;
@@ -115628,13 +115629,13 @@ function qst({ model: e, el: t }) {
 		y: 0
 	};
 	function Rt(e) {
-		if (!e) {
+		if (!e || !r.tips) {
 			O.style.display = "none";
 			return;
 		}
 		O.innerHTML = e, O.style.display = "block";
-		let t = a.getBoundingClientRect(), n = O.offsetWidth, r = O.offsetHeight, i = Lt.x + o.offsetLeft, s = Lt.y + o.offsetTop, c = i + 14, l = s + 14;
-		c + n > t.width - 8 && (c = i - n - 14), l + r > t.height - 8 && (l = s - r - 14), O.style.left = c + "px", O.style.top = l + "px";
+		let t = a.getBoundingClientRect(), n = O.offsetWidth, i = O.offsetHeight, s = Lt.x + o.offsetLeft, c = Lt.y + o.offsetTop, l = s + 14, u = c + 14;
+		l + n > t.width - 8 && (l = s - n - 14), u + i > t.height - 8 && (u = c - i - 14), O.style.left = l + "px", O.style.top = u + "px";
 	}
 	F.on("mousemove", (e) => {
 		if (Lt = e.point, !r.picking || !Pe || !F.getLayer("foot")) return xt(null);
@@ -115879,7 +115880,8 @@ function qst({ model: e, el: t }) {
 			r.labels = !r.labels;
 			for (let e of F.getStyle().layers) e.type === "symbol" && F.setLayoutProperty(e.id, "visibility", r.labels ? "visible" : "none");
 			te(r.labels ? "Labels on" : "Labels off");
-		} else if (t === "q" || t === "Q") r.picking = !r.picking, r.picking || Rt(""), te(r.picking ? "Picking on" : "Picking off");
+		} else if (t === "t" || t === "T") r.tips = !r.tips, r.tips || Rt(""), te(r.tips ? "Tooltip on" : "Tooltip off");
+		else if (t === "q" || t === "Q") r.picking = !r.picking, r.picking || Rt(""), te(r.picking ? "Picking on" : "Picking off");
 		else if (t === "h" || t === "H") jt(!r.folded);
 		else if (t === "s" || t === "S") r.pair ? r.winPair = !r.winPair : r.winMain = !r.winMain, a.classList.toggle("yrs", lt()), Et();
 		else if (t === "g" || t === "G") r.gap = +!r.gap, te(r.gap ? "Patches joined across a 1 pixel gap (G)" : "Patches joined by touching only (G)"), it();
