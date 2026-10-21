@@ -1435,7 +1435,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       findPatches();
     }
     else if (k === "y" || k === "Y") {
-      // the year ramp: imola, blues, pale yellow to blue, greens
+      // the year ramp: imola, blues, pale yellow to blue, greens, browns, oranges, grays
       rampI = (rampI + 1) % RAMPS.length;
       setRamp(RAMPS[rampI].cols);
       YEAR_RGB = YEAR_COL.map(hexRgb);

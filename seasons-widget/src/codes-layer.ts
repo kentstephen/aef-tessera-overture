@@ -24,6 +24,11 @@ export const RAMPS = [
   { name: "blues", cols: ["#b7d4ea", "#94c4df", "#6aaed6", "#4a98c9", "#2e7ebc", "#1764ab", "#084a91", "#08306b"] },
   { name: "pale yellow to blue", cols: ["#fff2a6", "#d9cf98", "#b1ac8b", "#8b897d", "#666d75", "#445973", "#224472", "#003070"] },
   { name: "greens", cols: ["#b8e3b2", "#98d594", "#73c476", "#4bb062", "#2f974e", "#157f3b", "#006428", "#00441b"] },
+  // the ground's own colors: matplotlib's YlOrBr (0.3 to 1.0), Oranges (0.3 to 1.0) and Greys (0.2 to 0.8, its darkest
+  // left off so 2025 still stands off the dark basemap)
+  { name: "browns", cols: ["#fed778", "#febb47", "#fe9829", "#f07818", "#d85a09", "#b84203", "#8e3104", "#662506"] },
+  { name: "oranges", cols: ["#fdc38d", "#fda762", "#fd8c3b", "#f3701b", "#e25508", "#c54102", "#9e3303", "#7f2704"] },
+  { name: "grays", cols: ["#e2e2e2", "#d1d1d1", "#bebebe", "#a3a3a3", "#8a8a8a", "#727272", "#5c5c5c", "#404040"] },
 ];
 /** The ramp in use (swapped in place by setRamp, so every reader sees the new one). */
 export const YEAR_COL = [...RAMPS[0].cols];
