@@ -112,10 +112,10 @@ class SpotExtension extends MaskExtension {
 }
 SpotExtension.extensionName = "SpotExtension";
 const SPOT = new SpotExtension();
-/** around every patch on the map: how dim (0 not at all, 0.5 half), V toggles it, S steps its strength */
-const mapSpot = { k: 0 };
+/** around every patch on the map: how dim (0 not at all, 1 fully, the start), V toggles it, S steps its strength */
+const mapSpot = { k: 1 };
 const MAP_DIM_STEPS = [0.25, 0.5, 0.75, 1];
-let mapDimK = 0.5;
+let mapDimK = 1;
 const dimName = (k: number) => (k === 1 ? "fully" : k === 0.75 ? "three quarters" : k === 0.5 ? "half" : "a quarter");
 class MapSpotExtension extends SpotExtension {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -972,7 +972,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       for (const pn of panels) pn.map?.triggerRepaint();
       note(spot.k ? `Around the patch: dimmed ${spot.k === 1 ? "fully" : spot.k === 0.5 ? "half" : "a quarter"} (D)` : "Around the patch: not dimmed (D)");
     } else if (k === "v" || k === "V") {
-      // the map dimmed outside every patch (by the strength S chose, half to start), or not
+      // the map dimmed outside every patch (by the strength S chose, fully to start), or not
       mapSpot.k = mapSpot.k ? 0 : mapDimK;
       draw();
       map.triggerRepaint();

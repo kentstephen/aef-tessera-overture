@@ -91692,12 +91692,12 @@ var PHe = {
 	}
 };
 K9.extensionName = "SpotExtension", new K9();
-var q9 = { k: 0 }, J9 = [
+var q9 = { k: 1 }, J9 = [
 	.25,
 	.5,
 	.75,
 	1
-], Y9 = .5, X9 = (e) => e === 1 ? "fully" : e === .75 ? "three quarters" : e === .5 ? "half" : "a quarter", Z9 = class extends K9 {
+], Y9 = 1, X9 = (e) => e === 1 ? "fully" : e === .75 ? "three quarters" : e === .5 ? "half" : "a quarter", Z9 = class extends K9 {
 	draw(...e) {
 		kw.prototype.draw.apply(this, e), this.setShaderModuleProps({ spotFill: {
 			k: q9.k,
