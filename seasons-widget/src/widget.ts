@@ -315,10 +315,12 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     const c = map.getCenter(), d = s2?.dateAt(st.s2Year, c.lng, c.lat) ?? "", stt = s2?.status(st.s2Year) ?? "finding";
     const day = d ? `${MONTHS[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}` + (stt === "cloudy" ? ", cloudy" : "") : stt === "cloudy" ? "no scene" : "finding…";
     const ends = `${String(S2_YEARS[0]).slice(2)}/${String(S2_YEARS[S2_YEARS.length - 1]).slice(2)}`;
+    void ends;
     const z = map.getZoom();
     s2Card.innerHTML =
       `<div class="s2hd"><b>${st.s2Year}</b><span>Sentinel-2<br>${day}</span><span class="zw">z<br><i class="z">${z.toFixed(1)}</i></span></div>` +
-      `<div class="keys"><span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${ends}</span><span><kbd>N</kbd> new look</span><span><kbd>R</kbd> reveal</span><span><kbd>O</kbd> outlines</span><span><kbd>C</kbd> color</span></div>` +
+      // the keys' hints commented out for now
+      // `<div class="keys"><span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${ends}</span><span><kbd>N</kbd> new look</span><span><kbd>R</kbd> reveal</span><span><kbd>O</kbd> outlines</span><span><kbd>C</kbd> color</span></div>` +
       `<div class="pnote">${z < AUTO_Z ? `Zoom in to ${AUTO_Z} to outline the dug ground` : (st.reveal ? `<i></i>Dug ground, 2018 to 2025: ${REVEAL_YEAR} inside, ${st.s2Year} around. Click a patch for both` : `<i></i>Dug ground, 2018 to 2025. Click a patch for its years`)}</div>`;
   }
   function stepS2(d: number) {
@@ -404,7 +406,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
         return `<span class="hb${y === dugYear ? " on" : ""}"><i style="height:${h}px"></i><small>${String(y).slice(2)}</small></span>`;
       })
       .join("");
-    back.innerHTML = `<b>${backHa}</b><span class="hist" title="the share of the patch last dug each year">${bars}</span><span class="keys">click or <kbd>Esc</kbd> back · <kbd>O</kbd> outline · <kbd>D</kbd> dim</span>`;
+    // the keys' hints commented out for now
+    // back.innerHTML = `<b>${backHa}</b><span class="hist" title="the share of the patch last dug each year">${bars}</span><span class="keys">click or <kbd>Esc</kbd> back · <kbd>O</kbd> outline · <kbd>D</kbd> dim</span>`;
+    back.innerHTML = `<b>${backHa}</b><span class="hist" title="the share of the patch last dug each year">${bars}</span>`;
   }
   /** The open patch's outer extent (what its outline encloses) as one bitmap over its box, coarser past 2048 across. */
   let openMask: { image: HTMLCanvasElement; bounds: [number, number, number, number] } | null = null;
