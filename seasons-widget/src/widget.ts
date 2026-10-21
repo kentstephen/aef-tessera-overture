@@ -202,6 +202,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   q.autocomplete = "off";
   q.spellcheck = false;
   sBox.append(q, E("kbd", "", "/"), hits);
+
   const s2Card = E("div", "s2card glass showing");
   top.append(sBox, s2Card);
   // the panels: the clicked patch in 2017 and 2025, side by side over the whole window; a click anywhere goes back

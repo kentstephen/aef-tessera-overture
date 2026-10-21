@@ -30,20 +30,23 @@
 /* the Sentinel-2 card: small, top left while the imagery shows; the year first */
 /* the Sentinel-2 card (aef-earthwork-web's): the search's width, under it; the year first, so the pair always says which
    year; the zoom in the gap at the right of its head, two lines as the words beside it */
-.sm .s2card{width:var(--top-w);padding:13px 14px 13px 15px;border-radius:12px}
+/* aef-earthwork-web's card exactly (web/src/page.css, .at-s2c and .ew-s2hd) */
+.sm .s2card{width:var(--top-w);padding:12px 12px 12px 14px;border-radius:10px}
 .sm .s2hd{display:flex;align-items:center;gap:9px}
 .sm .s2hd b{font-size:34px;line-height:1;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .sm .s2card:not(.showing) .s2hd b{color:var(--muted)}
-.sm .s2hd span{font-size:14px;line-height:1.3;color:#c9cfd5;white-space:nowrap}
+.sm .s2hd span{font-size:12px;line-height:1.25;color:var(--muted);white-space:nowrap}
 .sm .s2hd .zw{margin-left:auto;text-align:right}
 .sm .s2hd .z{font-style:normal;font-variant-numeric:tabular-nums}
 /* its keys in groups that wrap, so the card stays a small box */
 .sm .s2card .keys{display:flex;flex-wrap:wrap;gap:3px 9px;margin:9px 0 0;font-size:12px;line-height:1.5}
 .sm .s2card .keys>span{white-space:nowrap}
 /* top left, as in aef-earthwork-web: the search, and under it the Sentinel-2 card while the imagery shows */
-.sm .top{--top-w:240px;position:absolute;left:12px;top:12px;z-index:6;display:flex;flex-direction:column;gap:8px;align-items:flex-start;width:var(--col);max-width:calc(50% - 24px)}
+.sm .top{--top-w:212px;position:absolute;left:12px;top:12px;z-index:6;display:flex;flex-direction:column;gap:8px;align-items:flex-start;width:var(--col);max-width:calc(50% - 24px)}
 /* search (aef-earthwork-web's): small until it is used, then the column's width; its places drop over the card */
-.sm .search{position:relative;z-index:2;display:flex;align-items:center;gap:8px;width:var(--top-w);height:34px;padding:0 10px;background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:width .15s ease}
+/* aef-earthwork-web's search exactly: the card's width until it is used (click or /), then the column's */
+.sm .search{position:relative;z-index:2;display:flex;align-items:center;gap:8px;width:var(--top-w);height:34px;padding:0 10px;border-radius:10px;background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:width .15s ease}
+.sm .search:focus-within{width:var(--col)}
 .sm .search input:focus-visible{outline:none}
 .sm .search svg{flex:0 0 auto;opacity:.6}
 .sm .search:focus-within{border-color:rgba(255,255,255,.3)}
