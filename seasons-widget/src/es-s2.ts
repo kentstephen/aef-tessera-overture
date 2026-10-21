@@ -161,7 +161,7 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
   const years = new Map<number, YearState>();
   /**
    * The day of the year every year's pass is matched to, so the years compare in the same season: the first pass
-   * shown sets it, and a new look (N, Shift+N) moves it to that look's day. Null until the first pass is chosen.
+   * shown sets it. Null until the first pass is chosen.
    */
   let target: number | null = null;
   const dayOf = (date: string) => {
@@ -176,14 +176,16 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
   };
   /** Passes nearest the target day first (the order the search gave them, clearest first, without a target). */
   const nearest = <T extends Pass>(ps: T[]) => (target == null ? ps : [...ps].sort((a, b) => apart(a.date) - apart(b.date)));
-  /** The target moved to the year's look on screen; every other year chooses again, near it. */
-  function matchTo(year: number) {
-    const s = years.get(year), p = s && shownOf(s);
-    if (!p) return;
-    target = dayOf(p.date);
-    for (const y of [...years.keys()]) if (y !== year) years.delete(y);
-    discover(year);
-  }
+  // N and Shift+N moved the target to the new look and had every other year choose again (set aside: N steps the
+  // year alone)
+  // /** The target moved to the year's look on screen; every other year chooses again, near it. */
+  // function matchTo(year: number) {
+  //   const s = years.get(year), p = s && shownOf(s);
+  //   if (!p) return;
+  //   target = dayOf(p.date);
+  //   for (const y of [...years.keys()]) if (y !== year) years.delete(y);
+  //   discover(year);
+  // }
   /** years asked for lately, the latest last: their layers stay loaded */
   const recent: number[] = [];
 
@@ -399,68 +401,41 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
   }
 
   /**
-   * The year's next clear pass over the view as it is now (another is looked for when none is left). When the view
-   * has changed since the year's passes were checked, they are checked again over this view, the pass on screen last,
-   * so the next look is another pass that is clear here.
+   * The year's next clear pass (another is looked for when none is left), as the earth-search branch steps it: the
+   * year alone, over the passes already checked for the view, the other years left as they are.
    */
   function next(year: number) {
-    const v = viewBox();
-    if (v[2] - v[0] > 4 || v[3] - v[1] > 4) return;
     const s = years.get(year);
+    if (!s) return;
     // the look on screen, for back()
-    const was = s && shownOf(s);
+    const was = shownOf(s);
     if (was) {
       const h = looked.get(year) ?? [];
       if (h[h.length - 1]?.key !== was.key) h.push(was);
       if (h.length > 20) h.shift();
       looked.set(year, h);
     }
-    if (!s || s.view.some((x, i) => x !== v[i])) {
-      const shown = s ? shownOf(s) : null;
-      const ns: YearState = { view: v, hold: grow(v, 0.25), clear: [], look: 0, queue: [], best: null, prev: shown, busy: false, done: false };
-      years.set(year, ns);
-      onChange();
-      passes(year, ns.hold).then(
-        (ps) => {
-          if (years.get(year) !== ns) return;
-          ns.queue = shown ? [...ps.filter((p) => p.key !== shown.key), ...ps.filter((p) => p.key === shown.key)] : ps;
-          return fill(year, ns, 1).then(() => matchTo(year));
-        },
-        () => years.get(year) === ns && years.delete(year),
-      );
-      return;
-    }
-    if (s.look + 1 < s.clear.length) {
-      s.look++;
-      matchTo(year);
-    } else if (!s.done && s.queue.length)
+    if (s.look + 1 < s.clear.length) s.look++;
+    else if (!s.done && s.queue.length)
       fill(year, s, s.clear.length + 1).then(() => {
         if (s.look + 1 < s.clear.length) s.look++;
         else s.look = 0;
         onChange();
-        matchTo(year);
       });
-    else {
-      s.look = 0;
-      matchTo(year);
-    }
+    else s.look = 0;
   }
 
   /** The looks N stepped away from, by year, the latest last. */
   const looked = new Map<number, Rated[]>();
   /** Back to the year's look before the last N (Shift+N), over and over back through what N showed. */
   function back(year: number) {
-    const h = looked.get(year);
-    const p = h?.pop();
-    if (!p) return;
     const s = years.get(year);
-    if (!s) return;
+    const p = s && looked.get(year)?.pop();
+    if (!s || !p) return;
     const i = s.clear.findIndex((c) => c.key === p.key);
     // a look from before the view's passes were checked again: put back in the list where it is shown
     if (i >= 0) s.look = i;
     else s.clear.splice((s.look = s.clear.length ? s.look % s.clear.length : 0), 0, p);
-    onChange();
-    matchTo(year);
   }
 
   /** The day of the year's pass, or "" before one is chosen. */
