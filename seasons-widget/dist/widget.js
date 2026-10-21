@@ -115079,7 +115079,7 @@ function qst({ model: e, el: t }) {
 		lines: !1,
 		winMain: !1,
 		winPair: !1,
-		gap: 0
+		gap: 1
 	}, i = (e, t, n) => {
 		let r = document.createElement(e);
 		return t && (r.className = t), n != null && (r.innerHTML = n), r;

@@ -155,7 +155,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     protocolAdded = true;
   }
 
-  const st = { look: { src: "ours", year: null } as Look, fit: true, folded: false, area: null as [number, number, number, number] | null, readId: 0, labels: true, picking: true, pair: false, holding: false, s2Year: S2_YEARS[S2_YEARS.length - 1], lines: false, winMain: false, winPair: false, gap: 0 };
+  const st = { look: { src: "ours", year: null } as Look, fit: true, folded: false, area: null as [number, number, number, number] | null, readId: 0, labels: true, picking: true, pair: false, holding: false, s2Year: S2_YEARS[S2_YEARS.length - 1], lines: false, winMain: false, winPair: false, gap: 1 };
   const E = (t: string, c?: string, h?: string) => {
     const e = document.createElement(t);
     if (c) e.className = c;
