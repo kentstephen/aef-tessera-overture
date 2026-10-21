@@ -108964,16 +108964,16 @@ function mnt(e) {
 	}
 }
 var b7 = [...{
-	name: "orange",
+	name: "oranges",
 	cols: [
-		"#f9c28f73",
-		"#fab67b87",
-		"#fbaa669b",
-		"#fc9e52af",
-		"#fc913dc3",
-		"#fd8529d7",
-		"#fe7914eb",
-		"#ff6d00ff"
+		"#fdc38d73",
+		"#fda76287",
+		"#fd8c3b9b",
+		"#f3701baf",
+		"#e25508c3",
+		"#c54102d7",
+		"#9e3303eb",
+		"#7f2704ff"
 	]
 }.cols], x7 = 2018, S7 = [
 	"#1a33b3",
