@@ -2,7 +2,7 @@ import { COGLayer, MosaicLayer } from "@developmentseed/deck.gl-geotiff";
 import { DecoderPool, GeoTIFF, PerOriginSemaphore } from "@developmentseed/geotiff";
 import GeoTiffWorker from "@developmentseed/geotiff/pool/worker?worker&inline";
 import type * as maplibregl from "maplibre-gl";
-import { getTileData, renderTile, type S2TileData } from "./s2-shaders";
+import { getTileData, renderTile, type S2TileData, tileRgba } from "./s2-shaders";
 
 /**
  * Sentinel-2 behind the map: one clear L2A pass a year, found through Element 84's Earth Search (AWS Open Data's
@@ -21,7 +21,7 @@ import { getTileData, renderTile, type S2TileData } from "./s2-shaders";
  * again over the new view and kept if it is still clear there. The image is drawn as it is: the precomposed true
  * color (TCI) at gain 1.0, only its black nodata fill dropped (s2-shaders.ts). No cloud masking, no blending.
  *
- * `next` steps a year to its next clear pass. Every year the model reads, 2017 to 2025.
+ * `next` steps a year to its next clear pass, `back` returns to the one before. Every year the model reads, 2017 to 2025.
  */
 const STAC = "https://earth-search.aws.element84.com/v1/search";
 const COLLECTION = "sentinel-2-l2a";
@@ -54,7 +54,7 @@ type Feature = {
 type Scene = { id: string; bbox: [number, number, number, number]; tile: string; url: string; scl: string; epsg: number };
 /** One acquisition: its MGRS tiles over the view, all one day. */
 type Pass = { key: string; date: string; cloud: number; scenes: Scene[] };
-type Rated = Pass & { cover: number; bad: number };
+export type Rated = Pass & { cover: number; bad: number };
 type BBox = [number, number, number, number];
 
 type YearState = {
@@ -72,6 +72,8 @@ type YearState = {
   prev: Rated | null;
   busy: boolean;
   done: boolean;
+  /** the first look being found, for the years chosen after it to wait on (their target day comes from it) */
+  filling?: Promise<void>;
 };
 
 const MONTH_WINTER_N = new Set([12, 1, 2]);
@@ -157,6 +159,31 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
   };
 
   const years = new Map<number, YearState>();
+  /**
+   * The day of the year every year's pass is matched to, so the years compare in the same season: the first pass
+   * shown sets it, and a new look (N, Shift+N) moves it to that look's day. Null until the first pass is chosen.
+   */
+  let target: number | null = null;
+  const dayOf = (date: string) => {
+    const t = Date.parse(date);
+    return Math.floor((t - Date.UTC(new Date(t).getUTCFullYear(), 0, 1)) / 864e5) + 1;
+  };
+  // days apart within the year, around the new year
+  const apart = (date: string) => {
+    if (target == null) return 0;
+    const d = Math.abs(dayOf(date) - target);
+    return Math.min(d, 365 - d);
+  };
+  /** Passes nearest the target day first (the order the search gave them, clearest first, without a target). */
+  const nearest = <T extends Pass>(ps: T[]) => (target == null ? ps : [...ps].sort((a, b) => apart(a.date) - apart(b.date)));
+  /** The target moved to the year's look on screen; every other year chooses again, near it. */
+  function matchTo(year: number) {
+    const s = years.get(year), p = s && shownOf(s);
+    if (!p) return;
+    target = dayOf(p.date);
+    for (const y of [...years.keys()]) if (y !== year) years.delete(y);
+    discover(year);
+  }
   /** years asked for lately, the latest last: their layers stay loaded */
   const recent: number[] = [];
 
@@ -170,8 +197,11 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
   };
 
   /** A scene's SCL class at each of the points (lon, lat pairs), 0 where it has no data. */
-  async function classes(s: Scene, pts: Float64Array, span: number): Promise<Uint8Array> {
-    const g = await tiff(s.scl);
+  const classes = (s: Scene, pts: Float64Array, span: number) => readAt(s.scl, s, pts, span, 1);
+  /** A scene's `nb` bands (bytes) at each of the points (lon, lat pairs), from the coarsest level that still has a pixel
+   * or two between them; 0 where it has no data. */
+  async function readAt(url: string, s: Scene, pts: Float64Array, span: number, nb: number): Promise<Uint8Array> {
+    const g = await tiff(url);
     const zone = s.epsg % 100, south = Math.floor(s.epsg / 100) === 327;
     const n = pts.length / 2;
     const xy = new Float64Array(pts.length);
@@ -201,22 +231,25 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
       lvl = levels[levels.indexOf(lvl) - 1];
       need = tilesOf(lvl);
     }
-    const tiles = new Map<string, { w: number; data: ArrayLike<number> }>();
+    const tiles = new Map<string, { w: number; at: (i: number, b: number) => number }>();
     await Promise.all(
       [...need].map(async ([k, [tx, ty]]) => {
         const t = await lvl.fetchTile(tx, ty, { pool: poolGet(), boundless: true });
         const arr = t.array;
-        tiles.set(k, { w: arr.width, data: arr.layout === "band-separate" ? arr.bands[0] : arr.data });
+        const at = arr.layout === "band-separate" ? (i: number, b: number) => arr.bands[b][i] : (i: number, b: number) => arr.data[i * nb + b];
+        tiles.set(k, { w: arr.width, at });
       }),
     );
-    const out = new Uint8Array(n);
+    const out = new Uint8Array(n * nb);
     const [a, , c, , e, f] = lvl.transform;
     for (let i = 0; i < n; i++) {
       const col = Math.floor((xy[2 * i] - c) / a), row = Math.floor((xy[2 * i + 1] - f) / e);
       if (col < 0 || row < 0 || col >= lvl.width || row >= lvl.height) continue;
       const tx = Math.floor(col / lvl.tileWidth), ty = Math.floor(row / lvl.tileHeight);
       const t = tiles.get(tx + "," + ty);
-      if (t) out[i] = t.data[(row - ty * lvl.tileHeight) * t.w + (col - tx * lvl.tileWidth)];
+      if (!t) continue;
+      const j = (row - ty * lvl.tileHeight) * t.w + (col - tx * lvl.tileWidth);
+      for (let b = 0; b < nb; b++) out[i * nb + b] = t.at(j, b);
     }
     return out;
   }
@@ -260,14 +293,17 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
         if (years.get(year) !== s) return;
         for (const r of rated) if (!s.best || r.cover - r.bad > s.best.cover - s.best.bad) s.best = r;
         // within a batch the least cloudy first, so the one shown is the best of those checked together
-        const ok = rated.filter(isClear).sort((a, b) => a.bad - b.bad);
+        const ok = rated.filter(isClear).sort((a, b) => apart(a.date) - apart(b.date) || a.bad - b.bad);
         if (ok.length) {
           const had = s.clear.length;
           s.clear.push(...ok);
+          if (target == null) target = dayOf(ok[0].date);
           if (!had) onChange();
         }
       }
       if (!s.queue.length || checked >= MAX_CHECKED) s.done = true;
+      // no clear pass: the least cloudy one shown sets the target all the same
+      if (s.done && !s.clear.length && target == null && s.best) target = dayOf(s.best.date);
       if (!s.clear.length) onChange();
     } finally {
       s.busy = false;
@@ -279,7 +315,7 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
     const v = viewBox();
     if (v[2] - v[0] > 4 || v[3] - v[1] > 4) return;
     const old = years.get(year);
-    if (old && inside(v, old.hold)) return;
+    if (old && inside(v, old.hold)) return old.filling;
     const shown = old ? shownOf(old) : null;
     const s: YearState = { view: v, hold: grow(v, 0.25), clear: [], look: 0, queue: [], best: null, prev: shown, busy: false, done: false };
     // the pass on screen checked first over the new view: if it is still clear there, it stays
@@ -288,47 +324,143 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
       if (r && isClear(r)) {
         s.clear.push(r);
         years.set(year, s);
-        passes(year, s.hold).then((ps) => (s.queue = ps.filter((p) => p.key !== shown.key)), () => {});
+        passes(year, s.hold).then((ps) => (s.queue = nearest(ps.filter((p) => p.key !== shown.key))), () => {});
         onChange();
         return;
       }
     }
     years.set(year, s);
-    try {
-      s.queue = await passes(year, s.hold);
-    } catch {
-      years.delete(year);
-      return;
-    }
-    await fill(year, s, 1);
+    s.filling = (async () => {
+      try {
+        s.queue = nearest(await passes(year, s.hold));
+      } catch {
+        years.delete(year);
+        return;
+      }
+      await fill(year, s, 1);
+    })();
+    await s.filling;
   }
   const shownOf = (s: YearState): Rated | null => (s.clear.length ? s.clear[s.look % s.clear.length] : s.done ? s.best : s.prev);
 
+  /**
+   * The year's pass over the view read ahead, its full-resolution tiles into the shared tile cache (s2-shaders.ts), one
+   * at a time: a panel opened on a patch in view then draws without waiting. Stops when the view moves (`gen`).
+   */
+  async function warmView(year: number, gen: number) {
+    const s = years.get(year), p = s && shownOf(s), v = viewBox();
+    if (!p) return;
+    for (const sc of p.scenes) {
+      if (!(sc.bbox[0] < v[2] && sc.bbox[2] > v[0] && sc.bbox[1] < v[3] && sc.bbox[3] > v[1])) continue;
+      const g = await tiff(sc.url);
+      if (gen !== warmGen) return;
+      const zone = sc.epsg % 100, south = Math.floor(sc.epsg / 100) === 327;
+      const [a, , c, , e, f] = g.transform;
+      let c0 = Infinity, c1 = -Infinity, r0 = Infinity, r1 = -Infinity;
+      for (const [lon, lat] of [[v[0], v[1]], [v[0], v[3]], [v[2], v[1]], [v[2], v[3]], [(v[0] + v[2]) / 2, v[1]], [(v[0] + v[2]) / 2, v[3]]]) {
+        const [x, y] = utm(lon, lat, zone, south);
+        const col = (x - c) / a, row = (y - f) / e;
+        (c0 = Math.min(c0, col)), (c1 = Math.max(c1, col)), (r0 = Math.min(r0, row)), (r1 = Math.max(r1, row));
+      }
+      const tx0 = Math.max(0, Math.floor(c0 / g.tileWidth)), tx1 = Math.min(Math.ceil(g.width / g.tileWidth) - 1, Math.floor(c1 / g.tileWidth));
+      const ty0 = Math.max(0, Math.floor(r0 / g.tileHeight)), ty1 = Math.min(Math.ceil(g.height / g.tileHeight) - 1, Math.floor(r1 / g.tileHeight));
+      for (let ty = ty0; ty <= ty1; ty++)
+        for (let tx = tx0; tx <= tx1; tx++) {
+          await tileRgba(g, tx, ty).catch(() => {});
+          if (gen !== warmGen) return;
+        }
+    }
+  }
+
   let chain: Promise<void> = Promise.resolve();
-  /** Finds the year's pass for the view, then every other year's after it, one year at a time. */
+  /** the pick for the year on screen, the latest asked: the other years' picks wait on it */
+  let lead: Promise<void> = Promise.resolve();
+  let warmGen = 0;
+  /**
+   * Finds the year's pass for the view, then every other year's after it, one year at a time, each read ahead for the
+   * view as it is found (the year shown first). Lazily: one thing at a time, and dropped when the view moves on.
+   */
   function discover(year: number) {
     const i = recent.indexOf(year);
     if (i >= 0) recent.splice(i, 1);
     recent.push(year);
-    choose(year).then(() => {
+    const gen = ++warmGen;
+    const first = choose(year);
+    lead = first.catch(() => {});
+    first.then(() => {
       chain = chain.then(async () => {
-        for (const y of S2_YEARS) if (y !== year) await choose(y).catch(() => {});
+        for (const y of [year, ...S2_YEARS.filter((v) => v !== year)]) {
+          if (gen !== warmGen) return;
+          await choose(y).catch(() => {});
+          await warmView(y, gen).catch(() => {});
+        }
       });
     });
   }
 
-  /** The year's next clear pass (another is looked for when none is left). */
+  /**
+   * The year's next clear pass over the view as it is now (another is looked for when none is left). When the view
+   * has changed since the year's passes were checked, they are checked again over this view, the pass on screen last,
+   * so the next look is another pass that is clear here.
+   */
   function next(year: number) {
+    const v = viewBox();
+    if (v[2] - v[0] > 4 || v[3] - v[1] > 4) return;
     const s = years.get(year);
-    if (!s) return;
-    if (s.look + 1 < s.clear.length) s.look++;
-    else if (!s.done && s.queue.length)
+    // the look on screen, for back()
+    const was = s && shownOf(s);
+    if (was) {
+      const h = looked.get(year) ?? [];
+      if (h[h.length - 1]?.key !== was.key) h.push(was);
+      if (h.length > 20) h.shift();
+      looked.set(year, h);
+    }
+    if (!s || s.view.some((x, i) => x !== v[i])) {
+      const shown = s ? shownOf(s) : null;
+      const ns: YearState = { view: v, hold: grow(v, 0.25), clear: [], look: 0, queue: [], best: null, prev: shown, busy: false, done: false };
+      years.set(year, ns);
+      onChange();
+      passes(year, ns.hold).then(
+        (ps) => {
+          if (years.get(year) !== ns) return;
+          ns.queue = shown ? [...ps.filter((p) => p.key !== shown.key), ...ps.filter((p) => p.key === shown.key)] : ps;
+          return fill(year, ns, 1).then(() => matchTo(year));
+        },
+        () => years.get(year) === ns && years.delete(year),
+      );
+      return;
+    }
+    if (s.look + 1 < s.clear.length) {
+      s.look++;
+      matchTo(year);
+    } else if (!s.done && s.queue.length)
       fill(year, s, s.clear.length + 1).then(() => {
         if (s.look + 1 < s.clear.length) s.look++;
         else s.look = 0;
         onChange();
+        matchTo(year);
       });
-    else s.look = 0;
+    else {
+      s.look = 0;
+      matchTo(year);
+    }
+  }
+
+  /** The looks N stepped away from, by year, the latest last. */
+  const looked = new Map<number, Rated[]>();
+  /** Back to the year's look before the last N (Shift+N), over and over back through what N showed. */
+  function back(year: number) {
+    const h = looked.get(year);
+    const p = h?.pop();
+    if (!p) return;
+    const s = years.get(year);
+    if (!s) return;
+    const i = s.clear.findIndex((c) => c.key === p.key);
+    // a look from before the view's passes were checked again: put back in the list where it is shown
+    if (i >= 0) s.look = i;
+    else s.clear.splice((s.look = s.clear.length ? s.look % s.clear.length : 0), 0, p);
+    onChange();
+    matchTo(year);
   }
 
   /** The day of the year's pass, or "" before one is chosen. */
@@ -343,7 +475,7 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
     return s.clear.length ? "clear" : "cloudy";
   }
 
-  function layerOf(year: number, p: Rated, visible: boolean, beforeId: string | undefined, tag: string) {
+  function layerOf(year: number, p: Rated, visible: boolean, beforeId: string | undefined, tag: string, extra: Record<string, unknown> = {}) {
     return new MosaicLayer({
       id: `s2${tag}-${year}-${p.key}`,
       sources: p.scenes,
@@ -364,24 +496,95 @@ export function createS2(map: maplibregl.Map, onChange: () => void) {
               signal,
               refinementStrategy: "best-available",
               maxRequests: 16,
+              // a mask and its extension, from the first tile (a tile layer given them later keeps its old drawing)
+              ...extra,
             } as never),
     } as never);
   }
 
   /**
    * The year's imagery (hidden but loading when not `visible`), with the last few years asked for kept loaded and
-   * hidden beside it. `tag` keeps a second map's layer ids apart.
+   * hidden beside it. `tag` keeps a second map's layer ids apart; `extra` goes on each scene's layer (a mask).
    */
-  function layers(year: number, visible: boolean, beforeId?: string, tag = "") {
+  function layers(year: number, visible: boolean, beforeId?: string, tag = "", extra: Record<string, unknown> = {}) {
     poolGet();
     const ys = [...recent.filter((y) => y !== year).slice(-WARM), year];
     const out = [];
     for (const y of ys) {
       const s = years.get(y), p = s && shownOf(s);
-      if (p) out.push(layerOf(y, p, visible && y === year, beforeId, tag));
+      if (p) out.push(layerOf(y, p, visible && y === year, beforeId, tag, extra));
     }
     return out;
   }
 
-  return { discover, layers, dateAt, status, next };
+  /**
+   * Up to `n` clear passes of the year over the view (more checked as needed), the one shown first; the least cloudy
+   * checked when none is clear.
+   */
+  async function candidates(year: number, n: number): Promise<Rated[]> {
+    await choose(year).catch(() => {});
+    const s = years.get(year);
+    if (!s) return [];
+    while (s.busy) await new Promise((r) => setTimeout(r, 150));
+    if (years.get(year) === s) await fill(year, s, n).catch(() => {});
+    const shown = shownOf(s);
+    const out = s.clear.length ? [...s.clear] : shown ? [shown] : [];
+    if (shown) out.sort((a, b) => (a === shown ? -1 : b === shown ? 1 : 0));
+    return out.slice(0, n);
+  }
+  /** The year's pass shown, once chosen. */
+  async function shownPass(year: number): Promise<Rated | null> {
+    await choose(year).catch(() => {});
+    const s = years.get(year);
+    if (!s) return null;
+    for (let i = 0; i < 200 && !shownOf(s); i++) await new Promise((r) => setTimeout(r, 150));
+    return shownOf(s);
+  }
+  /**
+   * A pass at the points (lon, lat pairs): each point's true color (TCI) and SCL class, from the first of its scenes
+   * with data there; class 0 and color 0 where none has. `span`: the points' extent in meters, for the level read.
+   */
+  async function sample(p: Rated, pts: Float64Array, span: number) {
+    const n = pts.length / 2, rgb = new Uint8Array(3 * n), cls = new Uint8Array(n);
+    let W = Infinity, S = Infinity, E = -Infinity, N = -Infinity;
+    for (let i = 0; i < n; i++) (W = Math.min(W, pts[2 * i])), (E = Math.max(E, pts[2 * i])), (S = Math.min(S, pts[2 * i + 1])), (N = Math.max(N, pts[2 * i + 1]));
+    const over = p.scenes.filter((sc) => sc.bbox[0] < E && sc.bbox[2] > W && sc.bbox[1] < N && sc.bbox[3] > S);
+    const got = await Promise.all(
+      over.map(async (sc) => {
+        const [c, l] = await Promise.all([readAt(sc.url, sc, pts, span, 3), readAt(sc.scl, sc, pts, span, 1)]).catch(() => [null, null]);
+        return c && l ? { c, l } : null;
+      }),
+    );
+    for (let i = 0; i < n; i++)
+      for (const g of got) {
+        if (!g || !g.l[i]) continue;
+        cls[i] = g.l[i];
+        rgb.set(g.c.subarray(3 * i, 3 * i + 3), 3 * i);
+        break;
+      }
+    return { rgb, cls };
+  }
+  const isBad = (c: number) => BAD.has(c);
+
+  /** The years given chosen for the view now, side by side, ahead of the rest (each kept if already chosen near here). */
+  function want(ys: number[]) {
+    // after the year on screen has its pass, so these are chosen near its day
+    for (const y of ys) lead.then(() => choose(y)).catch(() => {});
+  }
+
+  /** A given pass of the year, shown. */
+  function layerForPass(year: number, p: Rated, tag: string, extra: Record<string, unknown> = {}) {
+    poolGet();
+    return [layerOf(year, p, true, undefined, tag, extra)];
+  }
+
+  /** The year's pass alone, shown (none until it is chosen). `tag` keeps another map's layer ids apart; `extra` goes on
+   * each scene's layer (a mask). */
+  function layerFor(year: number, tag: string, extra: Record<string, unknown> = {}) {
+    poolGet();
+    const s = years.get(year), p = s && shownOf(s);
+    return p ? [layerOf(year, p, true, undefined, tag, extra)] : [];
+  }
+
+  return { discover, layers, layerFor, layerForPass, want, candidates, shownPass, sample, isBad, dateAt, status, next, back };
 }

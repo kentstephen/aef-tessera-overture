@@ -2,20 +2,22 @@ import maplibreCss from "maplibre-gl/dist/maplibre-gl.css?inline";
 import "./mesh-sampler";
 
 import { MapLibreOverlay as MapboxOverlay } from "@deck.gl/maplibre";
-import { PathLayer } from "@deck.gl/layers";
+import { COORDINATE_SYSTEM, LayerExtension } from "@deck.gl/core";
+import { MaskExtension } from "@deck.gl/extensions";
+import { BitmapLayer, LineLayer, PathLayer } from "@deck.gl/layers";
 import { GeoArrowPathLayer, GeoArrowPolygonLayer } from "@geoarrow/deck.gl-layers";
 import * as arrow from "apache-arrow";
 import * as maplibregl from "maplibre-gl";
 import maplibreWorker from "maplibre-gl/dist/maplibre-gl-worker.mjs?raw";
 import { Protocol } from "pmtiles";
 
-import { MIN_ZOOM, YEAR_ORIGIN } from "./aef";
+import { MIN_ZOOM, RES, X0, Y0, YEAR_ORIGIN } from "./aef";
 import { createCodesLayer, HALF_COL, type Look, pixelCenter, pixelOf, SEASON_COL, UNCLEAR, Y0_RAMP, YEAR_COL } from "./codes-layer";
 import decoderBin from "./decoder_month.bin?url";
 import { colorData, type FootJoin, joinColors, joinPixels, ringOf as footRing } from "./foot";
 // Earth Genome's yearly mosaics (eg-s2.ts) swapped for single scenes from Earth Search
 import { createS2, S2_YEARS } from "./es-s2";
-import { patchAt } from "./patch";
+import { outerShape, type Patch, patchAt, patchesIn } from "./patch";
 import decoderMeta from "./decoder_month.json";
 import type { WorldModel } from "./earthwork-cpu";
 import world from "./earthwork_world.json";
@@ -49,6 +51,26 @@ const CHEV = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke
 // from this zoom the view reads by itself once the map settles; below it nothing is read
 const AUTO_Z = MIN_ZOOM;
 const FIT_CLS = "sm-fit-on";
+
+// ---- the patches as windows (from the reveal branch): Sentinel-2 drawn only inside every patch's extent, deck.gl's
+// mask extension with the extents as one bitmap
+const WINDOW = new MaskExtension();
+// the mask: a bitmap of the extents, its clear pixels dropped so only the patches count
+class DiscardClear extends LayerExtension {
+  getShaders() {
+    return { inject: { "fs:DECKGL_FILTER_COLOR": "if (color.a < 0.5) discard;" } };
+  }
+}
+DiscardClear.extensionName = "DiscardClear";
+const DISCARD_CLEAR = new DiscardClear();
+// a BitmapLayer gives deck no bounds (its positions are not kept), so its mask was never drawn: its own bounds here
+class WindowMaskLayer extends BitmapLayer {
+  getBounds() {
+    const [w, s, e, n] = this.props.bounds as number[];
+    return [[w, s], [e, n]] as [number[], number[]];
+  }
+}
+WindowMaskLayer.layerName = "WindowMaskLayer";
 
 let protocolAdded = false;
 // maplibre's worker from the bundle itself, as a blob: the widget is one file with nothing beside it
@@ -87,7 +109,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     protocolAdded = true;
   }
 
-  const st = { look: { src: "ours", year: null } as Look, fit: true, folded: false, area: null as [number, number, number, number] | null, readId: 0, labels: true, picking: true, pair: false, holding: false, s2Year: S2_YEARS[S2_YEARS.length - 1] };
+  const st = { look: { src: "ours", year: null } as Look, fit: true, folded: false, area: null as [number, number, number, number] | null, readId: 0, labels: true, picking: true, pair: false, holding: false, s2Year: S2_YEARS[S2_YEARS.length - 1], lines: false };
   const E = (t: string, c?: string, h?: string) => {
     const e = document.createElement(t);
     if (c) e.className = c;
@@ -224,6 +246,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   // the arrays behind them, to tell a change; and a count for each, read by its layer's update trigger
   let lineRgba: Uint8Array | null = null, mapLineRgba: Uint8Array | null = null;
   let lineN = 0, mapLineN = 0;
+  // on the map with the patches as windows: silver, and none where the footprint touches a patch (the imagery shows
+  // that ground instead)
+  let winLine: ReturnType<typeof colorData> | null = null, winLineRgba: Uint8Array | null = null, winLineN = 0;
   // the basemap layer our raster, the footprints and their fade go under: its first road, so the streets stay over both
   let groundId = "foot";
   function loadFoot() {
@@ -236,7 +261,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     if (pinHi?.key.startsWith("a:")) pinHi = null;
     setL2();
     join = footBatch ? joinPixels(footBatch) : null;
-    line = mapLine = lineRgba = mapLineRgba = null;
+    line = mapLine = lineRgba = mapLineRgba = winLine = winLineRgba = null;
     recolor();
   }
   model.on("change:foot", loadFoot);
@@ -256,10 +281,11 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     if (!codes || !join) return render();
     const at = codes.at;
     const rgba = joinColors(join, at, st.look.year, (y) => YEAR_RGB[y - Y0_RAMP] ?? [0, 0, 0], QUARTER_RGB, UNCLEAR_RGB);
-    const ln = new Uint8Array(rgba.length), ml = new Uint8Array(rgba.length);
+    const ln = new Uint8Array(rgba.length), ml = new Uint8Array(rgba.length), wl = new Uint8Array(rgba.length);
     for (let r = 0; r < join.rows; r++) {
       const o = 4 * r, has = rgba[o + 3] > 0;
       ml.set(has ? DUG_LINE : FOOT_LINE, o);
+      if (!inPatch(r)) wl.set(FOOT_LINE, o);
       ln[o] = has ? rgba[o] : S2_LINE[0];
       ln[o + 1] = has ? rgba[o + 1] : S2_LINE[1];
       ln[o + 2] = has ? rgba[o + 2] : S2_LINE[2];
@@ -278,6 +304,12 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       mapLineRgba = ml;
       mapLine = colorData(ml, join.rows);
       mapLineN++;
+      changed = true;
+    }
+    if (!winLine || !same(winLineRgba, wl)) {
+      winLineRgba = wl;
+      winLine = colorData(wl, join.rows);
+      winLineN++;
       changed = true;
     }
     if (changed) render();
@@ -366,10 +398,94 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     joinSoon();
     render();
   }
+
+  // ---- the patches of dug ground in the area read (as the reveal branch finds them), found again as chunks come in (a
+  // few times a second at most): the windows the year's imagery shows through
+  let patches: Patch[] = [];
+  // every patch's outline as segments: their ends, and how many
+  let segSrc = new Float64Array(0), segTgt = new Float64Array(0), segN = 0, segV = 0;
+  // every patch's extent (what its outline encloses, holes filled) by row: [start, end, ...], to tell a footprint on one
+  let extRows = new Map<number, number[]>();
+  let patchT = 0;
+  function patchesSoon() {
+    clearTimeout(patchT);
+    patchT = window.setTimeout(findPatches, 400);
+  }
+  // each patch's outline and extent kept by its first run and size, so a patch unchanged as chunks come in is not
+  // closed again
+  let outlines = new Map<string, { edges: number[][]; ext: number[] }>();
+  // every patch's extent as one bitmap over them (coarser past 2048 across): the windows' mask
+  let winMask: { image: HTMLCanvasElement; bounds: [number, number, number, number] } | null = null;
+  function findPatches() {
+    if (!codes || !st.area) return;
+    patches = patchesIn(st.area, codes.chunk);
+    const kept = new Map<string, { edges: number[][]; ext: number[] }>();
+    const edges: number[] = [];
+    extRows = new Map();
+    for (const p of patches) {
+      const key = `${p.runs[0]}:${p.runs[1]}:${p.n}`;
+      const out = outlines.get(key) ?? outerShape(p.runs);
+      kept.set(key, out);
+      for (const e of out.edges) edges.push(e[0], e[1], e[2], e[3]);
+      const x = out.ext;
+      for (let k = 0; k < x.length; k += 3) {
+        const r = extRows.get(x[k]);
+        if (r) r.push(x[k + 1], x[k + 2]);
+        else extRows.set(x[k], [x[k + 1], x[k + 2]]);
+      }
+    }
+    outlines = kept;
+    winMask = maskOfRuns([...kept.values()].map((o) => o.ext));
+    segN = edges.length / 4;
+    segSrc = new Float64Array(2 * segN);
+    segTgt = new Float64Array(2 * segN);
+    for (let i = 0; i < segN; i++) {
+      segSrc[2 * i] = edges[4 * i];
+      segSrc[2 * i + 1] = edges[4 * i + 1];
+      segTgt[2 * i] = edges[4 * i + 2];
+      segTgt[2 * i + 1] = edges[4 * i + 3];
+    }
+    segV++;
+    // the footprints on a patch step aside (recolor draws again only when a color changed; the mask always needs it)
+    recolor();
+    render();
+  }
+  /** Whether any of a footprint's pixels lies in a patch's extent. */
+  function inPatch(row: number) {
+    if (!join) return false;
+    for (let i = join.start[row]; i < join.start[row + 1]; i++) {
+      const r = extRows.get(join.py[i]);
+      if (!r) continue;
+      const x = join.px[i];
+      for (let k = 0; k < r.length; k += 2) if (x >= r[k] && x < r[k + 1]) return true;
+    }
+    return false;
+  }
+  /** Runs [row, start, end, ...] (one list or several) as one bitmap over them, coarser past 2048 across; null for none. */
+  function maskOfRuns(lists: number[][]) {
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const r of lists) for (let i = 0; i < r.length; i += 3) (y0 = Math.min(y0, r[i])), (y1 = Math.max(y1, r[i] + 1)), (x0 = Math.min(x0, r[i + 1])), (x1 = Math.max(x1, r[i + 2]));
+    if (!(x1 > x0)) return null;
+    const f = Math.max(1, Math.ceil(Math.max(x1 - x0, y1 - y0) / 2048)), w = Math.ceil((x1 - x0) / f), h = Math.ceil((y1 - y0) / f);
+    const cv = document.createElement("canvas");
+    cv.width = w;
+    cv.height = h;
+    const img = new ImageData(w, h), d = img.data;
+    for (const r of lists)
+      for (let i = 0; i < r.length; i += 3) {
+        const row = Math.floor((r[i] - y0) / f);
+        for (let c = Math.floor((r[i + 1] - x0) / f); c < Math.ceil((r[i + 2] - x0) / f); c++) d.fill(255, 4 * (row * w + c), 4 * (row * w + c) + 4);
+      }
+    cv.getContext("2d")!.putImageData(img, 0, 0);
+    return { image: cv, bounds: [X0 + x0 * RES, Y0 - y1 * RES, X0 + x1 * RES, Y0 - y0 * RES] as [number, number, number, number] };
+  }
   // the imagery over the map itself: while space is held (our raster and the footprints step aside)
   const s2Shown = () => st.holding;
-  // the imagery anywhere: held, or on the pair's left
-  const imgShown = () => st.holding || st.pair;
+  // the patches as windows: the map, its footprints, and the year's imagery inside every patch (the view unless space
+  // is held or the map is paired)
+  const winShown = () => !st.holding && !st.pair;
+  // the imagery anywhere: held, on the pair's left, or through the patches
+  const imgShown = () => true;
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   function drawS2Card() {
     // as aef-earthwork-web's: the year, what it is, the zoom at the right; its keys under it. Always there, the year
@@ -451,7 +567,14 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     // the imagery under everything of ours: while it shows, our raster and the footprints step aside, the imagery alone
     // paired, the imagery is the left map's alone
     // over everything of the basemap's (no beforeId: drawn last), so no Carto label, road or line lands on the imagery
-    if (s2 && !st.pair) layers.push(...s2.layers(st.s2Year, s2Shown()));
+    if (s2 && st.holding) layers.push(...s2.layers(st.s2Year, true));
+    // through the patches: the mask first (every patch's extent), then the year's imagery inside it alone, over the
+    // basemap's roads and under its labels. The mask goes in the same slot: deck draws each slot apart in MapLibre, and a
+    // mask from another slot comes out empty. Hidden until there are patches (with no mask layer it would cover the view)
+    if (s2 && winShown()) {
+      if (winMask) layers.push(new WindowMaskLayer({ id: "win-mask", image: winMask.image, bounds: winMask.bounds, operation: "mask", extensions: [DISCARD_CLEAR], _imageCoordinateSystem: COORDINATE_SYSTEM.LNGLAT, beforeId: "foot" } as never));
+      layers.push(...s2.layers(st.s2Year, !!winMask, "foot", "w", { extensions: [WINDOW], maskId: "win-mask", maskByInstance: false }));
+    }
     if (map2 && overlay2) {
       l2 = st.pair && s2 ? s2.layers(st.s2Year, true, undefined, "l") : [];
       setL2();
@@ -491,11 +614,13 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
         minZoom: MIN_ZOOM,
         area: st.area,
         readId: st.readId,
-        visible: !s2Shown(),
+        // drawn only on the pair's right; elsewhere it only gives the patches
+        visible: st.pair,
         beforeId: groundId,
         onTile: () => {
           progressSoon();
           joinSoon();
+          patchesSoon();
         },
       }),
     );
@@ -512,7 +637,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
           visible: !s2Shown(),
           // on the imagery the outlines carry the years: solid, a pixel and a half; on the map, orchid where digging
           // is under the building, silver where not
-          getColor: (s2Shown() ? (line ?? FOOT_LINE) : (mapLine ?? FOOT_LINE)) as never,
+          // through the patches, silver, none on a patch
+          getColor: (s2Shown() ? (line ?? FOOT_LINE) : winShown() ? (winLine ?? FOOT_LINE) : (mapLine ?? FOOT_LINE)) as never,
           // in meters, so zoomed in they thicken up to four pixels; zoomed out they hold at their floor (a pixel and a
           // half on the imagery, half a pixel on the map, where they thin instead of adding up to a glare)
           getWidth: s2Shown() ? 3 : 2,
@@ -520,8 +646,21 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
           widthMinPixels: s2Shown() ? 1.5 : 0.5,
           widthMaxPixels: 4,
           _pathType: "loop",
-          updateTriggers: { getColor: [lineN, mapLineN, s2Shown()] },
+          updateTriggers: { getColor: [lineN, mapLineN, winLineN, s2Shown(), st.pair] },
           // read by the MapLibre overlay
+          beforeId: "foot",
+        } as never),
+      );
+    // the patches' outlines (O), over the imagery
+    if (segN && st.lines && winShown())
+      layers.push(
+        new LineLayer({
+          id: "patches",
+          data: { length: segN, attributes: { getSourcePosition: { value: segSrc, size: 2 }, getTargetPosition: { value: segTgt, size: 2 } } } as never,
+          getColor: DUG_LINE,
+          getWidth: 1.5,
+          widthUnits: "pixels",
+          updateTriggers: { getSourcePosition: segV, getTargetPosition: segV },
           beforeId: "foot",
         } as never),
       );
@@ -1183,6 +1322,11 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     // WSF commented out for now
     // else if (k === "c" || k === "C") setLook({ ...st.look, src: st.look.src === "ours" ? "wsf" : "ours" });
     else if (k === "h" || k === "H") setFold(!st.folded);
+    else if (k === "o" || k === "O") {
+      // the patches' outlines on or off
+      st.lines = !st.lines;
+      render();
+    }
     else if ((k === "n" || k === "N") && imgShown() && s2) {
       // the year's next look: another of its clear scenes
       s2.next(st.s2Year);
@@ -1300,7 +1444,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       drawS2Card();
       render();
     });
-    // the card is always there: drawn from the start, its year grayed until the imagery shows
+    // the card is always there; the imagery shows through the patches from the start
+    s2.discover(st.s2Year);
     drawS2Card();
     codes = await createCodesLayer(world as unknown as WorldModel, await decoderP, () => update());
     loadFoot();

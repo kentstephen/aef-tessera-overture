@@ -8,10 +8,11 @@ import { RES, X0, Y0 } from "./aef";
  */
 
 /**
- * Found ground this many pixels apart or less still joins into one patch (a building and its graded lot with a road or
- * a curb between them): 1, ten meters, one pixel not found between them.
+ * Found ground this many pixels apart or less still joins into one patch. The year map uses 1 (ten meters: a building
+ * and its graded lot with a road or a curb between them); here 0, pixels joined only where they touch by side or
+ * corner, so neighboring sites dug in different years stay apart.
  */
-export const PATCH_GAP = 1;
+export const PATCH_GAP = 0;
 
 type Run = [number, number];
 /** A row's columns (unsorted) as runs [start, end), row by row. */
@@ -115,10 +116,6 @@ function traceOutline(runsOf: Map<number, Run[]>) {
 }
 
 /**
- * The outlines of everything the year map found (any year up to `upTo`) in the chunks over a box, joined across years
- * and holes filled, as edges [lon, lat, lon, lat]; chunks not in hand count as nothing found. Null over more than
-
-/**
  * The patch under a pixel: every pixel `dug` says is dug joined to it by side or corner, or across a gap of PATCH_GAP
  * pixels, whatever its year. Its outer outline (holes filled) as edges [lon, lat, lon, lat]; null off dug ground, or
  * over `max` pixels.
@@ -153,4 +150,237 @@ export function patchAt(px: number, py: number, dug: (gx: number, gy: number) =>
     first = Math.min(first, key(qx[q], qy[q]));
   }
   return { edges: traceOutline(runsFrom(xsOf)).edges, n: qx.length, first };
+}
+
+/**
+ * A patch's outline from its runs ([row, start, end, ...] of the whole grid, as patchesIn gives them), holes filled,
+ * as edges [lon, lat, lon, lat]. As the year map's outlineOfRuns.
+ */
+export function outlineOfRuns(runs: number[]) {
+  const runsOf = new Map<number, Run[]>();
+  for (let i = 0; i < runs.length; i += 3) {
+    const rs = runsOf.get(runs[i]);
+    if (rs) rs.push([runs[i + 1], runs[i + 2]]);
+    else runsOf.set(runs[i], [[runs[i + 1], runs[i + 2]]]);
+  }
+  for (const rs of runsOf.values()) rs.sort((u, v) => u[0] - v[0]);
+  return traceOutline(runsOf).edges;
+}
+
+/** A patch's runs ([row, start, end, ...]) with its holes filled, the same layout. */
+export function filledRuns(runs: number[]) {
+  const runsOf = new Map<number, Run[]>();
+  for (let i = 0; i < runs.length; i += 3) {
+    const rs = runsOf.get(runs[i]);
+    if (rs) rs.push([runs[i + 1], runs[i + 2]]);
+    else runsOf.set(runs[i], [[runs[i + 1], runs[i + 2]]]);
+  }
+  for (const rs of runsOf.values()) rs.sort((u, v) => u[0] - v[0]);
+  const out: number[] = [];
+  for (const [y, rs] of traceOutline(runsOf).filled) for (const [s0, e] of rs) out.push(y, s0, e);
+  return out;
+}
+
+/** A chunk of the codes: its size, and each pixel's year bits (bit k: dug in the pair of years ending FIRST_YEAR + k). */
+export type BitsChunk = { width: number; height: number; bits: Uint8Array };
+/** The year bit 0 stands for (dug between 2017 and 2018). */
+export const FIRST_YEAR = 2018;
+const NY = 8;
+
+export type Patch = {
+  /** its pixels, and its box [W, S, E, N] */
+  n: number;
+  box: [number, number, number, number];
+  /** pixels first dug each year, and pixels last dug each year (the year the map colored them by), FIRST_YEAR on */
+  years: number[];
+  lastYears: number[];
+  /** the earliest year any of it was dug, the year most of it was first dug, and the latest year any of it was dug */
+  first: number;
+  main: number;
+  last: number;
+  /** its pixels as runs [row, start, end, ...] of the whole grid */
+  runs: number[];
+};
+
+/**
+ * The patches over a box, as the year map's patchesIn finds them (copied, read from this widget's chunks of year bits
+ * in place of its paint scores): every pixel dug in any year joined to its neighbors by side or corner, or across a gap
+ * of PATCH_GAP pixels, whatever its year. Chunks not in hand count as nothing dug. Largest first.
+ */
+export function patchesIn(bbox: [number, number, number, number], chunkAt: (r: number, c: number) => BitsChunk | null, chunk = 256): Patch[] {
+  const [W, S, E, N] = bbox;
+  const c0 = Math.floor((W - X0) / RES / chunk), c1 = Math.floor((E - X0) / RES / chunk);
+  const r0 = Math.floor((Y0 - N) / RES / chunk), r1 = Math.floor((Y0 - S) / RES / chunk);
+  // the runs found, row by row from the north, each row from the west: row, start, end, its pixels' first years in fy
+  const ry: number[] = [], rs: number[] = [], re: number[] = [], rf: number[] = [];
+  // each run's latest year dug (the highest bit of any of its pixels)
+  const rl: number[] = [];
+  // each pixel's latest year dug, beside its first in fy
+  let ly = new Uint8Array(1 << 20);
+  let fy = new Uint8Array(1 << 20), nf = 0;
+  const parent: number[] = [];
+  const find = (i: number): number => {
+    while (parent[i] !== i) i = parent[i] = parent[parent[i]];
+    return i;
+  };
+  const rowRuns = new Map<number, [number, number]>();
+  const join = (i: number, j: number) => {
+    const x = find(i), y = find(j);
+    if (x !== y) parent[x] = y;
+  };
+  for (let r = r0; r <= r1; r++) {
+    const ps: (BitsChunk | null)[] = [];
+    for (let c = c0; c <= c1; c++) ps.push(chunkAt(r, c));
+    for (let iy = 0; iy < chunk; iy++) {
+      const gy = r * chunk + iy, cur0 = ry.length;
+      let open = -1; // the run going on, -1 none
+      for (let j = 0; j < ps.length; j++) {
+        const p = ps[j];
+        if (!p || iy >= p.height) { open = -1; continue; }
+        const gx0 = (c0 + j) * chunk, row = iy * p.width;
+        for (let ix = 0; ix < p.width; ix++) {
+          const b = p.bits[row + ix];
+          if (!b) { open = -1; continue; }
+          if (nf === fy.length) {
+            const g = new Uint8Array(fy.length * 2), h = new Uint8Array(fy.length * 2);
+            g.set(fy);
+            h.set(ly);
+            fy = g;
+            ly = h;
+          }
+          ly[nf] = 31 - Math.clz32(b);
+          // its first year: the lowest bit
+          fy[nf++] = 31 - Math.clz32(b & -b);
+          const hb = 31 - Math.clz32(b);
+          const gx = gx0 + ix;
+          if (open >= 0 && re[open] === gx) {
+            re[open] = gx + 1;
+            if (hb > rl[open]) rl[open] = hb;
+          } else {
+            open = ry.length;
+            ry.push(gy); rs.push(gx); re.push(gx + 1); rf.push(nf - 1); rl.push(hb); parent.push(open);
+            // the run before it in this row, across a gap of PATCH_GAP pixels or less
+            if (open > cur0 && gx - re[open - 1] <= PATCH_GAP) join(open, open - 1);
+          }
+        }
+        if (p.width < chunk) open = -1;
+      }
+      // this row's runs joined to the runs of the rows above within PATCH_GAP + 1 pixels (by side or corner, or across
+      // the gap)
+      for (let d = 1; d <= PATCH_GAP + 1; d++) {
+        const up = rowRuns.get(gy - d);
+        if (!up) continue;
+        const [p0, p1] = up;
+        let a = p0;
+        for (let b = cur0; b < ry.length; b++) {
+          while (a < p1 && re[a] < rs[b] - PATCH_GAP) a++;
+          for (let k = a; k < p1 && rs[k] <= re[b] + PATCH_GAP; k++) join(b, k);
+        }
+      }
+      if (ry.length > cur0) rowRuns.set(gy, [cur0, ry.length]);
+      rowRuns.delete(gy - PATCH_GAP - 2);
+    }
+  }
+  type P = { n: number; x0: number; x1: number; y0: number; y1: number; years: number[]; lastYears: number[]; last: number; runs: number[] };
+  const by = new Map<number, P>();
+  for (let i = 0; i < ry.length; i++) {
+    const root = find(i);
+    let q = by.get(root);
+    if (!q) by.set(root, (q = { n: 0, x0: rs[i], x1: re[i], y0: ry[i], y1: ry[i] + 1, years: new Array(NY).fill(0), lastYears: new Array(NY).fill(0), last: 0, runs: [] }));
+    const len = re[i] - rs[i];
+    q.n += len;
+    q.last = Math.max(q.last, rl[i]);
+    q.x0 = Math.min(q.x0, rs[i]);
+    q.x1 = Math.max(q.x1, re[i]);
+    q.y0 = Math.min(q.y0, ry[i]);
+    q.y1 = Math.max(q.y1, ry[i] + 1);
+    for (let k = rf[i]; k < rf[i] + len; k++) {
+      q.years[fy[k]]++;
+      q.lastYears[ly[k]]++;
+    }
+    q.runs.push(ry[i], rs[i], re[i]);
+  }
+  const lonOf = (gx: number) => X0 + gx * RES, latOf = (gy: number) => Y0 - gy * RES;
+  return [...by.values()]
+    .sort((u, v) => v.n - u.n)
+    .map((q) => {
+      const m = Math.max(...q.years);
+      return {
+        n: q.n,
+        box: [lonOf(q.x0), latOf(q.y1), lonOf(q.x1), latOf(q.y0)] as [number, number, number, number],
+        years: q.years,
+        lastYears: q.lastYears,
+        first: FIRST_YEAR + q.years.findIndex((v) => v > 0),
+        main: FIRST_YEAR + q.years.indexOf(m),
+        last: FIRST_YEAR + q.last,
+        runs: q.runs,
+      };
+    });
+}
+
+/**
+ * A patch's outer extent: its pixels closed by `close` pixels (grown by it and shrunk back, square and diamond steps in
+ * turn, as the year map's tidyBits closes its calls), so inlets and channels up to twice that wide are filled, then its
+ * outer edge, holes filled, as edges [lon, lat, lon, lat].
+ */
+export function outerOutline(runs: number[], close = 3) {
+  return traceOutline(closedRuns(runs, close)).edges;
+}
+
+/** A patch's pixels closed by `close` pixels, row by row as runs [start, end) of the whole grid (holes not filled). */
+export function closedRuns(runs: number[], close = 3) {
+  const runsOf = new Map<number, Run[]>();
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (let i = 0; i < runs.length; i += 3) (y0 = Math.min(y0, runs[i])), (y1 = Math.max(y1, runs[i] + 1)), (x0 = Math.min(x0, runs[i + 1])), (x1 = Math.max(x1, runs[i + 2]));
+  if (!(x1 > x0)) return runsOf;
+  // the patch's box with room to grow, as a grid
+  const ox = x0 - close, oy = y0 - close, w = x1 - x0 + 2 * close, h = y1 - y0 + 2 * close;
+  let a = new Uint8Array(w * h), b = new Uint8Array(w * h);
+  for (let i = 0; i < runs.length; i += 3) a.fill(1, (runs[i] - oy) * w + runs[i + 1] - ox, (runs[i] - oy) * w + runs[i + 2] - ox);
+  const step = (src: Uint8Array, dst: Uint8Array, grow: boolean, square: boolean) => {
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++) {
+        let any = 0, all = 1;
+        for (let dy = -1; dy <= 1; dy++)
+          for (let dx = -1; dx <= 1; dx++) {
+            if (!square && dx && dy) continue;
+            const xx = x + dx, yy = y + dy;
+            const v = xx < 0 || yy < 0 || xx >= w || yy >= h ? 0 : src[yy * w + xx];
+            any |= v;
+            all &= v;
+          }
+        dst[y * w + x] = grow ? any : all;
+      }
+  };
+  for (const grow of [true, false])
+    for (let k = 0; k < close; k++) {
+      step(a, b, grow, k % 2 === 0);
+      [a, b] = [b, a];
+    }
+  for (let y = 0; y < h; y++) {
+    const rs: Run[] = [];
+    for (let x = 0; x < w; x++) {
+      if (!a[y * w + x]) continue;
+      const r = rs[rs.length - 1];
+      if (r && r[1] === ox + x) r[1]++;
+      else rs.push([ox + x, ox + x + 1]);
+    }
+    if (rs.length) runsOf.set(oy + y, rs);
+  }
+  return runsOf;
+}
+
+/** A patch's outer extent as runs [row, start, end, ...]: closed by `close` pixels, holes filled (what its outline encloses). */
+export function extentRuns(runs: number[], close = 3) {
+  const out: number[] = [];
+  for (const [y, rs] of traceOutline(closedRuns(runs, close)).filled) for (const [s0, e] of rs) out.push(y, s0, e);
+  return out;
+}
+
+/** A patch's outer outline (edges [lon, lat, lon, lat]) and the extent it encloses (runs [row, start, end, ...]), closed by `close` pixels, holes filled. */
+export function outerShape(runs: number[], close = 3) {
+  const t = traceOutline(closedRuns(runs, close));
+  const ext: number[] = [];
+  for (const [y, rs] of t.filled) for (const [s0, e] of rs) ext.push(y, s0, e);
+  return { edges: t.edges, ext };
 }

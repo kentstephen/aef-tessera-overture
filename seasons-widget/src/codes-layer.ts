@@ -277,7 +277,7 @@ export async function createCodesLayer(model: WorldModel, decoder: { w: Float32A
         let r: { ours: Uint8Array; bits: Uint8Array; wsf: Uint8Array };
         try {
           // tried again on a failure (a read that gave up): deck.gl keeps a failed tile empty and never asks for it
-          // again, so a building over it would show no digging until a reload
+          // again, so a patch reaching into it would end in a straight line at the chunk's edge until a reload
           for (let k = 0; ; k++) {
             try {
               r = await ask<{ ours: Uint8Array; bits: Uint8Array; wsf: Uint8Array }>({ type: "codes", px0, py0, w: width, h: height, allIdx: ALL_IDX }, o.signal);
@@ -372,7 +372,10 @@ export async function createCodesLayer(model: WorldModel, decoder: { w: Float32A
     return { done, wanted };
   }
 
-  return { layer, setLook, loadedIn, quartersIn, at, seasonsReady, work: () => ({ ...work }), version: () => version };
+  /** The chunk on hand at a chunk row and column (null where it is not). */
+  const chunk = (r: number, c: number) => live.get(keyOf(r, c)) ?? null;
+
+  return { layer, setLook, loadedIn, quartersIn, at, chunk, seasonsReady, work: () => ({ ...work }), version: () => version };
 }
 
 /** Lon/lat to the mosaic pixel. */

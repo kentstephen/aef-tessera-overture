@@ -113,3 +113,7 @@
 .sm.clean .card .legend{display:flex;margin-top:0}
 .sm.clean .card .body,.sm.clean .card .cb{display:none}
 .sm.clean .hd{cursor:default;pointer-events:none}
+
+/* the "Dug by year" card only beside the raster it reads: on the pair's right. Through the patches nothing is colored
+   by year */
+.sm:not(.pair) .card{display:none}
