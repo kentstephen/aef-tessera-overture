@@ -12,7 +12,7 @@ import { MIN_ZOOM, RES, X0, Y0 } from "./aef";
 import { createCodesLayer, pixelOf } from "./codes-layer";
 import decoderBin from "./decoder_month.bin?url";
 import { createS2, type Rated, S2_YEARS } from "./es-s2";
-import { extentRuns, FIRST_YEAR, outerOutline, type Patch, patchesIn } from "./patch";
+import { extentRuns, FIRST_YEAR, outerOutline, outerShape, type Patch, patchesIn } from "./patch";
 import decoderMeta from "./decoder_month.json";
 import type { WorldModel } from "./earthwork-cpu";
 import world from "./earthwork_world.json";
@@ -86,6 +86,8 @@ class SpotExtension extends MaskExtension {
 }
 SpotExtension.extensionName = "SpotExtension";
 const SPOT = new SpotExtension();
+// the reveal: the latest year drawn only inside the patches (deck.gl's mask extension, the patches' extents the mask)
+const REVEAL = new MaskExtension();
 // the mask: a bitmap of the patch's pixels, its clear pixels dropped so only the patch counts
 class DiscardClear extends LayerExtension {
   getShaders() {
@@ -135,7 +137,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     document.head.appendChild(s);
   }
 
-  const st = { fit: true, area: null as [number, number, number, number] | null, readId: 0, s2Year: S2_YEARS[S2_YEARS.length - 1], open: null as Patch | null, lines: true, panelLines: true };
+  const st = { fit: true, area: null as [number, number, number, number] | null, readId: 0, s2Year: S2_YEARS[0], open: null as Patch | null, lines: true, panelLines: true, reveal: true };
+  // the reveal (R): the map in st.s2Year (2017 to start), and inside every patch in view this year instead
+  const REVEAL_YEAR = S2_YEARS[S2_YEARS.length - 1];
   const E = (t: string, c?: string, h?: string) => {
     const e = document.createElement(t);
     if (c) e.className = c;
@@ -254,19 +258,22 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     clearTimeout(patchT);
     patchT = window.setTimeout(findPatches, 400);
   }
-  // each patch's outer outline kept by its first run and size, so a patch unchanged as chunks come in is not closed again
-  let outlines = new Map<string, number[][]>();
+  // each patch's outer outline and extent kept by its first run and size, so a patch unchanged as chunks come in is not
+  // closed again
+  let outlines = new Map<string, { edges: number[][]; ext: number[] }>();
+  // every patch's extent as one bitmap over them (coarser past 2048 across): the reveal's mask
+  let revealMask: { image: HTMLCanvasElement; bounds: [number, number, number, number] } | null = null;
   function findPatches() {
     if (!codes || !st.area) return;
     patches = patchesIn(st.area, codes.chunk);
-    const kept = new Map<string, number[][]>();
+    const kept = new Map<string, { edges: number[][]; ext: number[] }>();
     const edges: number[] = [];
     rowsOf = new Map();
     patches.forEach((p, i) => {
       const key = `${p.runs[0]}:${p.runs[1]}:${p.n}`;
-      const out = outlines.get(key) ?? outerOutline(p.runs);
+      const out = outlines.get(key) ?? outerShape(p.runs);
       kept.set(key, out);
-      for (const e of out) edges.push(e[0], e[1], e[2], e[3]);
+      for (const e of out.edges) edges.push(e[0], e[1], e[2], e[3]);
       for (let k = 0; k < p.runs.length; k += 3) {
         const r = rowsOf.get(p.runs[k]);
         if (r) r.push(p.runs[k + 1], p.runs[k + 2], i);
@@ -274,6 +281,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       }
     });
     outlines = kept;
+    revealMask = maskOfRuns([...kept.values()].map((o) => o.ext));
     segN = edges.length / 4;
     segSrc = new Float64Array(2 * segN);
     segTgt = new Float64Array(2 * segN);
@@ -310,8 +318,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     const z = map.getZoom();
     s2Card.innerHTML =
       `<div class="s2hd"><b>${st.s2Year}</b><span>Sentinel-2<br>${day}</span><span class="zw">z<br><i class="z">${z.toFixed(1)}</i></span></div>` +
-      `<div class="keys"><span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${ends}</span><span><kbd>N</kbd> new look</span><span><kbd>O</kbd> outlines</span><span><kbd>C</kbd> color</span></div>` +
-      `<div class="pnote">${z < AUTO_Z ? `Zoom in to ${AUTO_Z} to outline the dug ground` : `<i></i>Dug ground, 2018 to 2025. Click a patch for its years`}</div>`;
+      `<div class="keys"><span><kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${ends}</span><span><kbd>N</kbd> new look</span><span><kbd>R</kbd> reveal</span><span><kbd>O</kbd> outlines</span><span><kbd>C</kbd> color</span></div>` +
+      `<div class="pnote">${z < AUTO_Z ? `Zoom in to ${AUTO_Z} to outline the dug ground` : (st.reveal ? `<i></i>Dug ground, 2018 to 2025: ${REVEAL_YEAR} inside, ${st.s2Year} around. Click a patch for both` : `<i></i>Dug ground, 2018 to 2025. Click a patch for its years`)}</div>`;
   }
   function stepS2(d: number) {
     const i = Math.max(0, Math.min(S2_YEARS.length - 1, S2_YEARS.indexOf(st.s2Year) + d));
@@ -328,6 +336,12 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     if (!ready || !codes) return;
     const layers: unknown[] = [];
     if (s2) layers.push(...s2.layers(st.s2Year, true));
+    // the reveal: the latest year over it, only inside the patches (the mask first; the masked layers given it from
+    // their first tile)
+    if (s2 && st.reveal && revealMask) {
+      layers.push(new SpotMaskLayer({ id: "reveal-mask", image: revealMask.image, bounds: revealMask.bounds, operation: "mask", extensions: [DISCARD_CLEAR], _imageCoordinateSystem: COORDINATE_SYSTEM.LNGLAT } as never));
+      layers.push(...s2.layerFor(REVEAL_YEAR, "rv", { extensions: [REVEAL], maskId: "reveal-mask", maskByInstance: false }));
+    }
     if (st.area)
       layers.push(
         codes.layer({
@@ -394,19 +408,22 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   }
   /** The open patch's outer extent (what its outline encloses) as one bitmap over its box, coarser past 2048 across. */
   let openMask: { image: HTMLCanvasElement; bounds: [number, number, number, number] } | null = null;
-  function maskOf(p: Patch) {
-    const r = extentRuns(p.runs);
+  const maskOf = (p: Patch) => maskOfRuns([extentRuns(p.runs)])!;
+  /** Runs [row, start, end, ...] (one list or several) as one bitmap over them, coarser past 2048 across; null for none. */
+  function maskOfRuns(lists: number[][]) {
     let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-    for (let i = 0; i < r.length; i += 3) (y0 = Math.min(y0, r[i])), (y1 = Math.max(y1, r[i] + 1)), (x0 = Math.min(x0, r[i + 1])), (x1 = Math.max(x1, r[i + 2]));
+    for (const r of lists) for (let i = 0; i < r.length; i += 3) (y0 = Math.min(y0, r[i])), (y1 = Math.max(y1, r[i] + 1)), (x0 = Math.min(x0, r[i + 1])), (x1 = Math.max(x1, r[i + 2]));
+    if (!(x1 > x0)) return null;
     const f = Math.max(1, Math.ceil(Math.max(x1 - x0, y1 - y0) / 2048)), w = Math.ceil((x1 - x0) / f), h = Math.ceil((y1 - y0) / f);
     const cv = document.createElement("canvas");
     cv.width = w;
     cv.height = h;
     const img = new ImageData(w, h), d = img.data;
-    for (let i = 0; i < r.length; i += 3) {
-      const row = Math.floor((r[i] - y0) / f);
-      for (let c = Math.floor((r[i + 1] - x0) / f); c < Math.ceil((r[i + 2] - x0) / f); c++) d.fill(255, 4 * (row * w + c), 4 * (row * w + c) + 4);
-    }
+    for (const r of lists)
+      for (let i = 0; i < r.length; i += 3) {
+        const row = Math.floor((r[i] - y0) / f);
+        for (let c = Math.floor((r[i + 1] - x0) / f); c < Math.ceil((r[i + 2] - x0) / f); c++) d.fill(255, 4 * (row * w + c), 4 * (row * w + c) + 4);
+      }
     cv.getContext("2d")!.putImageData(img, 0, 0);
     return { image: cv, bounds: [X0 + x0 * RES, Y0 - y1 * RES, X0 + x1 * RES, Y0 - y0 * RES] as [number, number, number, number] };
   }
@@ -863,7 +880,13 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       sizes();
     } else if (st.open) return;
     // the rest move the map or its imagery: not while the panels are open
-    else if (k === "[" || k === "]") stepS2(k === "]" ? 1 : -1);
+    else if (k === "r" || k === "R") {
+      // the reveal on or off: the latest year inside every patch, the year shown around them
+      st.reveal = !st.reveal;
+      drawS2Card();
+      draw();
+      note(st.reveal ? `Reveal: ${REVEAL_YEAR} inside the patches (R)` : "Reveal off (R)");
+    } else if (k === "[" || k === "]") stepS2(k === "]" ? 1 : -1);
     else if (k === "b" || k === "B") {
       // from any year to the latest, then back and forth between the first and the latest
       const last = S2_YEARS.length - 1, i = S2_YEARS.indexOf(st.s2Year);
@@ -891,6 +914,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   map.on("moveend", progressSoon);
   map.on("moveend", () => {
     s2?.discover(st.s2Year);
+    s2?.want([REVEAL_YEAR]);
     drawS2Card();
     draw();
   });
@@ -915,6 +939,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       if (st.open) drawPanels();
     });
     s2.discover(st.s2Year);
+    s2.want([REVEAL_YEAR]);
     drawS2Card();
     codes = await createCodesLayer(world as unknown as WorldModel, await decoderP, () => draw());
     ready = true;

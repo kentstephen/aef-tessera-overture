@@ -376,3 +376,11 @@ export function extentRuns(runs: number[], close = 3) {
   for (const [y, rs] of traceOutline(closedRuns(runs, close)).filled) for (const [s0, e] of rs) out.push(y, s0, e);
   return out;
 }
+
+/** A patch's outer outline (edges [lon, lat, lon, lat]) and the extent it encloses (runs [row, start, end, ...]), closed by `close` pixels, holes filled. */
+export function outerShape(runs: number[], close = 3) {
+  const t = traceOutline(closedRuns(runs, close));
+  const ext: number[] = [];
+  for (const [y, rs] of t.filled) for (const [s0, e] of rs) ext.push(y, s0, e);
+  return { edges: t.edges, ext };
+}
