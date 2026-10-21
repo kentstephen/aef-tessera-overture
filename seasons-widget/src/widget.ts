@@ -44,6 +44,15 @@ const DUG_LINE: [number, number, number, number] = [240, 165, 255, 255];
 // a footprint with no digging under it: a neutral gray with no hue to mix up with any year of the ramp (seen normally
 // or with protanopia), light enough to hold an edge on the dark basemap
 const FOOT_LINE: [number, number, number, number] = [184, 184, 184, 210];
+// the footprints' outline on the map (C cycles it, to find one that reads): silver, cyan, pale yellow, white, light blue
+const FOOT_COLS: { name: string; rgba: [number, number, number, number] }[] = [
+  { name: "silver", rgba: FOOT_LINE },
+  { name: "cyan", rgba: [79, 214, 255, 255] },
+  { name: "pale yellow", rgba: [255, 230, 128, 255] },
+  { name: "white", rgba: [255, 255, 255, 255] },
+  { name: "light blue", rgba: [158, 203, 255, 255] },
+];
+let footCol = 0;
 // a footprint with no year, on the Sentinel-2 imagery: solid, so it reads on bright ground
 const S2_LINE = [79, 214, 255];
 // the fold chevron, as aef-earthwork-web's cards
@@ -317,8 +326,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     const ln = new Uint8Array(rgba.length), ml = new Uint8Array(rgba.length), wl = new Uint8Array(rgba.length);
     for (let r = 0; r < join.rows; r++) {
       const o = 4 * r, has = rgba[o + 3] > 0;
-      ml.set(has ? DUG_LINE : FOOT_LINE, o);
-      if (!inPatch(r)) wl.set(FOOT_LINE, o);
+      ml.set(has ? DUG_LINE : FOOT_COLS[footCol].rgba, o);
+      if (!inPatch(r)) wl.set(FOOT_COLS[footCol].rgba, o);
       ln[o] = has ? rgba[o] : S2_LINE[0];
       ln[o + 1] = has ? rgba[o + 1] : S2_LINE[1];
       ln[o + 2] = has ? rgba[o + 2] : S2_LINE[2];
@@ -631,6 +640,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   }
   /** A click pins what is under it, so the years can be stepped with it held; with one pinned, any click lets go. */
   function pin(pt: { x: number; y: number }) {
+    // buildings light up under the pointer but are not picked by a click, for now
+    if (footAt(pt) >= 0) return;
     // paired, a click is the spotlight: the left dims around the patch under it
     if (st.pair) return spotAt(pt);
     pinHi = pinHi ? null : hiAt(pt);
@@ -682,6 +693,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
           stroked: false,
           getFillColor: [0, 0, 0, 0],
           pickable: true,
+          // the building under the pointer lit, light orchid; not a building hidden on a patch (its ground shows instead)
+          autoHighlight: true,
+          highlightColor: (info: { index: number }) => (winShown() && !st.pair && inPatch(info.index) ? [0, 0, 0, 0] : [240, 165, 255, 110]),
           beforeId: groundId,
         } as never),
       );
@@ -1405,6 +1419,12 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       else st.winMain = !st.winMain;
       root.classList.toggle("yrs", rasterShown());
       render();
+    }
+    else if (k === "c" || k === "C") {
+      // the footprints' outline color on the map
+      footCol = (footCol + 1) % FOOT_COLS.length;
+      note(`Footprints: ${FOOT_COLS[footCol].name} (C)`);
+      recolor();
     }
     else if (k === "o" || k === "O") {
       // the patches' outlines on or off
