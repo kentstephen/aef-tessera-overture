@@ -16,13 +16,14 @@ export type Look = { src: "ours" | "wsf"; year: number | null };
 // 2016 and 2017 commented out with WSF, the only source that dates them:
 // export const YEAR_COL = ["#1a33b3", "#2446a9", "#2d59a0", "#396b94", "#497b85", "#60927b", "#7bae74", "#99cc6d", "#c4ea67", "#ffff66"];
 // export const Y0_RAMP = 2016;
-/** The year ramps Y steps through, 2018 to 2025, the oldest darkest: imola; matplotlib's Blues and Greens (1.0 to 0.3);
- * blue to pale yellow (cividis's first blue, its gray, then pale yellow) */
+/** The year ramps Y steps through, 2018 to 2025: imola (oldest darkest); then the single ramps, the most recent darkest
+ * and most saturated: matplotlib's Blues and Greens (0.3 to 1.0), pale yellow to blue (pale yellow, cividis's gray,
+ * then its first blue) */
 export const RAMPS = [
   { name: "imola", cols: ["#1a33b3", "#274ca6", "#346499", "#467987", "#64967a", "#87ba71", "#b5e268", "#ffff66"] },
-  { name: "blues", cols: ["#08306b", "#084a91", "#1764ab", "#2e7ebc", "#4a98c9", "#6aaed6", "#94c4df", "#b7d4ea"] },
-  { name: "blue to pale yellow", cols: ["#003070", "#224472", "#445973", "#666d75", "#8b897d", "#b1ac8b", "#d9cf98", "#fff2a6"] },
-  { name: "greens", cols: ["#00441b", "#006428", "#157f3b", "#2f974e", "#4bb062", "#73c476", "#98d594", "#b8e3b2"] },
+  { name: "blues", cols: ["#b7d4ea", "#94c4df", "#6aaed6", "#4a98c9", "#2e7ebc", "#1764ab", "#084a91", "#08306b"] },
+  { name: "pale yellow to blue", cols: ["#fff2a6", "#d9cf98", "#b1ac8b", "#8b897d", "#666d75", "#445973", "#224472", "#003070"] },
+  { name: "greens", cols: ["#b8e3b2", "#98d594", "#73c476", "#4bb062", "#2f974e", "#157f3b", "#006428", "#00441b"] },
 ];
 /** The ramp in use (swapped in place by setRamp, so every reader sees the new one). */
 export const YEAR_COL = [...RAMPS[0].cols];

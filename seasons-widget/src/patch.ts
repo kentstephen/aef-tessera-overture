@@ -205,9 +205,9 @@ export type Patch = {
 /**
  * The patches over a box, as the year map's patchesIn finds them (copied, read from this widget's chunks of year bits
  * in place of its paint scores): every pixel dug in any year joined to its neighbors by side or corner, or across a gap
- * of PATCH_GAP pixels, whatever its year. Chunks not in hand count as nothing dug. Largest first.
+ * of `gap` pixels (PATCH_GAP unless given), whatever its year. Chunks not in hand count as nothing dug. Largest first.
  */
-export function patchesIn(bbox: [number, number, number, number], chunkAt: (r: number, c: number) => BitsChunk | null, chunk = 256): Patch[] {
+export function patchesIn(bbox: [number, number, number, number], chunkAt: (r: number, c: number) => BitsChunk | null, chunk = 256, gap = PATCH_GAP): Patch[] {
   const [W, S, E, N] = bbox;
   const c0 = Math.floor((W - X0) / RES / chunk), c1 = Math.floor((E - X0) / RES / chunk);
   const r0 = Math.floor((Y0 - N) / RES / chunk), r1 = Math.floor((Y0 - S) / RES / chunk);
@@ -259,26 +259,26 @@ export function patchesIn(bbox: [number, number, number, number], chunkAt: (r: n
           } else {
             open = ry.length;
             ry.push(gy); rs.push(gx); re.push(gx + 1); rf.push(nf - 1); rl.push(hb); parent.push(open);
-            // the run before it in this row, across a gap of PATCH_GAP pixels or less
-            if (open > cur0 && gx - re[open - 1] <= PATCH_GAP) join(open, open - 1);
+            // the run before it in this row, across a gap of gap pixels or less
+            if (open > cur0 && gx - re[open - 1] <= gap) join(open, open - 1);
           }
         }
         if (p.width < chunk) open = -1;
       }
-      // this row's runs joined to the runs of the rows above within PATCH_GAP + 1 pixels (by side or corner, or across
+      // this row's runs joined to the runs of the rows above within gap + 1 pixels (by side or corner, or across
       // the gap)
-      for (let d = 1; d <= PATCH_GAP + 1; d++) {
+      for (let d = 1; d <= gap + 1; d++) {
         const up = rowRuns.get(gy - d);
         if (!up) continue;
         const [p0, p1] = up;
         let a = p0;
         for (let b = cur0; b < ry.length; b++) {
-          while (a < p1 && re[a] < rs[b] - PATCH_GAP) a++;
-          for (let k = a; k < p1 && rs[k] <= re[b] + PATCH_GAP; k++) join(b, k);
+          while (a < p1 && re[a] < rs[b] - gap) a++;
+          for (let k = a; k < p1 && rs[k] <= re[b] + gap; k++) join(b, k);
         }
       }
       if (ry.length > cur0) rowRuns.set(gy, [cur0, ry.length]);
-      rowRuns.delete(gy - PATCH_GAP - 2);
+      rowRuns.delete(gy - gap - 2);
     }
   }
   type P = { n: number; x0: number; x1: number; y0: number; y1: number; years: number[]; lastYears: number[]; last: number; runs: number[] };

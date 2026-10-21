@@ -108982,40 +108982,40 @@ var v7 = [
 	{
 		name: "blues",
 		cols: [
-			"#08306b",
-			"#084a91",
-			"#1764ab",
-			"#2e7ebc",
-			"#4a98c9",
-			"#6aaed6",
+			"#b7d4ea",
 			"#94c4df",
-			"#b7d4ea"
+			"#6aaed6",
+			"#4a98c9",
+			"#2e7ebc",
+			"#1764ab",
+			"#084a91",
+			"#08306b"
 		]
 	},
 	{
-		name: "blue to pale yellow",
+		name: "pale yellow to blue",
 		cols: [
-			"#003070",
-			"#224472",
-			"#445973",
-			"#666d75",
-			"#8b897d",
-			"#b1ac8b",
+			"#fff2a6",
 			"#d9cf98",
-			"#fff2a6"
+			"#b1ac8b",
+			"#8b897d",
+			"#666d75",
+			"#445973",
+			"#224472",
+			"#003070"
 		]
 	},
 	{
 		name: "greens",
 		cols: [
-			"#00441b",
-			"#006428",
-			"#157f3b",
-			"#2f974e",
-			"#4bb062",
-			"#73c476",
+			"#b8e3b2",
 			"#98d594",
-			"#b8e3b2"
+			"#73c476",
+			"#4bb062",
+			"#2f974e",
+			"#157f3b",
+			"#006428",
+			"#00441b"
 		]
 	}
 ], y7 = [...v7[0].cols], b7 = 2018, x7 = [
@@ -114083,83 +114083,83 @@ function Tst(e, t, n, r = 5e4) {
 	};
 }
 var G9 = 2018, Est = 8;
-function Dst(e, t, n = 256) {
-	let [r, i, a, o] = e, s = Math.floor((r - P6) / N6 / n), c = Math.floor((a - P6) / N6 / n), l = Math.floor((F6 - o) / N6 / n), u = Math.floor((F6 - i) / N6 / n), d = [], f = [], p = [], m = [], h = [], g = new Uint8Array(1 << 20), _ = new Uint8Array(1 << 20), v = 0, y = [], b = (e) => {
-		for (; y[e] !== e;) e = y[e] = y[y[e]];
+function Dst(e, t, n = 256, r = 0) {
+	let [i, a, o, s] = e, c = Math.floor((i - P6) / N6 / n), l = Math.floor((o - P6) / N6 / n), u = Math.floor((F6 - s) / N6 / n), d = Math.floor((F6 - a) / N6 / n), f = [], p = [], m = [], h = [], g = [], _ = new Uint8Array(1 << 20), v = new Uint8Array(1 << 20), y = 0, b = [], x = (e) => {
+		for (; b[e] !== e;) e = b[e] = b[b[e]];
 		return e;
-	}, x = /* @__PURE__ */ new Map(), S = (e, t) => {
-		let n = b(e), r = b(t);
-		n !== r && (y[n] = r);
+	}, S = /* @__PURE__ */ new Map(), C = (e, t) => {
+		let n = x(e), r = x(t);
+		n !== r && (b[n] = r);
 	};
-	for (let e = l; e <= u; e++) {
-		let r = [];
-		for (let n = s; n <= c; n++) r.push(t(e, n));
+	for (let e = u; e <= d; e++) {
+		let i = [];
+		for (let n = c; n <= l; n++) i.push(t(e, n));
 		for (let t = 0; t < n; t++) {
-			let i = e * n + t, a = d.length, o = -1;
-			for (let e = 0; e < r.length; e++) {
-				let c = r[e];
-				if (!c || t >= c.height) {
-					o = -1;
+			let a = e * n + t, o = f.length, s = -1;
+			for (let e = 0; e < i.length; e++) {
+				let l = i[e];
+				if (!l || t >= l.height) {
+					s = -1;
 					continue;
 				}
-				let l = (s + e) * n, u = t * c.width;
-				for (let e = 0; e < c.width; e++) {
-					let t = c.bits[u + e];
+				let u = (c + e) * n, d = t * l.width;
+				for (let e = 0; e < l.width; e++) {
+					let t = l.bits[d + e];
 					if (!t) {
-						o = -1;
+						s = -1;
 						continue;
 					}
-					if (v === _.length) {
-						let e = new Uint8Array(_.length * 2), t = new Uint8Array(_.length * 2);
-						e.set(_), t.set(g), _ = e, g = t;
+					if (y === v.length) {
+						let e = new Uint8Array(v.length * 2), t = new Uint8Array(v.length * 2);
+						e.set(v), t.set(_), v = e, _ = t;
 					}
-					g[v] = 31 - Math.clz32(t), _[v++] = 31 - Math.clz32(t & -t);
-					let n = 31 - Math.clz32(t), r = l + e;
-					o >= 0 && p[o] === r ? (p[o] = r + 1, n > h[o] && (h[o] = n)) : (o = d.length, d.push(i), f.push(r), p.push(r + 1), m.push(v - 1), h.push(n), y.push(o), o > a && r - p[o - 1] <= 0 && S(o, o - 1));
+					_[y] = 31 - Math.clz32(t), v[y++] = 31 - Math.clz32(t & -t);
+					let n = 31 - Math.clz32(t), i = u + e;
+					s >= 0 && m[s] === i ? (m[s] = i + 1, n > g[s] && (g[s] = n)) : (s = f.length, f.push(a), p.push(i), m.push(i + 1), h.push(y - 1), g.push(n), b.push(s), s > o && i - m[s - 1] <= r && C(s, s - 1));
 				}
-				c.width < n && (o = -1);
+				l.width < n && (s = -1);
 			}
-			for (let e = 1; e <= 1; e++) {
-				let t = x.get(i - e);
+			for (let e = 1; e <= r + 1; e++) {
+				let t = S.get(a - e);
 				if (!t) continue;
-				let [n, r] = t, o = n;
-				for (let e = a; e < d.length; e++) {
-					for (; o < r && p[o] < f[e] - 0;) o++;
-					for (let t = o; t < r && f[t] <= p[e] + 0; t++) S(e, t);
+				let [n, i] = t, s = n;
+				for (let e = o; e < f.length; e++) {
+					for (; s < i && m[s] < p[e] - r;) s++;
+					for (let t = s; t < i && p[t] <= m[e] + r; t++) C(e, t);
 				}
 			}
-			d.length > a && x.set(i, [a, d.length]), x.delete(i - 0 - 2);
+			f.length > o && S.set(a, [o, f.length]), S.delete(a - r - 2);
 		}
 	}
-	let C = /* @__PURE__ */ new Map();
-	for (let e = 0; e < d.length; e++) {
-		let t = b(e), n = C.get(t);
-		n || C.set(t, n = {
+	let w = /* @__PURE__ */ new Map();
+	for (let e = 0; e < f.length; e++) {
+		let t = x(e), n = w.get(t);
+		n || w.set(t, n = {
 			n: 0,
-			x0: f[e],
-			x1: p[e],
-			y0: d[e],
-			y1: d[e] + 1,
+			x0: p[e],
+			x1: m[e],
+			y0: f[e],
+			y1: f[e] + 1,
 			years: Array(Est).fill(0),
 			lastYears: Array(Est).fill(0),
 			last: 0,
 			runs: []
 		});
-		let r = p[e] - f[e];
-		n.n += r, n.last = Math.max(n.last, h[e]), n.x0 = Math.min(n.x0, f[e]), n.x1 = Math.max(n.x1, p[e]), n.y0 = Math.min(n.y0, d[e]), n.y1 = Math.max(n.y1, d[e] + 1);
-		for (let t = m[e]; t < m[e] + r; t++) n.years[_[t]]++, n.lastYears[g[t]]++;
-		n.runs.push(d[e], f[e], p[e]);
+		let r = m[e] - p[e];
+		n.n += r, n.last = Math.max(n.last, g[e]), n.x0 = Math.min(n.x0, p[e]), n.x1 = Math.max(n.x1, m[e]), n.y0 = Math.min(n.y0, f[e]), n.y1 = Math.max(n.y1, f[e] + 1);
+		for (let t = h[e]; t < h[e] + r; t++) n.years[v[t]]++, n.lastYears[_[t]]++;
+		n.runs.push(f[e], p[e], m[e]);
 	}
-	let w = (e) => P6 + e * N6, T = (e) => F6 - e * N6;
-	return [...C.values()].sort((e, t) => t.n - e.n).map((e) => {
+	let T = (e) => P6 + e * N6, E = (e) => F6 - e * N6;
+	return [...w.values()].sort((e, t) => t.n - e.n).map((e) => {
 		let t = Math.max(...e.years);
 		return {
 			n: e.n,
 			box: [
-				w(e.x0),
-				T(e.y1),
-				w(e.x1),
-				T(e.y0)
+				T(e.x0),
+				E(e.y1),
+				T(e.x1),
+				E(e.y0)
 			],
 			years: e.years,
 			lastYears: e.lastYears,
@@ -115161,7 +115161,8 @@ function Jst({ model: e, el: t }) {
 		s2Year: H9[H9.length - 1],
 		lines: !1,
 		winMain: !0,
-		winPair: !1
+		winPair: !1,
+		gap: 0
 	}, i = (e, t, n) => {
 		let r = document.createElement(e);
 		return t && (r.className = t), n != null && (r.innerHTML = n), r;
@@ -115309,7 +115310,7 @@ function Jst({ model: e, el: t }) {
 	let et = /* @__PURE__ */ new Map(), tt = null;
 	function nt() {
 		if (!Me || !r.area) return;
-		We = Dst(r.area, Me.chunk);
+		We = Dst(r.area, Me.chunk, 256, r.gap);
 		let e = /* @__PURE__ */ new Map(), t = [];
 		Ye = /* @__PURE__ */ new Map(), Xe = /* @__PURE__ */ new Map(), Ze = [];
 		for (let [n, r] of We.entries()) {
@@ -115959,6 +115960,7 @@ function Jst({ model: e, el: t }) {
 		} else if (t === "q" || t === "Q") r.picking = !r.picking, r.picking || It(""), ne(r.picking ? "Picking on" : "Picking off");
 		else if (t === "h" || t === "H") kt(!r.folded);
 		else if (t === "s" || t === "S") r.pair ? r.winPair = !r.winPair : r.winMain = !r.winMain, a.classList.toggle("yrs", st()), wt();
+		else if (t === "g" || t === "G") r.gap = +!r.gap, ne(r.gap ? "Patches joined across a 1 pixel gap (G)" : "Patches joined by touching only (G)"), nt();
 		else if (t === "y" || t === "Y") ln = (ln + 1) % v7.length, xnt(v7[ln].cols), Te = y7.map(we), O(), Tt(), Me?.setLook(r.look), Ae(), ne(`Years: ${v7[ln].name} (Y)`);
 		else if (t === "c" || t === "C") Y9 = (Y9 + 1) % J9.length, ne(`Buildings on dug ground: ${J9[Y9].name} (C)`), Ae();
 		else if (t === "o" || t === "O") r.lines = !r.lines, wt();

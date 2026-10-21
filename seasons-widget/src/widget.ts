@@ -152,7 +152,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     protocolAdded = true;
   }
 
-  const st = { look: { src: "ours", year: null } as Look, fit: true, folded: false, area: null as [number, number, number, number] | null, readId: 0, labels: true, picking: true, pair: false, holding: false, s2Year: S2_YEARS[S2_YEARS.length - 1], lines: false, winMain: true, winPair: false };
+  const st = { look: { src: "ours", year: null } as Look, fit: true, folded: false, area: null as [number, number, number, number] | null, readId: 0, labels: true, picking: true, pair: false, holding: false, s2Year: S2_YEARS[S2_YEARS.length - 1], lines: false, winMain: true, winPair: false, gap: 0 };
   const E = (t: string, c?: string, h?: string) => {
     const e = document.createElement(t);
     if (c) e.className = c;
@@ -472,7 +472,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   let winMask: { image: HTMLCanvasElement; bounds: [number, number, number, number] } | null = null;
   function findPatches() {
     if (!codes || !st.area) return;
-    patches = patchesIn(st.area, codes.chunk);
+    patches = patchesIn(st.area, codes.chunk, 256, st.gap);
     const kept = new Map<string, { edges: number[][]; ext: number[] }>();
     const edges: number[] = [];
     extRows = new Map();
@@ -1428,8 +1428,14 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       root.classList.toggle("yrs", rasterShown());
       render();
     }
+    else if (k === "g" || k === "G") {
+      // patches joined by touching only (side or corner), or also across a one pixel gap: fewer, bigger patches
+      st.gap = st.gap ? 0 : 1;
+      note(st.gap ? "Patches joined across a 1 pixel gap (G)" : "Patches joined by touching only (G)");
+      findPatches();
+    }
     else if (k === "y" || k === "Y") {
-      // the year ramp: imola, blues, blue to pale yellow, greens
+      // the year ramp: imola, blues, pale yellow to blue, greens
       rampI = (rampI + 1) % RAMPS.length;
       setRamp(RAMPS[rampI].cols);
       YEAR_RGB = YEAR_COL.map(hexRgb);
