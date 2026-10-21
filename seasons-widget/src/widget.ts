@@ -1476,8 +1476,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       render();
     }
     else if ((k === "n" || k === "N") && imgShown() && s2) {
-      // the year's next look: another of its clear scenes
-      s2.next(st.s2Year);
+      // the year's next look: another of its clear scenes; Shift+N back to the look before
+      if (e.shiftKey) s2.back(st.s2Year);
+      else s2.next(st.s2Year);
       drawS2Card();
       render();
     }

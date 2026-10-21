@@ -115886,7 +115886,7 @@ function qst({ model: e, el: t }) {
 		else if (t === "s" || t === "S") r.pair ? r.winPair = !r.winPair : r.winMain = !r.winMain, a.classList.toggle("yrs", lt()), Et();
 		else if (t === "g" || t === "G") r.gap = +!r.gap, te(r.gap ? "Patches joined across a 1 pixel gap (G)" : "Patches joined by touching only (G)"), it();
 		else if (t === "o" || t === "O") r.lines = !r.lines, Et();
-		else if ((t === "n" || t === "N") && ut() && Fe) Fe.next(r.s2Year), ft(), Et();
+		else if ((t === "n" || t === "N") && ut() && Fe) e.shiftKey ? Fe.back(r.s2Year) : Fe.next(r.s2Year), ft(), Et();
 		else if (t === "x" || t === "X") r.fit = !r.fit, ae();
 		else if (t === "f" || t === "F") se();
 		else if (t === "k" || t === "K") ln();
