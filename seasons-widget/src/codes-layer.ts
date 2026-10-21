@@ -276,7 +276,18 @@ export async function createCodesLayer(model: WorldModel, decoder: { w: Float32A
         work.reading++;
         let r: { ours: Uint8Array; bits: Uint8Array; wsf: Uint8Array };
         try {
-          r = await ask<{ ours: Uint8Array; bits: Uint8Array; wsf: Uint8Array }>({ type: "codes", px0, py0, w: width, h: height, allIdx: ALL_IDX }, o.signal);
+          // tried again on a failure (a read that gave up): deck.gl keeps a failed tile empty and never asks for it
+          // again, so a patch reaching into it would end in a straight line at the chunk's edge until a reload
+          for (let k = 0; ; k++) {
+            try {
+              r = await ask<{ ours: Uint8Array; bits: Uint8Array; wsf: Uint8Array }>({ type: "codes", px0, py0, w: width, h: height, allIdx: ALL_IDX }, o.signal);
+              break;
+            } catch (e) {
+              if (k >= 3 || o.signal?.aborted || (e as { name?: string })?.name === "AbortError") throw e;
+              console.warn(`chunk ${py0 / CHUNK},${px0 / CHUNK}: ${(e as Error)?.message}; trying again`);
+              await new Promise((go) => setTimeout(go, 2000 * 2 ** k));
+            }
+          }
           work.readDone++;
         } finally {
           work.reading--;

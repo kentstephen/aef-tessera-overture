@@ -533,14 +533,16 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     progressSoon();
   }
 
-  // ---- the pointer: a hand over a patch, and a click opens it
-  map.on("mousemove", (e) => {
-    map.getCanvas().style.cursor = patchAt(e.lngLat.lng, e.lngLat.lat) ? "pointer" : "";
-  });
-  map.on("click", (e) => {
-    const p = patchAt(e.lngLat.lng, e.lngLat.lat);
-    if (p) openPatch(p);
-  });
+  // ---- the pointer: a hand over a patch, and a click opens it in the panels (2017 and 2025 side by side): commented
+  // out, the map dims around the patches (D) and flips the year (B) instead
+  // map.on("mousemove", (e) => {
+  //   map.getCanvas().style.cursor = patchAt(e.lngLat.lng, e.lngLat.lat) ? "pointer" : "";
+  // });
+  // map.on("click", (e) => {
+  //   const p = patchAt(e.lngLat.lng, e.lngLat.lat);
+  //   if (p) openPatch(p);
+  // });
+  void openPatch;
 
   // ---- search, as aef-earthwork-web searches: Photon as you type; when it is slow or finds nothing, Enter asks
   // Nominatim (whose usage policy allows no search-as-you-type and at most one request a second, so it runs on Enter
