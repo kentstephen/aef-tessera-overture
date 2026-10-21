@@ -112,8 +112,8 @@ class SpotExtension extends MaskExtension {
 }
 SpotExtension.extensionName = "SpotExtension";
 const SPOT = new SpotExtension();
-/** around every patch on the map: how dim (0 not at all, 1 fully, the start), V toggles it, S steps its strength */
-const mapSpot = { k: 1 };
+/** around every patch on the map: how dim (0 not at all, the start; 1 fully, what V turns on first), V toggles it, S steps its strength */
+const mapSpot = { k: 0 };
 const MAP_DIM_STEPS = [0.25, 0.5, 0.75, 1];
 let mapDimK = 1;
 const dimName = (k: number) => (k === 1 ? "fully" : k === 0.75 ? "three quarters" : k === 0.5 ? "half" : "a quarter");

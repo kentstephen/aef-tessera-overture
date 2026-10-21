@@ -91692,7 +91692,7 @@ var PHe = {
 	}
 };
 K9.extensionName = "SpotExtension", new K9();
-var q9 = { k: 1 }, J9 = [
+var q9 = { k: 0 }, J9 = [
 	.25,
 	.5,
 	.75,
