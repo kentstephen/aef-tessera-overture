@@ -594,6 +594,8 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
           : `<span><kbd>Space</kbd> or <kbd>P</kbd> to see it</span>`
       }</div>`;
     s2Card.classList.toggle("showing", showImg);
+    // the card only while Sentinel-2 is on the map: held, on the pair's left, or through the patches (S)
+    s2Card.style.display = st.holding || st.pair || winShown() ? "" : "none";
   }
   // the pair's left map: its imagery, and over it in orchid what is pinned by a click, else the footprint hovered, on
   // either half. A click pins a footprint, or where no footprint is, the patch of dug ground under it
@@ -806,7 +808,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     chips.style.gap = "";
     body.querySelector(".years")?.remove();
     if (l.agree && l.src === "ours") {
-      hdT.innerHTML = "<b>Models that see digging</b>";
+      hdT.innerHTML = "<b>Model agreement</b>";
       chips.style.gridTemplateColumns = "repeat(3, 1fr)";
       chips.style.gap = "0";
       // each chip its third of the continuous Viridis bar, side by side
@@ -1343,7 +1345,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     const mid = y0 + 10 * k;
     g.font = `600 ${15 * k}px ${FONT}`;
     g.fillStyle = "#e6e9ec";
-    const agree = !!st.look.agree, title = agree ? "Models that see digging" : "Dug by year";
+    const agree = !!st.look.agree, title = agree ? "Model agreement" : "Dug by year";
     g.fillText(title, x0, mid);
     let x = x0 + g.measureText(title).width + 14 * k;
     g.font = `500 ${13 * k}px ${FONT}`;
@@ -1491,6 +1493,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       if (st.pair) st.winPair = !st.winPair;
       else st.winMain = !st.winMain;
       root.classList.toggle("yrs", rasterShown());
+      drawS2Card();
       render();
     }
     else if (k === "g" || k === "G") {

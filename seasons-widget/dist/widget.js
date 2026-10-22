@@ -115592,7 +115592,7 @@ function Zst({ model: e, el: t }) {
 	];
 	function pt() {
 		let e = dt(), t = I.getCenter(), n = Ie?.dateAt(r.s2Year, t.lng, t.lat) ?? "", i = Ie?.status(r.s2Year) ?? "finding", a = e ? n ? `${ft[n.slice(5, 7) - 1]} ${+n.slice(8, 10)}` + (i === "cloudy" ? ", cloudy" : "") : i === "cloudy" ? "no scene" : "finding…" : "true color", o = `${String(K9[0]).slice(2)}/${String(K9[K9.length - 1]).slice(2)}`;
-		te.innerHTML = `<div class="s2hd"><b>${r.s2Year}</b><span>Sentinel-2<br>${a}</span><span class="zw">z<br><i class="z">${I.getZoom().toFixed(1)}</i></span></div><div class="keys">${e ? `<span>${r.holding ? "Scroll or " : ""}<kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${o}</span><span><kbd>N</kbd> next</span>` : "<span><kbd>Space</kbd> or <kbd>P</kbd> to see it</span>"}</div>`, te.classList.toggle("showing", e);
+		te.innerHTML = `<div class="s2hd"><b>${r.s2Year}</b><span>Sentinel-2<br>${a}</span><span class="zw">z<br><i class="z">${I.getZoom().toFixed(1)}</i></span></div><div class="keys">${e ? `<span>${r.holding ? "Scroll or " : ""}<kbd>[</kbd><kbd>]</kbd> year</span><span><kbd>B</kbd> ${o}</span><span><kbd>N</kbd> next</span>` : "<span><kbd>Space</kbd> or <kbd>P</kbd> to see it</span>"}</div>`, te.classList.toggle("showing", e), te.style.display = r.holding || r.pair || lt() ? "" : "none";
 	}
 	let mt = [], ht = null, gt = null;
 	function _t() {
@@ -115779,7 +115779,7 @@ function Zst({ model: e, el: t }) {
 	}
 	function Ot() {
 		let e = r.look;
-		if (v.classList.toggle("on", e.src === "ours"), y.classList.toggle("on", e.src === "wsf"), b.replaceChildren(), b.style.gap = "", h.querySelector(".years")?.remove(), e.agree && e.src === "ours") f.innerHTML = "<b>Models that see digging</b>", b.style.gridTemplateColumns = "repeat(3, 1fr)", b.style.gap = "0", [
+		if (v.classList.toggle("on", e.src === "ours"), y.classList.toggle("on", e.src === "wsf"), b.replaceChildren(), b.style.gap = "", h.querySelector(".years")?.remove(), e.agree && e.src === "ours") f.innerHTML = "<b>Model agreement</b>", b.style.gridTemplateColumns = "repeat(3, 1fr)", b.style.gap = "0", [
 			0,
 			1,
 			2
@@ -116131,7 +116131,7 @@ function Zst({ model: e, el: t }) {
 		e.save(), e.shadowColor = "rgba(0,0,0,.75)", e.shadowBlur = 6 * i, e.textBaseline = "middle";
 		let a = n + 10 * i;
 		e.font = `600 ${15 * i}px ${sn}`, e.fillStyle = "#e6e9ec";
-		let o = !!r.look.agree, s = o ? "Models that see digging" : "Dug by year";
+		let o = !!r.look.agree, s = o ? "Model agreement" : "Dug by year";
 		e.fillText(s, t, a);
 		let c = t + e.measureText(s).width + 14 * i;
 		e.font = `500 ${13 * i}px ${sn}`, e.fillStyle = "#c9cfd5";
@@ -116191,7 +116191,7 @@ function Zst({ model: e, el: t }) {
 		else if (t === "q" || t === "Q") r.picking = !r.picking, r.picking || zt(""), re(r.picking ? "Picking on" : "Picking off");
 		else if (t === "h" || t === "H") Mt(!r.folded);
 		else if ((t === "d" || t === "D") && r.pair) r.dim2 = !r.dim2, _t();
-		else if (t === "s" || t === "S") r.pair ? r.winPair = !r.winPair : r.winMain = !r.winMain, a.classList.toggle("yrs", ut()), Dt();
+		else if (t === "s" || t === "S") r.pair ? r.winPair = !r.winPair : r.winMain = !r.winMain, a.classList.toggle("yrs", ut()), pt(), Dt();
 		else if (t === "g" || t === "G") r.gap = +!r.gap, re(r.gap ? "Patches joined across a 1 pixel gap (G)" : "Patches joined by touching only (G)"), at();
 		else if (t === "a" || t === "A") jt({
 			...r.look,
