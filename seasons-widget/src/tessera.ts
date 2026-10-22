@@ -92,7 +92,7 @@ type Ask = { offset: number; length: number; signal?: AbortSignal; resolve: (v: 
 
 const isAbort = (e: unknown) => (e as { name?: string })?.name === "AbortError";
 
-class MergingStore implements zarr.AsyncReadable {
+export class MergingStore implements zarr.AsyncReadable {
   private inner: zarr.FetchStore;
   /** the same bucket under three S3 host names: a browser keeps six HTTP/1.1 connections per host, so 18 in all */
   private shards: zarr.FetchStore[];

@@ -158,7 +158,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     protocolAdded = true;
   }
 
-  const st = { look: { src: "ours", year: null, agree: "olmo" in world } as Look, fit: true, folded: false, area: null as [number, number, number, number] | null, readId: 0, labels: true, picking: true, pair: false, holding: false, s2Year: S2_YEARS[S2_YEARS.length - 1], lines: false, winMain: false, winPair: false, gap: 1, tips: true };
+  const st = { look: { src: "ours", year: null, agree: "olmo" in world } as Look, fit: true, folded: false, area: null as [number, number, number, number] | null, readId: 0, labels: true, picking: true, pair: false, holding: false, s2Year: S2_YEARS[S2_YEARS.length - 1], lines: false, winMain: false, winPair: false, gap: 1, tips: true, dim2: false };
   const E = (t: string, c?: string, h?: string) => {
     const e = document.createElement(t);
     if (c) e.className = c;
@@ -608,7 +608,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
       ? [new PathLayer({ id: "hi", data: h.paths, getPath: (r: number[][]) => r as never, getColor: DUG_LINE, getWidth: 2.5, widthUnits: "pixels", jointRounded: true, capRounded: true })]
       : [];
     // the patch clicked as the mask, first, so the imagery after it is dimmed outside it
-    const mask = st.pair && spotMask ? [new WindowMaskLayer({ id: "spot-mask", image: spotMask.image, bounds: spotMask.bounds, operation: "mask", extensions: [DISCARD_CLEAR], _imageCoordinateSystem: COORDINATE_SYSTEM.LNGLAT } as never)] : [];
+    const mask = st.pair && st.dim2 && spotMask ? [new WindowMaskLayer({ id: "spot-mask", image: spotMask.image, bounds: spotMask.bounds, operation: "mask", extensions: [DISCARD_CLEAR], _imageCoordinateSystem: COORDINATE_SYSTEM.LNGLAT } as never)] : [];
     overlay2.setProps({ layers: [...mask, ...l2, ...hi] as never });
   }
   // the patch clicked on the right (or the same point on the left): the left's imagery dimmed around it, no outline
@@ -1481,6 +1481,11 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     // WSF commented out for now
     // else if (k === "c" || k === "C") setLook({ ...st.look, src: st.look.src === "ours" ? "wsf" : "ours" });
     else if (k === "h" || k === "H") setFold(!st.folded);
+    else if ((k === "d" || k === "D") && st.pair) {
+      // the pair's left dimmed around the patch clicked, or not (off to start)
+      st.dim2 = !st.dim2;
+      setL2();
+    }
     else if (k === "s" || k === "S") {
       // the patches filled by the year's imagery, or by the year raster's colors
       if (st.pair) st.winPair = !st.winPair;

@@ -67,7 +67,7 @@
 .sm .map2{position:absolute;top:0;bottom:0;left:0;right:50%;display:none;border-right:2px solid rgba(255,255,255,.35)}
 .sm.pair .map{left:50%}
 .sm.pair .map2{display:block}
-.sm.pair .loadtag{left:calc(50% + 12px);transform:none}
+/* .sm.pair .loadtag{left:calc(50% + 12px);transform:none} the pair keeps it at the top center, clear of the legend */
 .sm.pair .toast{left:75%}
 .sm *:focus,.sm *:focus-visible,.sm .maplibregl-canvas:focus{outline:none!important}
 .sm .load{position:absolute;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,.08);z-index:6;display:none}
