@@ -12,8 +12,11 @@ import type { WorldModel } from "./earthwork-cpu";
  * how many of the three single models (AlphaEarth, TESSERA, OlmoEarth) call the ground dug instead of by year. */
 export type Look = { src: "ours" | "wsf"; year: number | null; agree?: boolean };
 
-/** One, two and all three models calling the ground dug: steps of the same Oranges, palest to deepest. */
-export const AGREE_COL = ["#fee3c8", "#f67824", "#ad3803"];
+/** Viridis, 9 stops (as in aef-earthwork-web), for the models agreeing made continuous: one model in its first
+ * third (purple to blue), two in the middle (teal to green), all three in the last (green to yellow). */
+export const VIRIDIS = ["#440154", "#472d7b", "#3b528b", "#2c728e", "#21918c", "#28ae80", "#5ec962", "#addc30", "#fde725"];
+// the three steps tried before it, Oranges palest to deepest:
+// export const AGREE_COL = ["#fee3c8", "#f67824", "#ad3803"];
 
 /** The year ramp (Crameri's imola, blue to yellow, its whole length), 2018 to 2025:
  * the years ours can date (its first pair is 2017 to 2018). */
@@ -38,9 +41,14 @@ export const HALF_COL = ["#356598", "#b2e068"];
 export const UNCLEAR = "#9aa1a9";
 const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 const ALPHA = 225;
+/** Viridis at t (0 to 1), between its stops. */
+export function viridis(t: number) {
+  const x = Math.max(0, Math.min(1, t)) * (VIRIDIS.length - 1), i = Math.min(VIRIDIS.length - 2, Math.floor(x)), f = x - i;
+  return [0, 1, 2].map((j) => Math.round(VIR[i][j] + (VIR[i + 1][j] - VIR[i][j]) * f));
+}
 // a color's alpha from its #rrggbbaa, else the raster's own
 const alphaOf = (h: string) => (h.length >= 9 ? parseInt(h.slice(7, 9), 16) : ALPHA);
-const YR = YEAR_COL.map(rgb), YA = YEAR_COL.map(alphaOf), SE = SEASON_COL.map(rgb), UN = rgb(UNCLEAR), AG = AGREE_COL.map(rgb);
+const YR = YEAR_COL.map(rgb), YA = YEAR_COL.map(alphaOf), SE = SEASON_COL.map(rgb), UN = rgb(UNCLEAR), VIR = VIRIDIS.map(rgb);
 let rampV = 0;
 /** Swaps the year ramp in place; the raster repaints on its layer's next setLook. */
 export function setRamp(cols: string[]) {
@@ -68,6 +76,8 @@ type Tile = {
   bits: Uint8Array;
   /** how many single models call each pair dug, two bits a pair (pairs 0 to 3 in byte 2i, 4 to 7 in byte 2i + 1) */
   agree: Uint8Array;
+  /** that count made continuous, a plane a pair (0 to 255; chunk.worker.ts lit) */
+  soft: Uint8Array;
   /** a bit a pair where OlmoEarth has no embedding (two models could vote, not three) */
   noOlmo: Uint8Array;
   wsf: Uint8Array;
@@ -184,10 +194,10 @@ export async function createCodesLayer(model: WorldModel, decoder: { w: Float32A
       if (gx < ax0 || gx > ax1 || gy < ay0 || gy > ay1) continue;
       let c: number[] | null = null, a = ALPHA;
       if (look.src === "ours" && look.agree) {
-        // the most models that agreed in any one pair (all years), or in the year opened
-        const n = yIdx >= 0 ? agreeAt(t, i, ALL_IDX.indexOf(yIdx)) : maxAgree(t, i);
-        if (!n) continue;
-        c = AG[n - 1];
+        // the most models that agreed in any one pair (all years), or in the year opened, made continuous
+        const v = yIdx >= 0 ? softAt(t, i, ALL_IDX.indexOf(yIdx)) : maxSoft(t, i);
+        if (v < 0) continue;
+        c = viridis(v / 255);
         a = 255;
       } else if (look.src === "ours") {
         const idx = t.ours[i];
@@ -234,6 +244,13 @@ export async function createCodesLayer(model: WorldModel, decoder: { w: Float32A
     let n = 0;
     for (let c = 0; c < ALL_IDX.length && c < 8; c++) n = Math.max(n, agreeAt(t, i, c));
     return n;
+  }
+  /** The continuous count of pair c at pixel i (-1 where no model calls it dug), and the most in any pair. */
+  const softAt = (t: Tile, i: number, c: number) => (agreeAt(t, i, c) ? t.soft[c * t.width * t.height + i] : -1);
+  function maxSoft(t: Tile, i: number) {
+    let v = -1;
+    for (let c = 0; c < ALL_IDX.length && c < 8; c++) v = Math.max(v, softAt(t, i, c));
+    return v;
   }
 
   /** The seasons of a year for a tile, asked once. */
@@ -316,16 +333,16 @@ export async function createCodesLayer(model: WorldModel, decoder: { w: Float32A
         if (cE < aW || cW > aE || cN < aS || cS > aN) {
           // outside the area read: nothing asked of the worker, nothing drawn
           const none = new Uint8Array(width * height);
-          return { key: "", px0, py0, width, height, byteLength: 0, ours: none, bits: none, wsf: none, agree: new Uint8Array(2 * width * height), noOlmo: none, seasons: new Map(), asking: new Set(), tex: null, painted: "" } as Tile;
+          return { key: "", px0, py0, width, height, byteLength: 0, ours: none, bits: none, wsf: none, agree: new Uint8Array(2 * width * height), soft: none, noOlmo: none, seasons: new Map(), asking: new Set(), tex: null, painted: "" } as Tile;
         }
         work.reading++;
-        let r: { ours: Uint8Array; bits: Uint8Array; wsf: Uint8Array; agree: Uint8Array; noOlmo: Uint8Array };
+        let r: { ours: Uint8Array; bits: Uint8Array; wsf: Uint8Array; agree: Uint8Array; noOlmo: Uint8Array; soft: Uint8Array };
         try {
           // tried again on a failure (a read that gave up): deck.gl keeps a failed tile empty and never asks for it
           // again, so a patch reaching into it would end in a straight line at the chunk's edge until a reload
           for (let k = 0; ; k++) {
             try {
-              r = await ask<{ ours: Uint8Array; bits: Uint8Array; wsf: Uint8Array; agree: Uint8Array; noOlmo: Uint8Array }>({ type: "codes", px0, py0, w: width, h: height, allIdx: ALL_IDX }, o.signal);
+              r = await ask<{ ours: Uint8Array; bits: Uint8Array; wsf: Uint8Array; agree: Uint8Array; noOlmo: Uint8Array; soft: Uint8Array }>({ type: "codes", px0, py0, w: width, h: height, allIdx: ALL_IDX }, o.signal);
               break;
             } catch (e) {
               if (k >= 3 || o.signal?.aborted || (e as { name?: string })?.name === "AbortError") throw e;
@@ -340,8 +357,8 @@ export async function createCodesLayer(model: WorldModel, decoder: { w: Float32A
         }
         const t: Tile = {
           key: keyOf(Math.floor(py0 / CHUNK), Math.floor(px0 / CHUNK)),
-          px0, py0, width, height, byteLength: 10 * width * height,
-          ours: r.ours, bits: r.bits, wsf: r.wsf, agree: r.agree, noOlmo: r.noOlmo, seasons: new Map(), asking: new Set(), tex: null, painted: "",
+          px0, py0, width, height, byteLength: 18 * width * height,
+          ours: r.ours, bits: r.bits, wsf: r.wsf, agree: r.agree, soft: r.soft, noOlmo: r.noOlmo, seasons: new Map(), asking: new Set(), tex: null, painted: "",
         };
         live.set(t.key, t);
         if (look.src === "ours" && look.year != null && !look.agree) wantSeasons(t, look.year - YEAR_ORIGIN);

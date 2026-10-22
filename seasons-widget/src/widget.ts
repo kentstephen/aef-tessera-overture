@@ -12,7 +12,7 @@ import maplibreWorker from "maplibre-gl/dist/maplibre-gl-worker.mjs?raw";
 import { Protocol } from "pmtiles";
 
 import { MIN_ZOOM, RES, X0, Y0, YEAR_ORIGIN } from "./aef";
-import { AGREE_COL, createCodesLayer, HALF_COL, type Look, pixelCenter, pixelOf, RAMPS, SEASON_COL, setRamp, UNCLEAR, Y0_RAMP, YEAR_COL } from "./codes-layer";
+import { createCodesLayer, VIRIDIS, HALF_COL, type Look, pixelCenter, pixelOf, RAMPS, SEASON_COL, setRamp, UNCLEAR, Y0_RAMP, YEAR_COL } from "./codes-layer";
 import decoderBin from "./decoder_month.bin?url";
 import { colorData, type FootJoin, joinColors, joinPixels, ringOf as footRing } from "./foot";
 // Earth Genome's yearly mosaics (eg-s2.ts) swapped for single scenes from Earth Search
@@ -64,6 +64,9 @@ const CHEV = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke
 // from this zoom the view reads by itself once the map settles; below it nothing is read
 const AUTO_Z = MIN_ZOOM;
 const FIT_CLS = "sm-fit-on";
+/** A CSS gradient over Viridis from t0 to t1 (0 to 1), its stops where they fall. */
+const virGrad = (t0: number, t1: number) =>
+  `linear-gradient(90deg, ${VIRIDIS.map((col, i) => `${col} ${((100 * (i / (VIRIDIS.length - 1) - t0)) / (t1 - t0)).toFixed(1)}%`).join(", ")})`;
 
 // ---- the patches as windows (from the reveal branch): Sentinel-2 drawn only inside every patch's extent, deck.gl's
 // mask extension with the extents as one bitmap
@@ -206,13 +209,20 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   const lFirst = E("span"), lLast = E("span");
   const drawLline = () => {
     const agree = !!st.look.agree;
-    lline.replaceChildren(
-      ...(agree ? AGREE_COL : YEAR_COL).map((col) => {
-        const i = E("i");
-        i.style.background = col;
-        return i;
-      }),
-    );
+    // agreement: one continuous Viridis bar, as long as the years' steps
+    if (agree) {
+      const i = E("i");
+      i.style.width = "158px";
+      i.style.background = virGrad(0, 1);
+      lline.replaceChildren(i);
+    } else
+      lline.replaceChildren(
+        ...YEAR_COL.map((col) => {
+          const i = E("i");
+          i.style.background = col;
+          return i;
+        }),
+      );
     lFirst.textContent = agree ? "1" : String(Y0_RAMP);
     lLast.textContent = agree ? "3 models" : String(Y0_RAMP + YEAR_COL.length - 1);
   };
@@ -793,18 +803,22 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     bOurs.classList.toggle("on", l.src === "ours");
     bWsf.classList.toggle("on", l.src === "wsf");
     chips.replaceChildren();
+    chips.style.gap = "";
     body.querySelector(".years")?.remove();
     if (l.agree && l.src === "ours") {
       hdT.innerHTML = "<b>Models that see digging</b>";
       chips.style.gridTemplateColumns = "repeat(3, 1fr)";
-      AGREE_COL.forEach((col, i) => {
+      chips.style.gap = "0";
+      // each chip its third of the continuous Viridis bar, side by side
+      [0, 1, 2].forEach((i) => {
         const b = E("div", "chip", `${i + 1} of 3`);
-        b.style.background = col;
-        b.style.color = i === 0 ? "#111" : "#fff";
+        b.style.background = virGrad(i / 3, (i + 1) / 3);
+        b.style.borderRadius = "0";
+        b.style.color = i === 2 ? "#111" : "#fff";
         b.style.cursor = "default";
         chips.appendChild(b);
       });
-      hint.textContent = "How many of AlphaEarth, TESSERA and OlmoEarth call the ground dug, each against its own cutoff, in the year the most of them agree. Where OlmoEarth has no embedding for a year (before 2023 outside some countries), at most two can.";
+      hint.textContent = "How many of AlphaEarth, TESSERA and OlmoEarth call the ground dug, each against its own cutoff, in the year the most of them agree; within each third, how far past their cutoffs they are. Where OlmoEarth has no embedding for a year (before 2023 outside some countries), at most two can.";
     } else if (l.year == null) {
       hdT.innerHTML = "<b>Dug by year</b>";
       chips.style.gridTemplateColumns = "repeat(4, 1fr)";
@@ -1337,11 +1351,19 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     const first = agree ? "1" : String(Y0_RAMP), last = agree ? "3" : String(Y0_RAMP + YEAR_COL.length - 1);
     g.fillText(first, x, mid);
     x += g.measureText(first).width + 8 * k;
-    (agree ? AGREE_COL : YEAR_COL).forEach((col) => {
-      g.fillStyle = col;
-      g.fillRect(x, mid - 7 * k, 20 * k, 14 * k);
-      x += 22 * k;
-    });
+    if (agree) {
+      // one continuous Viridis bar
+      const w = 66 * k, gr = g.createLinearGradient(x, 0, x + w, 0);
+      VIRIDIS.forEach((col, i) => gr.addColorStop(i / (VIRIDIS.length - 1), col));
+      g.fillStyle = gr;
+      g.fillRect(x, mid - 7 * k, w, 14 * k);
+      x += w + 2 * k;
+    } else
+      YEAR_COL.forEach((col) => {
+        g.fillStyle = col;
+        g.fillRect(x, mid - 7 * k, 20 * k, 14 * k);
+        x += 22 * k;
+      });
     g.fillStyle = "#c9cfd5";
     g.fillText(last, x + 6 * k, mid);
     g.restore();

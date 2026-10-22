@@ -120,7 +120,8 @@ function encodeScores(sc: Float32Array): Uint8Array {
 const yearCheckKept = new Map<string, Promise<Uint8Array>>();
 /** Each pair's votes, by scoreKey (the aggregate's): which single models call a pixel dug, each over its own cutoff.
  * Bits: 1 AlphaEarth, 2 TESSERA, 4 OlmoEarth; 8 OlmoEarth has no embedding in a year there, 16 TESSERA has none
- * (or was not read: no model pointed there). */
+ * (or was not read: no model pointed there). The second plane: how far past their cutoffs the models that vote are,
+ * on average (0 at the cutoff, 255 at a score of 1). */
 const votesKept = new Map<string, Promise<Uint8Array>>();
 const V_AEF = 1, V_TES = 2, V_OLMO = 4, V_NO_OLMO = 8, V_NO_TES = 16;
 // the scores and cross-checks are kept on disk too (disk-cache.ts), so a reload draws them without reading the
@@ -150,7 +151,7 @@ async function pairScore(kind: LayerKind, lastIdx: number, g: { py0: number; px0
   const plane = g.w * g.h;
   const both = (async () => {
     const [ds, dc, dv] = await Promise.all([cacheGet(diskKey("s", k)), wantCheck ? cacheGet(diskKey("c", k)) : undefined, wantVotes ? cacheGet(diskKey("v", k)) : undefined]);
-    if (ds && ds.length === plane && (!wantCheck || (dc && dc.length === plane)) && (!wantVotes || (dv && dv.length === plane)))
+    if (ds && ds.length === plane && (!wantCheck || (dc && dc.length === plane)) && (!wantVotes || (dv && dv.length === 2 * plane)))
       return { score: ds, check: dc || null, votes: dv || null };
     if (!mosaic) mosaic = openMosaic().then((o) => o.arr);
     mosaic.catch(() => (mosaic = null));
@@ -183,11 +184,17 @@ async function pairScore(kind: LayerKind, lastIdx: number, g: { py0: number; px0
       );
       if (olmo && tes) {
         const m = model!, cA = m.cut.aef, cT = m.cut.tessera, cO = m.olmo!.cut;
-        votes = new Uint8Array(plane);
-        for (let i = 0; i < plane; i++)
+        votes = new Uint8Array(2 * plane);
+        // how far past its own cutoff a model is: 0 at the cutoff, 1 at a score of 1
+        const past = (s: number, c: number) => (s >= c ? Math.min(1, (s - c) / (1 - c)) : -1);
+        for (let i = 0; i < plane; i++) {
           votes[i] =
             (aef[i] >= cA ? V_AEF : 0) | (tes[i] >= cT ? V_TES : 0) | (olmo[i] >= cO ? V_OLMO : 0) |
             (olmo[i] < 0 ? V_NO_OLMO : 0) | (tes[i] < 0 ? V_NO_TES : 0);
+          let sum = 0, n = 0;
+          for (const x of [past(aef[i], cA), past(tes[i], cT), past(olmo[i], cO)]) if (x >= 0) (sum += x), n++;
+          votes[plane + i] = n ? Math.round((255 * sum) / n) : 0;
+        }
       }
     }
     let check: Uint8Array | null = null;
@@ -355,8 +362,10 @@ async function lit(g: { py0: number; px0: number; h: number; w: number; allIdx: 
       }
   });
   // the number of single models calling each pair dug (0 to 3), two bits a pair (the first four pairs in the low
-  // byte, the next four in the high), and a bit a pair where OlmoEarth has no embedding (it cannot vote there)
-  const agree = new Uint8Array(2 * plane), noOlmo = new Uint8Array(plane);
+  // byte, the next four in the high), and a bit a pair where OlmoEarth has no embedding (it cannot vote there);
+  // `soft`, a plane a pair: the count made continuous, (count - 1) plus how far past their cutoffs the voters are on
+  // average, over 3 (0 to 255; 1 model 0 to 85, 2 models 85 to 170, 3 models 170 to 255)
+  const agree = new Uint8Array(2 * plane), noOlmo = new Uint8Array(plane), soft = new Uint8Array(8 * plane);
   if (model!.olmo) {
     const vs = await Promise.all(g.allIdx.map((i) => votesKept.get(scoreKey("aggregate", i, g)) ?? Promise.resolve(null)));
     vs.forEach((v, c) => {
@@ -366,11 +375,12 @@ async function lit(g: { py0: number; px0: number; h: number; w: number; allIdx: 
         const x = v[i];
         const n = (x & V_AEF ? 1 : 0) + (x & V_TES ? 1 : 0) + (x & V_OLMO ? 1 : 0);
         agree[2 * i + byte] |= n << sh;
+        if (n) soft[c * plane + i] = Math.round((255 * (n - 1) + v[plane + i]) / 3);
         if (x & V_NO_OLMO) noOlmo[i] |= 1 << c;
       }
     });
   }
-  return { last, bits, agree, noOlmo };
+  return { last, bits, agree, noOlmo, soft };
 }
 
 // the WSF Tracker: one global GeoZarr at about 10 m (its own grid, a hair off AlphaEarth's), int8, level 0
@@ -407,9 +417,9 @@ async function codes(m: Codes) {
   running.set(m.id, ac);
   // WSF commented out for now: not read
   // const [ours, wsf] = await Promise.all([latest(m, ac.signal), wsfChunk(m, ac.signal).catch(() => new Uint8Array(m.w * m.h))]);
-  const { last: ours, bits, agree, noOlmo } = await lit(m, ac.signal), wsf = new Uint8Array(m.w * m.h);
+  const { last: ours, bits, agree, noOlmo, soft } = await lit(m, ac.signal), wsf = new Uint8Array(m.w * m.h);
   void wsfChunk;
-  return { ours, bits, wsf, agree, noOlmo };
+  return { ours, bits, wsf, agree, noOlmo, soft };
 }
 
 // one pixel's [unit AlphaEarth, unit TESSERA] / sqrt(2) into out at `o`; false where AlphaEarth is missing
