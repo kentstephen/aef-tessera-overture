@@ -28,8 +28,14 @@ function openZone(zone: number): Promise<Zone | null> {
   if (!p) {
     p = (async () => {
       const url = `${OLMO_URL}/utm${String(zone).padStart(2, "0")}`;
-      // read from S3, kept on disk under the gateway's URL (as TESSERA)
-      const store = new DiskCachedStore(url, new zarr.FetchStore(fromS3(url)));
+      // read from S3 over its three host names in turn (a browser keeps six connections a host, and TESSERA uses
+      // the same three), kept on disk under the gateway's URL (as TESSERA)
+      const hosts = ["s3.us-west-2", "s3-us-west-2", "s3.dualstack.us-west-2"].map((h) => new zarr.FetchStore(fromS3(url).replace("s3.us-west-2", h)));
+      let turn = 0;
+      const store = new DiskCachedStore(url, {
+        get: (key, opts) => hosts[0].get(key, opts),
+        getRange: (key, range, opts) => hosts[turn++ % hosts.length].getRange(key, range, opts),
+      });
       const root = await zarr.open.v3(store, { kind: "group" });
       const tr = root.attrs["spatial:transform"] as number[];
       const emb = await zarr.open.v3(root.resolve("embeddings"), { kind: "array" });

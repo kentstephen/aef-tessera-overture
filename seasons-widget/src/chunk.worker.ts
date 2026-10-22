@@ -156,6 +156,9 @@ async function pairScore(kind: LayerKind, lastIdx: number, g: { py0: number; px0
     if (!mosaic) mosaic = openMosaic().then((o) => o.arr);
     mosaic.catch(() => (mosaic = null));
     const arr = await mosaic;
+    // OlmoEarth asked for at once, alongside AlphaEarth (its blocks are shared between pairs and chunks, never let go)
+    const olmoRead = wantVotes ? olmoOnChunk(g.px0, g.py0, g.w, g.h, lastIdx - 1, lastIdx) : null;
+    olmoRead?.catch(() => {});
     const [f, l] = await Promise.all([
       aefChunk(arr, lastIdx - 1, g.py0, g.px0, g.h, g.w, signal),
       aefChunk(arr, lastIdx, g.py0, g.px0, g.h, g.w, signal),
@@ -167,8 +170,8 @@ async function pairScore(kind: LayerKind, lastIdx: number, g: { py0: number; px0
     if (kind !== "aef") {
       // OlmoEarth's own score, and TESSERA read where either AlphaEarth or OlmoEarth points (so TESSERA can vote there)
       let olmo: Float32Array | null = null, pointer = aef;
-      if (wantVotes) {
-        const o = await olmoOnChunk(g.px0, g.py0, g.w, g.h, lastIdx - 1, lastIdx);
+      if (olmoRead) {
+        const o = await olmoRead;
         olmo = await swRun({ type: "olmo", first: o.first, last: o.last, ok: o.ok, plane }, [o.first.buffer, o.last.buffer, o.ok.buffer] as ArrayBuffer[]);
         pointer = new Float32Array(plane);
         for (let i = 0; i < plane; i++) pointer[i] = Math.max(aef[i], olmo[i]);
