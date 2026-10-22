@@ -104,7 +104,15 @@ def _(anywidget, pathlib, traitlets):
         `foot` (Arrow IPC: a geoarrow.polygon per footprint part, `fid` its footprint) and `foot_status`."""
 
         _esm = pathlib.Path(__file__).parent / "seasons-widget" / "dist" / "widget.js"
-        config = traitlets.Unicode("{}").tag(sync=True)
+        if not _esm.exists():
+            # the notebook run without its folder (molab): the built widget from the repo on GitHub
+            import urllib.request as _ur
+
+            with _ur.urlopen(
+                "https://raw.githubusercontent.com/kentstephen/aef-tessera-overture/main/seasons-widget/dist/widget.js", timeout=120
+            ) as _r:
+                _esm = _r.read().decode()
+        config =traitlets.Unicode("{}").tag(sync=True)
         foot_ask = traitlets.Unicode("").tag(sync=True)
         foot = traitlets.Bytes(b"").tag(sync=True)
         foot_status = traitlets.Unicode("").tag(sync=True)
