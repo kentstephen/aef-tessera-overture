@@ -4,7 +4,7 @@
 #     "marimo",
 #     "anywidget>=0.9",
 #     "traitlets",
-#     "duckdb>=1.5.5",
+#     "duckdb>=2.0.0",
 #     "pyarrow>=25.0.0",
 #     "shapely>=2.0",
 #     "numpy==2.5.4",
