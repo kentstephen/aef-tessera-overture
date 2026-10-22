@@ -12,7 +12,7 @@ import maplibreWorker from "maplibre-gl/dist/maplibre-gl-worker.mjs?raw";
 import { Protocol } from "pmtiles";
 
 import { MIN_ZOOM, RES, X0, Y0, YEAR_ORIGIN } from "./aef";
-import { createCodesLayer, HALF_COL, type Look, pixelCenter, pixelOf, RAMPS, SEASON_COL, setRamp, UNCLEAR, Y0_RAMP, YEAR_COL } from "./codes-layer";
+import { AGREE_COL, createCodesLayer, HALF_COL, type Look, pixelCenter, pixelOf, RAMPS, SEASON_COL, setRamp, UNCLEAR, Y0_RAMP, YEAR_COL } from "./codes-layer";
 import decoderBin from "./decoder_month.bin?url";
 import { colorData, type FootJoin, joinColors, joinPixels, ringOf as footRing } from "./foot";
 // Earth Genome's yearly mosaics (eg-s2.ts) swapped for single scenes from Earth Search
@@ -155,7 +155,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     protocolAdded = true;
   }
 
-  const st = { look: { src: "ours", year: null } as Look, fit: true, folded: false, area: null as [number, number, number, number] | null, readId: 0, labels: true, picking: true, pair: false, holding: false, s2Year: S2_YEARS[S2_YEARS.length - 1], lines: false, winMain: false, winPair: false, gap: 1, tips: true };
+  const st = { look: { src: "ours", year: null, agree: "olmo" in world } as Look, fit: true, folded: false, area: null as [number, number, number, number] | null, readId: 0, labels: true, picking: true, pair: false, holding: false, s2Year: S2_YEARS[S2_YEARS.length - 1], lines: false, winMain: false, winPair: false, gap: 1, tips: true };
   const E = (t: string, c?: string, h?: string) => {
     const e = document.createElement(t);
     if (c) e.className = c;
@@ -202,17 +202,22 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   // the card: the years as one thin stepped line, the first and last at its ends, and no notes or keys
   const legend = E("div", "legend");
   const lline = E("div", "lline");
-  // the legend's steps from the ramp in use (again when Y swaps it)
-  const drawLline = () =>
+  // the legend's steps from the ramp in use (again when Y swaps it, and when A switches years and agreement)
+  const lFirst = E("span"), lLast = E("span");
+  const drawLline = () => {
+    const agree = !!st.look.agree;
     lline.replaceChildren(
-      ...YEAR_COL.map((col) => {
+      ...(agree ? AGREE_COL : YEAR_COL).map((col) => {
         const i = E("i");
         i.style.background = col;
         return i;
       }),
     );
+    lFirst.textContent = agree ? "1" : String(Y0_RAMP);
+    lLast.textContent = agree ? "3 models" : String(Y0_RAMP + YEAR_COL.length - 1);
+  };
   drawLline();
-  legend.append(E("span", "", String(Y0_RAMP)), lline, E("span", "", String(Y0_RAMP + YEAR_COL.length - 1)));
+  legend.append(lFirst, lline, lLast);
   card.append(hd, legend, body);
   root.appendChild(card);
   const tip = E("div", "tip");
@@ -789,7 +794,18 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     bWsf.classList.toggle("on", l.src === "wsf");
     chips.replaceChildren();
     body.querySelector(".years")?.remove();
-    if (l.year == null) {
+    if (l.agree && l.src === "ours") {
+      hdT.innerHTML = "<b>Models that see digging</b>";
+      chips.style.gridTemplateColumns = "repeat(3, 1fr)";
+      AGREE_COL.forEach((col, i) => {
+        const b = E("div", "chip", `${i + 1} of 3`);
+        b.style.background = col;
+        b.style.color = i === 0 ? "#111" : "#fff";
+        b.style.cursor = "default";
+        chips.appendChild(b);
+      });
+      hint.textContent = "How many of AlphaEarth, TESSERA and OlmoEarth call the ground dug, each against its own cutoff, in the year the most of them agree. Where OlmoEarth has no embedding for a year (before 2023 outside some countries), at most two can.";
+    } else if (l.year == null) {
       hdT.innerHTML = "<b>Dug by year</b>";
       chips.style.gridTemplateColumns = "repeat(4, 1fr)";
       YEAR_COL.forEach((col, i) => {
@@ -872,6 +888,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
   function setLook(l: Look) {
     if (l.src === "ours" && l.year != null && l.year < 2018) l = { ...l, year: null };
     st.look = l;
+    drawLline();
     drawCard();
     codes?.setLook(l);
     progressSoon();
@@ -1033,7 +1050,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     // WSF commented out for now: only ours' ground answers
     // if (!c || (!c.ours && c.wsf < 2)) {
     const yOpen = st.look.year != null ? st.look.year - YEAR_ORIGIN : -1;
-    if (!c || !c.ours || (yOpen > 0 && !(c.bits & (1 << (yOpen - 1))))) {
+    if (!c || (st.look.agree ? !c.agree : !c.ours) || (!st.look.agree && yOpen > 0 && !(c.bits & (1 << (yOpen - 1))))) {
       hoverKey = "";
       showTip("");
       return;
@@ -1057,7 +1074,9 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
         });
       } else ours += s >= 1 && s <= 4 ? `, ${SEASONS[s - 1][0]} (${SEASONS[s - 1][1]})` : ", quarter unclear";
     }
-    showTip(`<b>No footprint</b><br>Dug or graded: ${ours}`);
+    if (st.look.agree)
+      showTip(`<b>No footprint</b><br>${c.agree} of 3 models see digging` + (c.noOlmo ? ` <span class="dim">(OlmoEarth missing some years)</span>` : "") + (c.ours ? `<br>Dug or graded: ${ours}` : ""));
+    else showTip(`<b>No footprint</b><br>Dug or graded: ${ours}`);
   });
   map.on("click", (e) => pin(e.point));
   mapEl.addEventListener("mouseleave", () => {
@@ -1310,14 +1329,15 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     const mid = y0 + 10 * k;
     g.font = `600 ${15 * k}px ${FONT}`;
     g.fillStyle = "#e6e9ec";
-    g.fillText("Dug by year", x0, mid);
-    let x = x0 + g.measureText("Dug by year").width + 14 * k;
+    const agree = !!st.look.agree, title = agree ? "Models that see digging" : "Dug by year";
+    g.fillText(title, x0, mid);
+    let x = x0 + g.measureText(title).width + 14 * k;
     g.font = `500 ${13 * k}px ${FONT}`;
     g.fillStyle = "#c9cfd5";
-    const first = String(Y0_RAMP), last = String(Y0_RAMP + YEAR_COL.length - 1);
+    const first = agree ? "1" : String(Y0_RAMP), last = agree ? "3" : String(Y0_RAMP + YEAR_COL.length - 1);
     g.fillText(first, x, mid);
     x += g.measureText(first).width + 8 * k;
-    YEAR_COL.forEach((col) => {
+    (agree ? AGREE_COL : YEAR_COL).forEach((col) => {
       g.fillStyle = col;
       g.fillRect(x, mid - 7 * k, 20 * k, 14 * k);
       x += 22 * k;
@@ -1470,6 +1490,7 @@ function render({ model, el }: { model: Model; el: HTMLElement }) {
     //   note(`Buildings on dug ground: ${DUG_COLS[dugCol].name} (C)`);
     //   recolor();
     // }
+    else if (k === "a" || k === "A") setLook({ ...st.look, agree: !st.look.agree });
     else if (k === "o" || k === "O") {
       // the patches' outlines on or off
       st.lines = !st.lines;

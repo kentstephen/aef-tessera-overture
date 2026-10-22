@@ -16,6 +16,9 @@ export type Model = { w: number[]; b: number };
 export type WorldModel = Record<LayerKind, Model> & {
   bounds: [number, number];
   cut: Record<LayerKind, number>;
+  /** OlmoEarth's own model (olmo.ts, its first 64 bands), taught on the US lidar sites with the same recipe: its
+   * change gate's bounds (where `gated`) and its cutoff (60% of held-out digging found, as the others). */
+  olmo?: Model & { bounds: [number, number]; gated: boolean; cut: number };
 };
 
 /** AlphaEarth's change (1 - cos) at which its gate opens and is fully open. */
@@ -122,6 +125,23 @@ export function scorePixel(kind: LayerKind, m: WorldModel, p: PixelInputs): numb
   const gate = p.tesFlags![at] & TES_FLIP ? ga : Math.max(ga, gt);
   const w = m.aggregate.w;
   return sig(half(bA, aA, w, 0, NUM_BANDS) + half(bT, aT, w, 4 * NUM_BANDS, TES_BANDS) + m.aggregate.b) * gate;
+}
+
+/**
+ * OlmoEarth's own score at every pixel of a chunk, -1 where it has no embedding in a year. Quantized as AlphaEarth
+ * is, so read the same way.
+ */
+export function olmoScores(first: Int8Array, last: Int8Array, ok: Uint8Array, plane: number, m: WorldModel): Float32Array {
+  const out = new Float32Array(plane).fill(-1);
+  const o = m.olmo;
+  if (!o) return out;
+  const [lo, hi] = o.bounds;
+  for (let at = 0; at < plane; at++) {
+    if (!ok[at] || !unitAef(first, plane, at, bA) || !unitAef(last, plane, at, aA)) continue;
+    const g = o.gated ? clip01((1 - cosine(bA, aA, NUM_BANDS) - lo) / Math.max(hi - lo, 1e-6)) : 1;
+    out[at] = g > 0 ? sig(half(bA, aA, o.w, 0, NUM_BANDS) + o.b) * g : 0;
+  }
+  return out;
 }
 
 /**

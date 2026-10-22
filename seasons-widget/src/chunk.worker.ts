@@ -4,6 +4,7 @@ import { type AefArray, NUM_BANDS, openMosaic, RES, X0, Y0 } from "./aef";
 import { cacheGet, cachePut, DiskCachedStore, fingerprint } from "./disk-cache";
 import { aefScores, crossCheckChunk, type LayerKind, type WorldModel } from "./earthwork-cpu";
 import ScoreWorker from "./score.worker.ts?worker&inline";
+import { olmoOnChunk } from "./olmo";
 import { TES_BANDS, TES_OK, tesseraOnChunk } from "./tessera";
 
 // the scoring math on a few workers of its own (score.worker.ts), the least busy first: several chunks score at once
@@ -117,11 +118,16 @@ function encodeScores(sc: Float32Array): Uint8Array {
 // the year map's cross-check a year, by scoreKey: made with the pair's score, from the same years in hand (and the
 // three before, which the year map reads anyway), for the pixels it draws only
 const yearCheckKept = new Map<string, Promise<Uint8Array>>();
+/** Each pair's votes, by scoreKey (the aggregate's): which single models call a pixel dug, each over its own cutoff.
+ * Bits: 1 AlphaEarth, 2 TESSERA, 4 OlmoEarth; 8 OlmoEarth has no embedding in a year there, 16 TESSERA has none
+ * (or was not read: no model pointed there). */
+const votesKept = new Map<string, Promise<Uint8Array>>();
+const V_AEF = 1, V_TES = 2, V_OLMO = 4, V_NO_OLMO = 8, V_NO_TES = 16;
 // the scores and cross-checks are kept on disk too (disk-cache.ts), so a reload draws them without reading the
 // embeddings again (64 KB a chunk and year, against 8 MB of embeddings). SCORE_V goes up when the scoring changes
-const SCORE_V = 2;
+const SCORE_V = 3;
 const SCORE_TTL = 30 * 864e5;
-const diskKey = (part: "s" | "c", k: string) => `score:v${SCORE_V}:${modelFp}:${part}:${k}`;
+const diskKey = (part: "s" | "c" | "v", k: string) => `score:v${SCORE_V}:${modelFp}:${part}:${k}`;
 const kept_ = <T,>(m: Map<string, T>, k: string) => {
   const v = m.get(k);
   if (v !== undefined) {
@@ -138,11 +144,14 @@ const keepIn = <T,>(m: Map<string, Promise<T>>, k: string, p: Promise<T>) => {
 async function pairScore(kind: LayerKind, lastIdx: number, g: { py0: number; px0: number; h: number; w: number }, signal: AbortSignal, wantCheck = false): Promise<Uint8Array> {
   const k = scoreKey(kind, lastIdx, g);
   const kept = kept_(scoreKept, k);
-  if (kept && (!wantCheck || yearCheckKept.has(k))) return kept;
+  // the aggregate's votes come with it (OlmoEarth's model given)
+  const wantVotes = kind === "aggregate" && !!model?.olmo;
+  if (kept && (!wantCheck || yearCheckKept.has(k)) && (!wantVotes || votesKept.has(k))) return kept;
   const plane = g.w * g.h;
   const both = (async () => {
-    const [ds, dc] = await Promise.all([cacheGet(diskKey("s", k)), wantCheck ? cacheGet(diskKey("c", k)) : undefined]);
-    if (ds && ds.length === plane && (!wantCheck || (dc && dc.length === plane))) return { score: ds, check: dc || null };
+    const [ds, dc, dv] = await Promise.all([cacheGet(diskKey("s", k)), wantCheck ? cacheGet(diskKey("c", k)) : undefined, wantVotes ? cacheGet(diskKey("v", k)) : undefined]);
+    if (ds && ds.length === plane && (!wantCheck || (dc && dc.length === plane)) && (!wantVotes || (dv && dv.length === plane)))
+      return { score: ds, check: dc || null, votes: dv || null };
     if (!mosaic) mosaic = openMosaic().then((o) => o.arr);
     mosaic.catch(() => (mosaic = null));
     const arr = await mosaic;
@@ -153,14 +162,33 @@ async function pairScore(kind: LayerKind, lastIdx: number, g: { py0: number; px0
     const aefFirst = f.data as Int8Array, aefLast = l.data as Int8Array;
     // copies of the kept AlphaEarth chunks go to the scoring workers
     const aef = await swRun({ type: "aef", first: aefFirst, last: aefLast, plane });
-    let t: Awaited<ReturnType<typeof tesseraOnChunk>> | null = null, sc = aef;
+    let t: Awaited<ReturnType<typeof tesseraOnChunk>> | null = null, sc = aef, votes: Uint8Array | null = null;
     if (kind !== "aef") {
-      t = await tesseraOnChunk(g.px0, g.py0, g.w, g.h, lastIdx - 1, lastIdx, signal, aef);
+      // OlmoEarth's own score, and TESSERA read where either AlphaEarth or OlmoEarth points (so TESSERA can vote there)
+      let olmo: Float32Array | null = null, pointer = aef;
+      if (wantVotes) {
+        const o = await olmoOnChunk(g.px0, g.py0, g.w, g.h, lastIdx - 1, lastIdx);
+        olmo = await swRun({ type: "olmo", first: o.first, last: o.last, ok: o.ok, plane }, [o.first.buffer, o.last.buffer, o.ok.buffer] as ArrayBuffer[]);
+        pointer = new Float32Array(plane);
+        for (let i = 0; i < plane; i++) pointer[i] = Math.max(aef[i], olmo[i]);
+      }
+      t = await tesseraOnChunk(g.px0, g.py0, g.w, g.h, lastIdx - 1, lastIdx, signal, pointer);
+      const tes = wantVotes
+        ? await swRun({ type: "pair", kind: "tessera", aefFirst, aefLast, tesFirst: t.first, tesLast: t.last, tesFlags: t.flags, plane })
+        : null;
       // TESSERA's arrays handed over when the cross-check does not need them after
       sc = await swRun(
         { type: "pair", kind, aefFirst, aefLast, tesFirst: t.first, tesLast: t.last, tesFlags: t.flags, plane },
         wantCheck ? [] : ([t.first.buffer, t.last.buffer, t.flags.buffer] as ArrayBuffer[]),
       );
+      if (olmo && tes) {
+        const m = model!, cA = m.cut.aef, cT = m.cut.tessera, cO = m.olmo!.cut;
+        votes = new Uint8Array(plane);
+        for (let i = 0; i < plane; i++)
+          votes[i] =
+            (aef[i] >= cA ? V_AEF : 0) | (tes[i] >= cT ? V_TES : 0) | (olmo[i] >= cO ? V_OLMO : 0) |
+            (olmo[i] < 0 ? V_NO_OLMO : 0) | (tes[i] < 0 ? V_NO_TES : 0);
+      }
     }
     let check: Uint8Array | null = null;
     if (wantCheck) {
@@ -171,10 +199,12 @@ async function pairScore(kind: LayerKind, lastIdx: number, g: { py0: number; px0
     const score = encodeScores(sc);
     cachePut(diskKey("s", k), score, SCORE_TTL);
     if (check) cachePut(diskKey("c", k), check, SCORE_TTL);
-    return { score, check };
+    if (votes) cachePut(diskKey("v", k), votes, SCORE_TTL);
+    return { score, check, votes };
   })();
   const p = both.then((r) => r.score);
   keepIn(scoreKept, k, p);
+  if (wantVotes) keepIn(votesKept, k, both.then((r) => r.votes as Uint8Array));
   if (wantCheck) keepIn(yearCheckKept, k, both.then((r) => r.check as Uint8Array));
   return p;
 }
@@ -324,7 +354,23 @@ async function lit(g: { py0: number; px0: number; h: number; w: number; allIdx: 
         if (idx > last[i]) last[i] = idx;
       }
   });
-  return { last, bits };
+  // the number of single models calling each pair dug (0 to 3), two bits a pair (the first four pairs in the low
+  // byte, the next four in the high), and a bit a pair where OlmoEarth has no embedding (it cannot vote there)
+  const agree = new Uint8Array(2 * plane), noOlmo = new Uint8Array(plane);
+  if (model!.olmo) {
+    const vs = await Promise.all(g.allIdx.map((i) => votesKept.get(scoreKey("aggregate", i, g)) ?? Promise.resolve(null)));
+    vs.forEach((v, c) => {
+      if (!v || c >= 8) return;
+      const byte = c >> 2, sh = 2 * (c & 3);
+      for (let i = 0; i < plane; i++) {
+        const x = v[i];
+        const n = (x & V_AEF ? 1 : 0) + (x & V_TES ? 1 : 0) + (x & V_OLMO ? 1 : 0);
+        agree[2 * i + byte] |= n << sh;
+        if (x & V_NO_OLMO) noOlmo[i] |= 1 << c;
+      }
+    });
+  }
+  return { last, bits, agree, noOlmo };
 }
 
 // the WSF Tracker: one global GeoZarr at about 10 m (its own grid, a hair off AlphaEarth's), int8, level 0
@@ -361,9 +407,9 @@ async function codes(m: Codes) {
   running.set(m.id, ac);
   // WSF commented out for now: not read
   // const [ours, wsf] = await Promise.all([latest(m, ac.signal), wsfChunk(m, ac.signal).catch(() => new Uint8Array(m.w * m.h))]);
-  const { last: ours, bits } = await lit(m, ac.signal), wsf = new Uint8Array(m.w * m.h);
+  const { last: ours, bits, agree, noOlmo } = await lit(m, ac.signal), wsf = new Uint8Array(m.w * m.h);
   void wsfChunk;
-  return { ours, bits, wsf };
+  return { ours, bits, wsf, agree, noOlmo };
 }
 
 // one pixel's [unit AlphaEarth, unit TESSERA] / sqrt(2) into out at `o`; false where AlphaEarth is missing
